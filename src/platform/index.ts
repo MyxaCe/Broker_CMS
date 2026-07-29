@@ -32,3 +32,32 @@ export {
 export type { Role } from './auth/roles'
 
 export { DECLARED_ROUTE_FILES, scanRouteFiles } from './http/declared-routes'
+
+export {
+  buildChain,
+  canAccessTenant,
+  canRevertToInherited,
+  collectSubtree,
+  expandTenantScope,
+  MAX_CHAIN_DEPTH,
+  resolveCollection,
+  resolveEffectiveAccess,
+  resolveField,
+  resolveTenantAccess,
+  revertLeavesEmpty,
+  TenantChainError,
+  validateTenantDraft,
+} from './tenancy'
+export type {
+  AccessDecision,
+  Actor,
+  CollectionEntry,
+  CollectionLayerState,
+  CollectionResolution,
+  FieldResolution,
+  LayerState,
+  Provenance,
+  TenantDraft,
+  TenantKind,
+  TenantNode,
+} from './tenancy'

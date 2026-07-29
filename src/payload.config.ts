@@ -7,6 +7,7 @@ import { buildConfig } from 'payload'
 
 import { ensureEnv } from './platform/config'
 import { Users } from './platform/auth/users.collection'
+import { Tenants } from './platform/tenancy/tenants.collection'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -27,7 +28,7 @@ export default buildConfig({
 
   editor: lexicalEditor(),
 
-  collections: [Users],
+  collections: [Tenants, Users],
 
   db: postgresAdapter({
     pool: { connectionString: env.DATABASE_URL },
