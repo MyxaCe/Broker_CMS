@@ -13,6 +13,7 @@
 export {
   bootstrapEnv,
   describeEnv,
+  ensureEnv,
   getEnv,
   initEnv,
   isSecretKey,
@@ -20,3 +21,14 @@ export {
   EnvValidationError,
 } from './config'
 export type { Env } from './config'
+
+export {
+  APPROVER_ROLE,
+  CROSS_TENANT_ROLES,
+  isCrossTenantRole,
+  ROLE_LABELS,
+  ROLES,
+} from './auth/roles'
+export type { Role } from './auth/roles'
+
+export { DECLARED_ROUTE_FILES, scanRouteFiles } from './http/declared-routes'

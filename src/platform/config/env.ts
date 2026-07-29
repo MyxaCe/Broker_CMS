@@ -181,6 +181,15 @@ export function getEnv(): Env {
   return cached
 }
 
+/**
+ * Для точек входа, которые запускаются вне нашего bootstrap — конфигурация
+ * Payload читается и приложением, и CLI миграций. Семантика та же самая:
+ * невалидное окружение бросает исключение, процесс не поднимается.
+ */
+export function ensureEnv(): Env {
+  return cached ?? initEnv()
+}
+
 /** Только для тестов: сбросить закешированную конфигурацию. */
 export function resetEnvForTests(): void {
   cached = undefined
