@@ -1,0 +1,35 @@
+# Зависимости
+node_modules/
+.pnpm-store/
+
+# Сборка
+dist/
+.next/
+out/
+*.tsbuildinfo
+
+# Секреты — в репозиторий не попадают никогда (ТЗ разд. 6)
+.env
+.env.*
+!.env.example
+
+# Тесты и отчёты
+coverage/
+test-results/
+playwright-report/
+
+# Локальные данные
+*.log
+tmp/
+
+# ОС и редакторы
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Obsidian: рабочее состояние волта — личное, настройки волта — общие
+docs/.obsidian/workspace.json
+docs/.obsidian/workspace-mobile.json
+docs/.obsidian/cache/

@@ -1,0 +1,78 @@
+name: CI
+
+# ТЗ разд. 8: CI блокирует мёрж при падении ЛЮБОЙ проверки.
+# Все проверки блокирующие с самого начала — вводить их «когда будет что
+# проверять» поздно: правило перестаёт соблюдаться в первый же спорный момент.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Проверки качества
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # --frozen-lockfile обязателен: CI не имеет права молча разрешить
+      # версии иначе, чем это сделал разработчик локально.
+      - name: Установка зависимостей
+        run: pnpm install --frozen-lockfile
+
+      - name: Линтер и границы модулей
+        run: pnpm run lint
+
+      - name: Форматирование
+        run: pnpm run format:check
+
+      - name: Типы
+        run: pnpm run typecheck
+
+      - name: Тесты
+        run: pnpm run test
+
+  audit:
+    name: Аудит зависимостей
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Установка зависимостей
+        run: pnpm install --frozen-lockfile
+
+      # ТЗ разд. 6: уязвимость в зависимости роняет сборку, а не попадает
+      # в отчёт, который никто не читает.
+      - name: Аудит
+        run: pnpm audit --audit-level moderate

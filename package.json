@@ -1,0 +1,33 @@
+{
+  "name": "broker-cms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Broker CMS v2 — источник истины для контента, дизайна и клиентской конфигурации сайтов брокерской платформы.",
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22.11.0"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run test"
+  },
+  "dependencies": {
+    "pino": "^9.5.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.19.0",
+    "vitest": "^2.1.8"
+  }
+}

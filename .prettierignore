@@ -1,0 +1,9 @@
+# Волт документации форматируется Obsidian, а не Prettier:
+# он ломает callouts, wikilinks и таблицы, выравненные вручную.
+docs/
+
+node_modules/
+dist/
+.next/
+coverage/
+pnpm-lock.yaml
