@@ -6,7 +6,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
    CREATE TYPE "public"."enum_tenants_kind" AS ENUM('brand', 'region', 'site');
   CREATE TYPE "public"."enum_users_role" AS ENUM('brand-admin', 'site-admin', 'editor', 'author', 'compliance', 'translator', 'viewer', 'developer');
-  CREATE TABLE "tenants_locales" (
+  CREATE TABLE "tenants_available_locales" (
   	"_order" integer NOT NULL,
   	"_parent_id" integer NOT NULL,
   	"id" varchar PRIMARY KEY NOT NULL,
@@ -103,7 +103,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
   
-  ALTER TABLE "tenants_locales" ADD CONSTRAINT "tenants_locales_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;
+  ALTER TABLE "tenants_available_locales" ADD CONSTRAINT "tenants_available_locales_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."tenants"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "tenants" ADD CONSTRAINT "tenants_parent_id_tenants_id_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."tenants"("id") ON DELETE set null ON UPDATE no action;
   ALTER TABLE "users_sessions" ADD CONSTRAINT "users_sessions_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "users_rels" ADD CONSTRAINT "users_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
@@ -113,8 +113,8 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_users_fk" FOREIGN KEY ("users_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_preferences_rels" ADD CONSTRAINT "payload_preferences_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "public"."payload_preferences"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "payload_preferences_rels" ADD CONSTRAINT "payload_preferences_rels_users_fk" FOREIGN KEY ("users_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
-  CREATE INDEX "tenants_locales_order_idx" ON "tenants_locales" USING btree ("_order");
-  CREATE INDEX "tenants_locales_parent_id_idx" ON "tenants_locales" USING btree ("_parent_id");
+  CREATE INDEX "tenants_available_locales_order_idx" ON "tenants_available_locales" USING btree ("_order");
+  CREATE INDEX "tenants_available_locales_parent_id_idx" ON "tenants_available_locales" USING btree ("_parent_id");
   CREATE UNIQUE INDEX "tenants_slug_idx" ON "tenants" USING btree ("slug");
   CREATE INDEX "tenants_kind_idx" ON "tenants" USING btree ("kind");
   CREATE INDEX "tenants_parent_idx" ON "tenants" USING btree ("parent_id");
@@ -152,7 +152,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
 
 export async function down({ db }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
-   DROP TABLE "tenants_locales" CASCADE;
+   DROP TABLE "tenants_available_locales" CASCADE;
   DROP TABLE "tenants" CASCADE;
   DROP TABLE "users_sessions" CASCADE;
   DROP TABLE "users" CASCADE;

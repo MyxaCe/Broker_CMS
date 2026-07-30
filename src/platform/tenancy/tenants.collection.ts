@@ -84,7 +84,13 @@ export const Tenants: CollectionConfig = {
       },
     },
     {
-      name: 'locales',
+      /**
+       * Имя `locales` использовать нельзя: Payload называет `<коллекция>_locales`
+       * свои служебные таблицы локализованных полей, и массив с таким именем
+       * порождает конфликт имён — связанные запросы к коллекции перестают
+       * строиться вовсе (BUG-002).
+       */
+      name: 'availableLocales',
       type: 'array',
       label: 'Локали',
       fields: [{ name: 'code', type: 'text', required: true, label: 'Код' }],
@@ -121,7 +127,7 @@ export const Tenants: CollectionConfig = {
 }
 
 function toDraft(data: Record<string, unknown>): TenantDraft {
-  const rawLocales = Array.isArray(data.locales) ? data.locales : []
+  const rawLocales = Array.isArray(data.availableLocales) ? data.availableLocales : []
 
   return {
     kind: (data.kind as TenantKind | undefined) ?? 'site',

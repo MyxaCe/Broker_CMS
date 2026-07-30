@@ -19,10 +19,12 @@
     "typecheck": "tsc --noEmit",
     "payload": "node --env-file=.env ./node_modules/payload/bin.js",
     "migrate": "node --env-file=.env ./node_modules/payload/bin.js migrate",
-    "migrate:create": "node --env-file=.env ./node_modules/payload/bin.js migrate:create && node scripts/normalize-migrations.mjs && prettier --write src/migrations",
+    "migrate:create": "node scripts/migrate-create.mjs",
     "migrate:status": "node --env-file=.env ./node_modules/payload/bin.js migrate:status",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "node --env-file-if-exists=.env --env-file-if-exists=.env.test ./node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts",
+    "migrate:test": "node --env-file-if-exists=.env --env-file-if-exists=.env.test ./node_modules/payload/bin.js migrate",
     "verify": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run test"
   },
   "dependencies": {

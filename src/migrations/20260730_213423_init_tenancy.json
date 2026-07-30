@@ -2,8 +2,8 @@
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.tenants_locales": {
-      "name": "tenants_locales",
+    "public.tenants_available_locales": {
+      "name": "tenants_available_locales",
       "schema": "",
       "columns": {
         "_order": {
@@ -32,8 +32,8 @@
         }
       },
       "indexes": {
-        "tenants_locales_order_idx": {
-          "name": "tenants_locales_order_idx",
+        "tenants_available_locales_order_idx": {
+          "name": "tenants_available_locales_order_idx",
           "columns": [
             {
               "expression": "_order",
@@ -47,8 +47,8 @@
           "method": "btree",
           "with": {}
         },
-        "tenants_locales_parent_id_idx": {
-          "name": "tenants_locales_parent_id_idx",
+        "tenants_available_locales_parent_id_idx": {
+          "name": "tenants_available_locales_parent_id_idx",
           "columns": [
             {
               "expression": "_parent_id",
@@ -64,9 +64,9 @@
         }
       },
       "foreignKeys": {
-        "tenants_locales_parent_id_fk": {
-          "name": "tenants_locales_parent_id_fk",
-          "tableFrom": "tenants_locales",
+        "tenants_available_locales_parent_id_fk": {
+          "name": "tenants_available_locales_parent_id_fk",
+          "tableFrom": "tenants_available_locales",
           "tableTo": "tenants",
           "columnsFrom": ["_parent_id"],
           "columnsTo": ["id"],
@@ -1207,6 +1207,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "ba5d9b3b-4344-4e39-928a-e1bcb995647e",
+  "id": "c0c2919f-bf32-423e-adb2-815a49399e23",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }
