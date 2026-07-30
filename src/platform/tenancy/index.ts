@@ -13,6 +13,15 @@ export {
 } from './inheritance'
 export { validateTenantDraft } from './tenant-rules'
 export type { TenantDraft } from './tenant-rules'
+export {
+  createTenantAccess,
+  crossTenantOnly,
+  crossTenantOnlyField,
+  crossTenantOrSelf,
+  decisionToWhere,
+  isCrossTenantActor,
+} from './payload-access'
+export type { TenantAccessOptions } from './payload-access'
 export type {
   AccessDecision,
   Actor,

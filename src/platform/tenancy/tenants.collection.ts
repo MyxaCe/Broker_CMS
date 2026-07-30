@@ -1,3 +1,6 @@
+import { normalizeRelationId } from '../shared/relation'
+
+import { createTenantAccess, crossTenantOnly } from './payload-access'
 import { validateTenantDraft } from './tenant-rules'
 
 import type { TenantDraft } from './tenant-rules'
@@ -13,6 +16,21 @@ import type { CollectionConfig } from 'payload'
  */
 export const Tenants: CollectionConfig = {
   slug: 'tenants',
+
+  /**
+   * Чтение ограничено поддеревом привязки — по полю `id` самой коллекции.
+   *
+   * Изменение структуры цепочки (уровень, родитель) меняет права всех, кто
+   * привязан ниже, поэтому создание, правка и удаление тенантов доступны
+   * только кросс-тенантной роли. Более тонкое разделение — вместе с полной
+   * матрицей ролей; сейчас строгая граница безопаснее.
+   */
+  access: {
+    read: createTenantAccess({ field: 'id' }),
+    create: crossTenantOnly,
+    update: crossTenantOnly,
+    delete: crossTenantOnly,
+  },
 
   admin: {
     useAsTitle: 'name',
@@ -108,7 +126,7 @@ function toDraft(data: Record<string, unknown>): TenantDraft {
   return {
     kind: (data.kind as TenantKind | undefined) ?? 'site',
     slug: typeof data.slug === 'string' ? data.slug : '',
-    parentId: normalizeRelation(data.parent),
+    parentId: normalizeRelationId(data.parent),
     jurisdiction: typeof data.jurisdiction === 'string' ? data.jurisdiction : null,
     locales: rawLocales
       .map((entry) =>
@@ -119,15 +137,4 @@ function toDraft(data: Record<string, unknown>): TenantDraft {
       .filter((code) => code !== ''),
     defaultLocale: typeof data.defaultLocale === 'string' ? data.defaultLocale : null,
   }
-}
-
-/** Payload отдаёт связь либо идентификатором, либо развёрнутым документом. */
-function normalizeRelation(value: unknown): string | null {
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value)
-  }
-  if (value !== null && typeof value === 'object' && 'id' in value) {
-    return String((value as { id: unknown }).id)
-  }
-  return null
 }

@@ -33,9 +33,20 @@ export type { Role } from './auth/roles'
 
 export { DECLARED_ROUTE_FILES, scanRouteFiles } from './http/declared-routes'
 
+export { toActor } from './auth/actor'
+export { validateUserDraft } from './auth/user-rules'
+export type { UserDraft } from './auth/user-rules'
+export { normalizeRelationId, normalizeRelationIds } from './shared/relation'
+
 export {
   buildChain,
   canAccessTenant,
+  createTenantAccess,
+  crossTenantOnly,
+  crossTenantOnlyField,
+  crossTenantOrSelf,
+  decisionToWhere,
+  isCrossTenantActor,
   canRevertToInherited,
   collectSubtree,
   expandTenantScope,
