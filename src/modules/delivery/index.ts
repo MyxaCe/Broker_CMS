@@ -1,5 +1,6 @@
 /**
  * Модуль `delivery` — часть 3 ТЗ: плоскость доставки.
+ *
  * Единственная дверь наружу: версионированный API, релизы и каналы, кеш и
  * инвалидация, события через outbox, ключи и скоупы.
  *
@@ -11,9 +12,29 @@
  *   (site, releaseId, locale, jurisdiction, variant) → ответ
  * Все пять участвуют в ключе кеша и в ETag с этапа M1; до M5 `jurisdiction`
  * берётся из карточки тенанта, а `variant` всегда `default`.
- *
- * Наполняется на этапе M1.
  */
+
+export {
+  buildCacheKey,
+  buildETag,
+  CACHE_KEY_VERSION,
+  CacheKeyError,
+  contentHash,
+  DEFAULT_VARIANT,
+  matchesETag,
+} from './cache-key'
+export type { CacheKeyInput, ResolutionAxes } from './cache-key'
+
+export {
+  FIRST_RELEASE_NUMBER,
+  nextReleaseNumber,
+  ReleaseNumberingError,
+} from './releases/numbering'
+
+export { Releases, RELEASE_STATUSES } from './releases/releases.collection'
+export type { ReleaseStatus } from './releases/releases.collection'
+export { Channels, CHANNEL_NAMES } from './releases/channels.collection'
+export type { ChannelName } from './releases/channels.collection'
 
 /** Измерения, от которых зависит ответ доставки. Порядок значим: он задаёт ключ кеша. */
 export const RESOLUTION_AXES = ['site', 'releaseId', 'locale', 'jurisdiction', 'variant'] as const

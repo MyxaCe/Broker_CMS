@@ -9,6 +9,8 @@ import { ensureEnv } from './platform/config'
 import { AuditEvents } from './platform/audit/audit.collection'
 import { Users } from './platform/auth/users.collection'
 import { Tenants } from './platform/tenancy/tenants.collection'
+import { Channels } from './modules/delivery/releases/channels.collection'
+import { Releases } from './modules/delivery/releases/releases.collection'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -29,7 +31,7 @@ export default buildConfig({
 
   editor: lexicalEditor(),
 
-  collections: [Tenants, Users, AuditEvents],
+  collections: [Tenants, Users, Releases, Channels, AuditEvents],
 
   db: postgresAdapter({
     pool: { connectionString: env.DATABASE_URL },

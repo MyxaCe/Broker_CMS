@@ -69,6 +69,8 @@ export interface Config {
   collections: {
     tenants: Tenant;
     users: User;
+    releases: Release;
+    channels: Channel;
     'audit-events': AuditEvent;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -79,6 +81,8 @@ export interface Config {
   collectionsSelect: {
     tenants: TenantsSelect<false> | TenantsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    releases: ReleasesSelect<false> | ReleasesSelect<true>;
+    channels: ChannelsSelect<false> | ChannelsSelect<true>;
     'audit-events': AuditEventsSelect<false> | AuditEventsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -203,6 +207,82 @@ export interface User {
   collection: 'users';
 }
 /**
+ * Собранный релиз неизменяем: правки после сборки невозможны ни через интерфейс, ни напрямую в базе. Откат выполняется переключением канала.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "releases".
+ */
+export interface Release {
+  id: number;
+  siteId: string;
+  siteSlug: string;
+  /**
+   * Свой у каждого сайта, монотонный. Выданный номер не выдаётся повторно — даже если сборка провалилась.
+   */
+  number: number;
+  /**
+   * Например, apex-de #42 — то, чем оперируют в переписке.
+   */
+  label: string;
+  /**
+   * Правки возможны только пока релиз собирается. После перехода в «готов» или «провален» запись замораживается на уровне базы.
+   */
+  status: 'building' | 'ready' | 'failed';
+  /**
+   * Полное состояние структуры сайта на момент сборки.
+   */
+  snapshot?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Участвует в ETag выдачи; устойчив к порядку полей.
+   */
+  contentHash?: string | null;
+  /**
+   * Почему сборка прошла или была отклонена. Хранится и у проваленных релизов — иначе причина отказа теряется.
+   */
+  validationReport?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  builtAt?: string | null;
+  builtById?: string | null;
+  builtByEmail?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Откат — это переключение канала на предыдущий релиз.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "channels".
+ */
+export interface Channel {
+  id: number;
+  siteId: string;
+  siteSlug: string;
+  name: 'live' | 'staging';
+  label: string;
+  releaseId?: string | null;
+  releaseNumber?: number | null;
+  switchedAt?: string | null;
+  switchedById?: string | null;
+  switchedByEmail?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Только добавление. Изменение и удаление записей запрещены и на уровне приложения, и на уровне базы данных.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -265,6 +345,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'users';
         value: number | User;
+      } | null)
+    | ({
+        relationTo: 'releases';
+        value: number | Release;
+      } | null)
+    | ({
+        relationTo: 'channels';
+        value: number | Channel;
       } | null)
     | ({
         relationTo: 'audit-events';
@@ -372,6 +460,42 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "releases_select".
+ */
+export interface ReleasesSelect<T extends boolean = true> {
+  siteId?: T;
+  siteSlug?: T;
+  number?: T;
+  label?: T;
+  status?: T;
+  snapshot?: T;
+  contentHash?: T;
+  validationReport?: T;
+  builtAt?: T;
+  builtById?: T;
+  builtByEmail?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "channels_select".
+ */
+export interface ChannelsSelect<T extends boolean = true> {
+  siteId?: T;
+  siteSlug?: T;
+  name?: T;
+  label?: T;
+  releaseId?: T;
+  releaseNumber?: T;
+  switchedAt?: T;
+  switchedById?: T;
+  switchedByEmail?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
