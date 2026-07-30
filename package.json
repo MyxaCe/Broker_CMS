@@ -9,6 +9,10 @@
     "node": ">=22.11.0"
   },
   "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p 3001",
+    "generate:importmap": "node --env-file=.env ./node_modules/payload/bin.js generate:importmap",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

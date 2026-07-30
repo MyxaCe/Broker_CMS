@@ -29,8 +29,31 @@ describe('инвентаризация HTTP-поверхностей', () => {
   })
 })
 
+describe('GraphQL не смонтирован', () => {
+  /**
+   * ТЗ разд. 13 запрещает родной GraphQL как вторую дверь к данным. Он
+   * отключён в конфигурации, но отключение можно случайно снять — а вот
+   * появление файла маршрута заметить труднее. Проверяем оба конца: и то, что
+   * файлов нет, и то, что их нет в списке разрешённых.
+   */
+  it('среди маршрутов нет ничего похожего на graphql', () => {
+    const suspicious = scanRouteFiles(APP_DIR).filter((route) => /graphql/i.test(route))
+    expect(suspicious).toEqual([])
+  })
+
+  it('в списке разрешённых маршрутов graphql тоже отсутствует', () => {
+    expect(DECLARED_ROUTE_FILES.filter((route) => /graphql/i.test(route))).toEqual([])
+  })
+})
+
 describe('scanRouteFiles', () => {
   it('возвращает пустой список для несуществующего каталога', () => {
     expect(scanRouteFiles(path.join(APP_DIR, 'нет-такого-каталога'))).toEqual([])
+  })
+
+  it('находит смонтированные маршруты админки', () => {
+    const routes = scanRouteFiles(APP_DIR)
+    expect(routes).toContain('(payload)/api/[...slug]/route.ts')
+    expect(routes).toContain('(payload)/admin/[[...segments]]/page.tsx')
   })
 })

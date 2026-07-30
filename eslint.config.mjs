@@ -44,14 +44,22 @@ const noProcessEnv = {
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/**', 'dist/**', '.next/**', 'docs/**', 'coverage/**'],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      '.next/**',
+      'docs/**',
+      'coverage/**',
+      // Генерируется командой `payload generate:importmap`; правится не руками.
+      'src/app/(payload)/admin/importMap.js',
+    ],
   },
 
   js.configs.recommended,
   ...tseslint.configs.recommended,
 
   {
-    files: ['**/*.ts', '**/*.mts', '**/*.mjs'],
+    files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.mjs'],
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: 'module',

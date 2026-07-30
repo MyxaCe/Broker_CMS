@@ -7,3 +7,6 @@ dist/
 .next/
 coverage/
 pnpm-lock.yaml
+
+# Генерируется `payload generate:importmap`
+src/app/(payload)/admin/importMap.js
