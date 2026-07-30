@@ -1,29 +1,90 @@
 import { normalizeRelationId } from '../shared/relation'
 
+import { resolveTenantSettings, validateResolvedSettings } from './layers'
 import { createTenantAccess, crossTenantOnly } from './payload-access'
+import { loadTenantLayers } from './resolve-tenant'
 import { validateTenantDraft } from './tenant-rules'
 
-import type { TenantDraft } from './tenant-rules'
+import type { COLLECTION_MODES, SCALAR_MODES } from './layers'
 import type { TenantKind } from './types'
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Field } from 'payload'
 
 /**
  * Тенанты: узлы цепочки наследования `brand → region → site` (ТЗ 3.3).
  *
- * Коллекция намеренно тонкая. Вся логика — форма цепочки, разрешение
- * наследуемых значений, правила доступа — живёт в чистых функциях рядом и
- * покрыта тестами. Здесь только описание полей и подключение проверок.
+ * Коллекция намеренно тонкая. Форма цепочки, разрешение наследуемых значений
+ * и правила доступа живут в чистых функциях рядом и покрыты тестами; здесь
+ * только описание полей и подключение проверок.
  */
+
+/**
+ * Наследуемое скалярное поле.
+ *
+ * Режим — отдельное поле, а не следствие заполненности значения. Разница
+ * существенна для аудита: «наследую», «переопределяю» и «отвязываюсь» —
+ * разные решения редактора, и по журналу они обязаны различаться (ADR-0010).
+ */
+function inheritableScalar(name: string, label: string, description: string): Field {
+  return {
+    name,
+    type: 'group',
+    label,
+    fields: [
+      {
+        name: 'mode',
+        type: 'select',
+        required: true,
+        defaultValue: 'inherit',
+        label: 'Источник',
+        options: [
+          { value: 'inherit', label: 'Наследуется' },
+          { value: 'override', label: 'Переопределено' },
+          { value: 'fork', label: 'Отвязано' },
+        ] satisfies { value: (typeof SCALAR_MODES)[number]; label: string }[],
+      },
+      { name: 'value', type: 'text', label: 'Значение', admin: { description } },
+    ],
+  }
+}
+
+function inheritableCollection(name: string, label: string, description: string): Field {
+  return {
+    name,
+    type: 'group',
+    label,
+    fields: [
+      {
+        name: 'mode',
+        type: 'select',
+        required: true,
+        defaultValue: 'inherit',
+        label: 'Источник',
+        options: [
+          { value: 'inherit', label: 'Наследуется' },
+          { value: 'extend', label: 'Дополняет унаследованное' },
+          { value: 'fork', label: 'Отвязано: только своё' },
+        ] satisfies { value: (typeof COLLECTION_MODES)[number]; label: string }[],
+      },
+      {
+        name: 'items',
+        type: 'array',
+        label: 'Значения',
+        admin: { description },
+        fields: [{ name: 'code', type: 'text', required: true, label: 'Код' }],
+      },
+    ],
+  }
+}
+
 export const Tenants: CollectionConfig = {
   slug: 'tenants',
 
   /**
    * Чтение ограничено поддеревом привязки — по полю `id` самой коллекции.
    *
-   * Изменение структуры цепочки (уровень, родитель) меняет права всех, кто
-   * привязан ниже, поэтому создание, правка и удаление тенантов доступны
-   * только кросс-тенантной роли. Более тонкое разделение — вместе с полной
-   * матрицей ролей; сейчас строгая граница безопаснее.
+   * Изменение структуры цепочки меняет права всех, кто привязан ниже, поэтому
+   * создание, правка и удаление доступны только кросс-тенантной роли. Более
+   * тонкое разделение — вместе с полной матрицей ролей.
    */
   access: {
     read: createTenantAccess({ field: 'id' }),
@@ -34,7 +95,7 @@ export const Tenants: CollectionConfig = {
 
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'slug', 'kind', 'jurisdiction'],
+    defaultColumns: ['name', 'slug', 'kind'],
   },
 
   fields: [
@@ -73,49 +134,63 @@ export const Tenants: CollectionConfig = {
         description: 'Пусто только у бренда. Сайт наследуется от региона или напрямую от бренда.',
       },
     },
-    {
-      name: 'jurisdiction',
-      type: 'text',
-      index: true,
-      label: 'Юрисдикция',
-      admin: {
-        description:
-          'Обязательна для сайта: определяет обязательные предупреждения, запрещённые продукты и правовой набор. Без неё релиз не собирается.',
-      },
-    },
-    {
-      /**
-       * Имя `locales` использовать нельзя: Payload называет `<коллекция>_locales`
-       * свои служебные таблицы локализованных полей, и массив с таким именем
-       * порождает конфликт имён — связанные запросы к коллекции перестают
-       * строиться вовсе (BUG-002).
-       */
-      name: 'availableLocales',
-      type: 'array',
-      label: 'Локали',
-      fields: [{ name: 'code', type: 'text', required: true, label: 'Код' }],
-    },
-    {
-      name: 'defaultLocale',
-      type: 'text',
-      label: 'Локаль по умолчанию',
-      admin: { description: 'Обязана входить в список локалей тенанта.' },
-    },
+
+    inheritableScalar(
+      'jurisdiction',
+      'Юрисдикция',
+      'Определяет обязательные предупреждения, запрещённые продукты и правовой набор. Обязательна для сайта — своя или унаследованная: без неё релиз не собирается.',
+    ),
+    inheritableCollection(
+      'availableLocales',
+      'Локали',
+      'Языки, на которых существует сайт. Наследуются от бренда и региона; «отвязано» означает, что новые локали сверху сюда больше не приезжают.',
+    ),
+    inheritableScalar(
+      'defaultLocale',
+      'Локаль по умолчанию',
+      'Обязана входить в перечень разрешённых локалей — с учётом наследования.',
+    ),
   ],
 
   hooks: {
     beforeValidate: [
-      ({ data }) => {
+      async ({ data, originalDoc, req }) => {
         if (!data) return data
 
-        const issues = validateTenantDraft(toDraft(data))
+        /**
+         * Проверяется то состояние, которое пытаются сохранить: при правке
+         * Payload передаёт только изменённые поля, поэтому их накладываем на
+         * текущий документ.
+         */
+        const effective: Record<string, unknown> = {
+          ...((originalDoc as Record<string, unknown> | undefined) ?? {}),
+          ...data,
+        }
+
+        const issues = validateTenantDraft({
+          kind: (effective.kind as TenantKind | undefined) ?? 'site',
+          slug: typeof effective.slug === 'string' ? effective.slug : '',
+          parentId: normalizeRelationId(effective.parent),
+        })
+
+        /**
+         * Правила, зависящие от цепочки, проверяются только если карточка
+         * структурно корректна: иначе цепочку не построить, и человек получил
+         * бы вместо внятной ошибки сообщение о неверном родителе.
+         */
+        if (issues.length === 0) {
+          const layers = await loadTenantLayers(req.payload, effective)
+          const settings = resolveTenantSettings(layers)
+          const leafKind = layers.at(-1)?.node.kind ?? 'site'
+
+          issues.push(...validateResolvedSettings(leafKind, settings))
+        }
 
         if (issues.length > 0) {
           /**
-           * Fail-closed: некорректная карточка тенанта не сохраняется вовсе.
-           * Разрешить сохранение «черновиком» здесь нельзя — на карточку
-           * опираются правила доступа, а частично заполненный тенант означает
-           * неопределённые права.
+           * Fail-closed: некорректная карточка не сохраняется вовсе. Разрешить
+           * «черновик» здесь нельзя — на карточку опираются правила доступа,
+           * а частично заполненный тенант означает неопределённые права.
            */
           throw new Error(`Карточка тенанта не прошла проверку:\n  - ${issues.join('\n  - ')}`)
         }
@@ -124,23 +199,4 @@ export const Tenants: CollectionConfig = {
       },
     ],
   },
-}
-
-function toDraft(data: Record<string, unknown>): TenantDraft {
-  const rawLocales = Array.isArray(data.availableLocales) ? data.availableLocales : []
-
-  return {
-    kind: (data.kind as TenantKind | undefined) ?? 'site',
-    slug: typeof data.slug === 'string' ? data.slug : '',
-    parentId: normalizeRelationId(data.parent),
-    jurisdiction: typeof data.jurisdiction === 'string' ? data.jurisdiction : null,
-    locales: rawLocales
-      .map((entry) =>
-        entry !== null && typeof entry === 'object' && 'code' in entry
-          ? String((entry as { code: unknown }).code)
-          : '',
-      )
-      .filter((code) => code !== ''),
-    defaultLocale: typeof data.defaultLocale === 'string' ? data.defaultLocale : null,
-  }
 }

@@ -54,9 +54,12 @@ export {
   resolveCollection,
   resolveEffectiveAccess,
   resolveField,
+  resolveTenant,
   resolveTenantAccess,
+  resolveTenantSettings,
   revertLeavesEmpty,
   TenantChainError,
+  validateResolvedSettings,
   validateTenantDraft,
 } from './tenancy'
 export type {
@@ -70,5 +73,7 @@ export type {
   Provenance,
   TenantDraft,
   TenantKind,
+  TenantLayerSource,
   TenantNode,
+  TenantSettings,
 } from './tenancy'

@@ -2,6 +2,8 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import { resolveTenantById } from './resolve-tenant'
+
 import type { Payload, TypedUser } from 'payload'
 
 /**
@@ -108,30 +110,39 @@ beforeAll(async () => {
   payload = await getPayload({ config })
   await wipe()
 
-  ids.brandApex = await createTenant({ name: 'Apex', slug: 'apex', kind: 'brand' })
+  /**
+   * Фикстура выстроена так, чтобы наследование было видно:
+   * бренд даёт локаль `en`, регион — юрисдикцию, локаль `de` и локаль по
+   * умолчанию, сайт `apex-de` переопределяет юрисдикцию, а `apex-at` не задаёт
+   * ничего и живёт целиком на унаследованном.
+   */
+  ids.brandApex = await createTenant({
+    name: 'Apex',
+    slug: 'apex',
+    kind: 'brand',
+    availableLocales: { mode: 'extend', items: [{ code: 'en' }] },
+  })
   ids.regionEu = await createTenant({
     name: 'Apex EU',
     slug: 'apex-eu',
     kind: 'region',
     parent: ids.brandApex,
+    jurisdiction: { mode: 'override', value: 'eu-mifid' },
+    availableLocales: { mode: 'extend', items: [{ code: 'de' }] },
+    defaultLocale: { mode: 'override', value: 'de' },
   })
   ids.siteDe = await createTenant({
     name: 'Apex Germany',
     slug: 'apex-de',
     kind: 'site',
     parent: ids.regionEu,
-    jurisdiction: 'de-bafin',
-    availableLocales: [{ code: 'de' }, { code: 'en' }],
-    defaultLocale: 'de',
+    jurisdiction: { mode: 'override', value: 'de-bafin' },
   })
   ids.siteAt = await createTenant({
     name: 'Apex Austria',
     slug: 'apex-at',
     kind: 'site',
     parent: ids.regionEu,
-    jurisdiction: 'at-fma',
-    availableLocales: [{ code: 'de' }],
-    defaultLocale: 'de',
   })
 
   // Второй бренд — проверка, что поддерево не протекает вбок.
@@ -141,9 +152,9 @@ beforeAll(async () => {
     slug: 'other-ru',
     kind: 'site',
     parent: ids.brandOther,
-    jurisdiction: 'ru-cbr',
-    availableLocales: [{ code: 'ru' }],
-    defaultLocale: 'ru',
+    jurisdiction: { mode: 'override', value: 'ru-cbr' },
+    availableLocales: { mode: 'extend', items: [{ code: 'ru' }] },
+    defaultLocale: { mode: 'override', value: 'ru' },
   })
 
   await createUser('editor-de', { role: 'editor', tenants: [ids.siteDe] })
@@ -357,7 +368,7 @@ describe('учётные записи', () => {
       payload.update({
         collection: 'users',
         id: users['editor-de']!.id,
-        data: { tenants: [ids.siteDe, ids.siteAt] },
+        data: { tenants: [ids.siteDe, ids.siteAt] } as never,
         overrideAccess: false,
         user: users['editor-de'],
       }),
@@ -416,8 +427,51 @@ describe('учётные записи', () => {
   })
 })
 
+describe('наследование по цепочке', () => {
+  it('сайт без собственных настроек живёт на унаследованных', async () => {
+    const settings = await resolveTenantById(payload, ids.siteAt)
+
+    expect(settings.jurisdiction.value).toBe('eu-mifid')
+    expect(settings.jurisdiction.provenance).toBe('inherited')
+    expect(String(settings.jurisdiction.sourceTenantId)).toBe(String(ids.regionEu))
+
+    // Локали накопились: `en` от бренда, `de` от региона.
+    expect(settings.availableLocales.entries.map((entry) => entry.value)).toEqual(['de', 'en'])
+    expect(settings.defaultLocale.value).toBe('de')
+  })
+
+  it('сайт переопределяет юрисдикцию, но видит унаследованное значение', async () => {
+    const settings = await resolveTenantById(payload, ids.siteDe)
+
+    expect(settings.jurisdiction.value).toBe('de-bafin')
+    expect(settings.jurisdiction.provenance).toBe('overridden')
+    // То, к чему вернётся поле по кнопке «вернуть к наследуемому».
+    expect(settings.jurisdiction.inheritedValue).toBe('eu-mifid')
+  })
+
+  it('изменение региона доезжает до сайта, который его наследует', async () => {
+    await payload.update({
+      collection: 'tenants',
+      id: ids.regionEu,
+      data: { jurisdiction: { mode: 'override', value: 'eu-mifid-2' } } as never,
+      overrideAccess: true,
+    })
+
+    const settings = await resolveTenantById(payload, ids.siteAt)
+
+    expect(settings.jurisdiction.value).toBe('eu-mifid-2')
+
+    await payload.update({
+      collection: 'tenants',
+      id: ids.regionEu,
+      data: { jurisdiction: { mode: 'override', value: 'eu-mifid' } } as never,
+      overrideAccess: true,
+    })
+  })
+})
+
 describe('целостность цепочки', () => {
-  it('сайт без юрисдикции не сохраняется', async () => {
+  it('сайт без юрисдикции — ни своей, ни унаследованной — не сохраняется', async () => {
     const denied = await isDenied(() =>
       payload.create({
         collection: 'tenants',
@@ -425,15 +479,32 @@ describe('целостность цепочки', () => {
           name: 'Без юрисдикции',
           slug: 'no-jurisdiction',
           kind: 'site',
-          parent: ids.regionEu,
-          availableLocales: [{ code: 'de' }],
-          defaultLocale: 'de',
+          // Бренд `apex` юрисдикции не задаёт — наследовать нечего.
+          parent: ids.brandApex,
+          availableLocales: { mode: 'extend', items: [{ code: 'de' }] },
+          defaultLocale: { mode: 'override', value: 'de' },
         } as never,
         overrideAccess: true,
       }),
     )
 
     expect(denied).toBe(true)
+  })
+
+  it('сайт с унаследованной юрисдикцией сохраняется без собственной', async () => {
+    const created = await payload.create({
+      collection: 'tenants',
+      data: {
+        name: 'Apex Netherlands',
+        slug: 'apex-nl',
+        kind: 'site',
+        parent: ids.regionEu,
+      } as never,
+      overrideAccess: true,
+    })
+
+    expect(created.id).toBeTruthy()
+    await payload.delete({ collection: 'tenants', id: created.id, overrideAccess: true })
   })
 
   it('бренд с родителем не сохраняется', async () => {

@@ -55,7 +55,7 @@ async function loadTenantNodes(req: PayloadRequest): Promise<ReadonlyMap<string,
   const nodes = new Map<string, TenantNode>()
 
   for (const doc of result.docs) {
-    const record = doc as Record<string, unknown>
+    const record = doc as unknown as Record<string, unknown>
     const id = normalizeRelationId(record.id)
     const kind = record.kind
 

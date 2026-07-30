@@ -14,6 +14,18 @@ export {
 export { validateTenantDraft } from './tenant-rules'
 export type { TenantDraft } from './tenant-rules'
 export {
+  COLLECTION_MODES,
+  INHERITABLE_COLLECTIONS,
+  INHERITABLE_SCALARS,
+  readCollectionLayer,
+  readScalarLayer,
+  resolveTenantSettings,
+  SCALAR_MODES,
+  validateResolvedSettings,
+} from './layers'
+export type { TenantLayerSource, TenantSettings } from './layers'
+export { loadTenantLayers, resolveTenant, resolveTenantById } from './resolve-tenant'
+export {
   createTenantAccess,
   crossTenantOnly,
   crossTenantOnlyField,

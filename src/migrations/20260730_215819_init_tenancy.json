@@ -2,8 +2,8 @@
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.tenants_available_locales": {
-      "name": "tenants_available_locales",
+    "public.tenants_available_locales_items": {
+      "name": "tenants_available_locales_items",
       "schema": "",
       "columns": {
         "_order": {
@@ -32,8 +32,8 @@
         }
       },
       "indexes": {
-        "tenants_available_locales_order_idx": {
-          "name": "tenants_available_locales_order_idx",
+        "tenants_available_locales_items_order_idx": {
+          "name": "tenants_available_locales_items_order_idx",
           "columns": [
             {
               "expression": "_order",
@@ -47,8 +47,8 @@
           "method": "btree",
           "with": {}
         },
-        "tenants_available_locales_parent_id_idx": {
-          "name": "tenants_available_locales_parent_id_idx",
+        "tenants_available_locales_items_parent_id_idx": {
+          "name": "tenants_available_locales_items_parent_id_idx",
           "columns": [
             {
               "expression": "_parent_id",
@@ -64,9 +64,9 @@
         }
       },
       "foreignKeys": {
-        "tenants_available_locales_parent_id_fk": {
-          "name": "tenants_available_locales_parent_id_fk",
-          "tableFrom": "tenants_available_locales",
+        "tenants_available_locales_items_parent_id_fk": {
+          "name": "tenants_available_locales_items_parent_id_fk",
+          "tableFrom": "tenants_available_locales_items",
           "tableTo": "tenants",
           "columnsFrom": ["_parent_id"],
           "columnsTo": ["id"],
@@ -115,14 +115,38 @@
           "primaryKey": false,
           "notNull": false
         },
-        "jurisdiction": {
-          "name": "jurisdiction",
+        "jurisdiction_mode": {
+          "name": "jurisdiction_mode",
+          "type": "enum_tenants_jurisdiction_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'inherit'"
+        },
+        "jurisdiction_value": {
+          "name": "jurisdiction_value",
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
         },
-        "default_locale": {
-          "name": "default_locale",
+        "available_locales_mode": {
+          "name": "available_locales_mode",
+          "type": "enum_tenants_available_locales_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'inherit'"
+        },
+        "default_locale_mode": {
+          "name": "default_locale_mode",
+          "type": "enum_tenants_default_locale_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'inherit'"
+        },
+        "default_locale_value": {
+          "name": "default_locale_value",
           "type": "varchar",
           "primaryKey": false,
           "notNull": false
@@ -178,21 +202,6 @@
           "columns": [
             {
               "expression": "parent_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "tenants_jurisdiction_idx": {
-          "name": "tenants_jurisdiction_idx",
-          "columns": [
-            {
-              "expression": "jurisdiction",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1182,6 +1191,21 @@
       "schema": "public",
       "values": ["brand", "region", "site"]
     },
+    "public.enum_tenants_jurisdiction_mode": {
+      "name": "enum_tenants_jurisdiction_mode",
+      "schema": "public",
+      "values": ["inherit", "override", "fork"]
+    },
+    "public.enum_tenants_available_locales_mode": {
+      "name": "enum_tenants_available_locales_mode",
+      "schema": "public",
+      "values": ["inherit", "extend", "fork"]
+    },
+    "public.enum_tenants_default_locale_mode": {
+      "name": "enum_tenants_default_locale_mode",
+      "schema": "public",
+      "values": ["inherit", "override", "fork"]
+    },
     "public.enum_users_role": {
       "name": "enum_users_role",
       "schema": "public",
@@ -1207,6 +1231,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "c0c2919f-bf32-423e-adb2-815a49399e23",
+  "id": "383e218e-edce-411a-9135-be66aec24132",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }
