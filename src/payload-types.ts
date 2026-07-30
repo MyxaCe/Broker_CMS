@@ -69,6 +69,7 @@ export interface Config {
   collections: {
     tenants: Tenant;
     users: User;
+    'audit-events': AuditEvent;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,6 +79,7 @@ export interface Config {
   collectionsSelect: {
     tenants: TenantsSelect<false> | TenantsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    'audit-events': AuditEventsSelect<false> | AuditEventsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -201,6 +203,38 @@ export interface User {
   collection: 'users';
 }
 /**
+ * Только добавление. Изменение и удаление записей запрещены и на уровне приложения, и на уровне базы данных.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-events".
+ */
+export interface AuditEvent {
+  id: number;
+  occurredAt: string;
+  action:
+    'create' | 'update' | 'delete' | 'login' | 'login-failed' | 'access-denied' | 'publish' | 'rollback' | 'approve';
+  targetCollection: string;
+  targetId?: string | null;
+  tenantId?: string | null;
+  tenantSlug?: string | null;
+  actorId?: string | null;
+  actorEmail?: string | null;
+  actorRole?: string | null;
+  summary: string;
+  changes?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  requestId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -231,6 +265,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'users';
         value: number | User;
+      } | null)
+    | ({
+        relationTo: 'audit-events';
+        value: number | AuditEvent;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -334,6 +372,26 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audit-events_select".
+ */
+export interface AuditEventsSelect<T extends boolean = true> {
+  occurredAt?: T;
+  action?: T;
+  targetCollection?: T;
+  targetId?: T;
+  tenantId?: T;
+  tenantSlug?: T;
+  actorId?: T;
+  actorEmail?: T;
+  actorRole?: T;
+  summary?: T;
+  changes?: T;
+  requestId?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

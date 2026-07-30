@@ -1,3 +1,4 @@
+import { auditHooks } from '../audit/record'
 import { normalizeRelationId } from '../shared/relation'
 
 import { resolveTenantSettings, validateResolvedSettings } from './layers'
@@ -73,6 +74,14 @@ function inheritableCollection(name: string, label: string, description: string)
         fields: [{ name: 'code', type: 'text', required: true, label: 'Код' }],
       },
     ],
+  }
+}
+
+/** Событие о тенанте относится к нему самому. */
+function tenantSelf(doc: Record<string, unknown>): { id: string | null; slug: string | null } {
+  return {
+    id: normalizeRelationId(doc.id),
+    slug: typeof doc.slug === 'string' ? doc.slug : null,
   }
 }
 
@@ -153,6 +162,10 @@ export const Tenants: CollectionConfig = {
   ],
 
   hooks: {
+    /** Изменения тенанта относятся к нему самому (ТЗ 5.2). */
+    afterChange: [auditHooks({ tenantOf: tenantSelf }).afterChange],
+    afterDelete: [auditHooks({ tenantOf: tenantSelf }).afterDelete],
+
     beforeValidate: [
       async ({ data, originalDoc, req }) => {
         if (!data) return data

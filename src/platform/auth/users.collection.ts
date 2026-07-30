@@ -1,3 +1,4 @@
+import { auditHooks } from '../audit/record'
 import { normalizeRelationIds } from '../shared/relation'
 import {
   createTenantAccess,
@@ -104,6 +105,14 @@ export const Users: CollectionConfig = {
   ],
 
   hooks: {
+    /**
+     * События по учётным записям не привязаны к тенанту: человек может быть
+     * привязан к нескольким, и «размазать» действие по ним значило бы показать
+     * его тем, кого оно не касается. Такие записи видят кросс-тенантные роли.
+     */
+    afterChange: [auditHooks({ tenantOf: () => ({ id: null, slug: null }) }).afterChange],
+    afterDelete: [auditHooks({ tenantOf: () => ({ id: null, slug: null }) }).afterDelete],
+
     beforeValidate: [
       ({ data }) => {
         if (!data) return data

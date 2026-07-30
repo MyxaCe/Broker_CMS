@@ -21,6 +21,7 @@
     "payload": "node --env-file=.env ./node_modules/payload/bin.js",
     "migrate": "node --env-file=.env ./node_modules/payload/bin.js migrate",
     "migrate:create": "node scripts/migrate-create.mjs",
+    "migrate:down": "node --env-file-if-exists=.env ./node_modules/payload/bin.js migrate:down",
     "migrate:status": "node --env-file=.env ./node_modules/payload/bin.js migrate:status",
     "test": "vitest run",
     "test:watch": "vitest",

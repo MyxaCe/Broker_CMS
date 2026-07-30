@@ -6,6 +6,7 @@ import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig } from 'payload'
 
 import { ensureEnv } from './platform/config'
+import { AuditEvents } from './platform/audit/audit.collection'
 import { Users } from './platform/auth/users.collection'
 import { Tenants } from './platform/tenancy/tenants.collection'
 
@@ -28,7 +29,7 @@ export default buildConfig({
 
   editor: lexicalEditor(),
 
-  collections: [Tenants, Users],
+  collections: [Tenants, Users, AuditEvents],
 
   db: postgresAdapter({
     pool: { connectionString: env.DATABASE_URL },

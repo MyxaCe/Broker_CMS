@@ -33,6 +33,25 @@ export type { Role } from './auth/roles'
 
 export { DECLARED_ROUTE_FILES, scanRouteFiles } from './http/declared-routes'
 
+export {
+  actorFrom,
+  AUDIT_ACTION_LABELS,
+  AUDIT_ACTIONS,
+  auditHooks,
+  computeChanges,
+  isSensitiveField,
+  recordAuditEvent,
+  REDACTED,
+  summarizeChanges,
+} from './audit'
+export type {
+  AuditAction,
+  AuditActor,
+  AuditChange,
+  AuditEventInput,
+  AuditHookOptions,
+} from './audit'
+
 export { toActor } from './auth/actor'
 export { validateUserDraft } from './auth/user-rules'
 export type { UserDraft } from './auth/user-rules'
