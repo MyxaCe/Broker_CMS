@@ -50,8 +50,9 @@ export default tseslint.config(
       '.next/**',
       'docs/**',
       'coverage/**',
-      // Генерируется командой `payload generate:importmap`; правится не руками.
+      // Генерируются командами `payload generate:*`; правятся не руками.
       'src/app/(payload)/admin/importMap.js',
+      'src/payload-types.ts',
     ],
   },
 

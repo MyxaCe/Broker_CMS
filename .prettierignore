@@ -10,3 +10,8 @@ pnpm-lock.yaml
 
 # Генерируется `payload generate:importmap`
 src/app/(payload)/admin/importMap.js
+
+# Генерируется `payload generate:types`. Форматировать нельзя: CI сверяет файл
+# с результатом генерации, а prettier снимает точки с запятой — сверка начнёт
+# падать на каждом прогоне.
+src/payload-types.ts
