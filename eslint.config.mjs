@@ -35,6 +35,13 @@ const noModulesFromPlatform = {
     'platform — общее основание и не знает о модулях. Зависимость направлена только вниз: modules → platform.',
 }
 
+/** contracts — канон внешнего обещания: он не знает ни о платформе, ни о модулях. */
+const noImplementationFromContracts = {
+  group: ['@/platform', '@/platform/**', '@/modules', '@/modules/**'],
+  message:
+    'contracts не зависит от реализации. Канон, знающий о коде, перестаёт быть каноном: его начнут править под удобство кода, а не наоборот. ТЗ разд. 3 и 9.',
+}
+
 /** process.env читается ровно в одном месте (ТЗ разд. 6, TASK-005). */
 const noProcessEnv = {
   selector: "MemberExpression[object.name='process'][property.name='env']",
@@ -100,6 +107,17 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         { patterns: [...publicInterfaceOnly, noModulesFromPlatform] },
+      ],
+    },
+  },
+
+  // contracts: плюс запрет на любую реализацию.
+  {
+    files: ['src/contracts/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [...publicInterfaceOnly, noImplementationFromContracts] },
       ],
     },
   },

@@ -51,6 +51,33 @@ describe('границы модулей', () => {
     expect(found).toEqual([])
   })
 
+  /**
+   * Направление здесь важнее, чем кажется: contracts обязан читаться и
+   * доставкой, и доменами, и — в перспективе — сторонним потребителем схем.
+   * Любая зависимость на реализацию делает это невозможным.
+   */
+  it('запрещает contracts зависеть от реализации', async () => {
+    const found = await violations(
+      `import { MODULE_NAME } from '@/modules/delivery'\nexport const use = MODULE_NAME\n`,
+      'src/contracts/example.ts',
+    )
+    expect(found.join('\n')).toMatch(/no-restricted-imports/)
+
+    const fromPlatform = await violations(
+      `import { ensureEnv } from '@/platform'\nexport const use = ensureEnv\n`,
+      'src/contracts/example.ts',
+    )
+    expect(fromPlatform.join('\n')).toMatch(/no-restricted-imports/)
+  })
+
+  it('разрешает delivery читать contracts', async () => {
+    const found = await violations(
+      `import { CONTRACT_VERSION } from '@/contracts'\nexport const use = CONTRACT_VERSION\n`,
+      'src/modules/delivery/example.ts',
+    )
+    expect(found).toEqual([])
+  })
+
   it('запрещает platform зависеть от модулей', async () => {
     const found = await violations(
       `import { MODULE_NAME } from '@/modules/stream'\nexport const use = MODULE_NAME\n`,

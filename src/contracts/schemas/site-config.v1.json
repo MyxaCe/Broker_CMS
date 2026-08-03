@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cms.broker.platform/contracts/v1/site-config.json",
+  "title": "Конфигурация сайта, версия 1",
+  "description": "Ответ доставки на запрос конфигурации сайта. Форма ответа — обещание потребителю: любое несовместимое изменение требует новой версии контракта, а не правки этой схемы.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "site", "release", "resolution", "settings"],
+  "properties": {
+    "contract": {
+      "description": "Версия контракта. Совпадает с сегментом пути и входит в ключ кеша.",
+      "const": "v1"
+    },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug"],
+      "properties": {
+        "slug": {
+          "description": "Идентификатор сайта в терминах потребителя. Внутренние идентификаторы наружу не выходят.",
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "builtAt"],
+      "properties": {
+        "number": {
+          "description": "Номер релиза у этого сайта. Монотонный, не переиспользуется.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "builtAt": {
+          "description": "Когда релиз собран. Идентификатор релиза не отдаётся: потребителю он ни о чём не говорит, а нам связывает внешний контракт с внутренними ключами.",
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "resolution": {
+      "description": "Кортеж измерений, по которому ответ был разрешён (ADR-0003). Отдаётся наружу, чтобы потребитель мог убедиться, что получил именно то, что просил, а не молчаливое умолчание.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locale", "jurisdiction", "variant"],
+      "properties": {
+        "locale": { "type": "string", "minLength": 2, "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+        "jurisdiction": { "type": "string", "minLength": 1 },
+        "variant": { "type": "string", "minLength": 1 }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaultLocale", "availableLocales", "jurisdiction"],
+      "properties": {
+        "defaultLocale": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+        "availableLocales": {
+          "description": "Отсортирован и без повторов: порядок не должен зависеть от того, как значения накопились по цепочке наследования — иначе меняется отпечаток содержимого при неизменных данных.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" }
+        },
+        "jurisdiction": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

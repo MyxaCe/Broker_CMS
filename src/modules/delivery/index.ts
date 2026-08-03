@@ -78,6 +78,18 @@ export { issueDeliveryKey, verifyDeliveryKey } from './keys/issue'
 export type { IssuedKey } from './keys/issue'
 export { DeliveryKeys } from './keys/keys.collection'
 
+export { buildSiteConfigResponse, DeliveryAssemblyError, resolveLocale } from './api/site-config'
+export type { ReleaseFacts, SiteConfigRequest } from './api/site-config'
+export { handleSiteConfig } from './api/handler'
+export type {
+  DeliveryRequest,
+  DeliveryResponse,
+  DeliverySource,
+  ResolvedRelease,
+} from './api/handler'
+export { createPayloadSource } from './api/payload-source'
+export { readDeliveryRequest, respondSiteConfig } from './api/http'
+
 export { switchChannel } from './releases/publish'
 export type { SwitchChannelArgs, SwitchChannelResult } from './releases/publish'
 

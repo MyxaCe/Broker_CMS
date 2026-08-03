@@ -14,7 +14,18 @@
  *  · схемы пишутся заново под новую модель. Схемы существующей CMS описывают
  *    модель из 14 плоских ресурсов и не переиспользуются (ADR-0006).
  *
- * Наполняется на этапе M1.
+ * Слой ничего не импортирует из `platform` и `modules` — и это принуждается
+ * линтером. Канон, зависящий от реализации, перестаёт быть каноном: его начнут
+ * править под удобство кода.
  */
 
-export const CONTRACT_VERSION = 'v1' as const
+export { CONTRACT_VERSION, ERROR_CODES } from './types'
+export type { ErrorCode, ErrorResponse, SiteConfigResponse } from './types'
+
+export {
+  checkAgainstSchema,
+  ContractViolationError,
+  SCHEMA_IDS,
+  validateOutgoing,
+} from './validate'
+export type { ContractIssue, SchemaId } from './validate'

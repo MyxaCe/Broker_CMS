@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cms.broker.platform/contracts/v1/error.json",
+  "title": "Ошибка доставки, версия 1",
+  "description": "Единственная форма отрицательного ответа. Ошибка выходит через ту же дверь, что и данные, и валидируется той же машинерией: ответ, собранный в обход контракта, — это и есть способ отдать наружу что угодно.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "error"],
+  "properties": {
+    "contract": { "const": "v1" },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "description": "Закрытый перечень. Причины отказа авторизации намеренно схлопнуты в один код: снаружи «нет такого ключа» и «у ключа нет прав» обязаны выглядеть одинаково, иначе по различию ответов подбирается существование ключа.",
+          "enum": ["unauthorized", "not-found", "bad-request", "internal"]
+        },
+        "message": {
+          "description": "Формулировка для человека. Внутренних подробностей не содержит: ни имён полей, ни идентификаторов, ни причины отказа.",
+          "type": "string",
+          "minLength": 1
+        },
+        "requestId": {
+          "description": "Идентификатор запроса для сопоставления с журналом. Единственная нить между тем, что увидел потребитель, и тем, что мы видим у себя.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
