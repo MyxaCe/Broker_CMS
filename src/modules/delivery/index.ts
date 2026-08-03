@@ -89,6 +89,15 @@ export type {
 } from './api/handler'
 export { createPayloadSource } from './api/payload-source'
 export { readDeliveryRequest, respondSiteConfig } from './api/http'
+export {
+  decide,
+  DEFAULT_AUTH_FAILURE_RULE,
+  DEFAULT_READ_RULE,
+  estimateUsage,
+  windowBounds,
+} from './api/rate-limit'
+export type { RateLimiter, RateLimitRule, RateLimitVerdict } from './api/rate-limit'
+export { RedisRateLimiter } from './api/redis-rate-limit'
 
 export { switchChannel } from './releases/publish'
 export type { SwitchChannelArgs, SwitchChannelResult } from './releases/publish'

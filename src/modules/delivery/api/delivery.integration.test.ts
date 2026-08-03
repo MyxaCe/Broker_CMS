@@ -1,6 +1,6 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { checkAgainstSchema, SCHEMA_IDS } from '@/contracts'
 import { ensureEnv } from '@/platform'
@@ -11,6 +11,7 @@ import { switchChannel } from '../releases/publish'
 
 import { handleSiteConfig } from './handler'
 import { createPayloadSource } from './payload-source'
+import { RedisRateLimiter } from './redis-rate-limit'
 
 import type { DeliveryRequest, DeliverySource } from './handler'
 import type { Payload } from 'payload'
@@ -26,6 +27,7 @@ import type { Payload } from 'payload'
 
 let payload: Payload
 let source: DeliverySource
+let limiter: RedisRateLimiter
 let siteSlug: string
 let otherSlug: string
 let liveKey: string
@@ -57,7 +59,19 @@ async function makeSite(name: string, slug: string) {
 
 beforeAll(async () => {
   payload = await getPayload({ config })
-  source = createPayloadSource({ payload, pepper: ensureEnv().DELIVERY_KEY_PEPPER })
+
+  /**
+   * Счётчик настоящий, а не подменённый: смысл ограничения — в общем на все
+   * процессы хранилище, и подделка проверила бы только арифметику. Префикс свой
+   * у каждого прогона — иначе счётчики предыдущего запуска влияли бы на этот.
+   */
+  limiter = new RedisRateLimiter({ url: ensureEnv().REDIS_URL, prefix: `test:${stamp}` })
+
+  source = createPayloadSource({
+    payload,
+    pepper: ensureEnv().DELIVERY_KEY_PEPPER,
+    rateLimiter: limiter,
+  })
 
   siteSlug = `delivery-site-${stamp}`
   otherSlug = `delivery-other-${stamp}`
@@ -195,4 +209,58 @@ describe('всё остальное закрыто', () => {
 
     expect(result.status).toBe(400)
   })
+})
+
+describe('ограничение частоты на настоящем Redis', () => {
+  const rule = { limit: 3, windowMs: 60_000 }
+
+  it('счётчик общий, а не в памяти процесса', async () => {
+    const bucket = `общий-${stamp}`
+    const other = new RedisRateLimiter({ url: ensureEnv().REDIS_URL, prefix: `test:${stamp}` })
+
+    try {
+      await limiter.consume(bucket, rule)
+      await limiter.consume(bucket, rule)
+      const third = await other.consume(bucket, rule)
+      const fourth = await other.consume(bucket, rule)
+
+      /**
+       * Третье обращение ещё в пределах, четвёртое — уже нет, и увидел это
+       * **второй** экземпляр. Именно это свойство теряется у счётчика в памяти:
+       * там каждый процесс считал бы заново.
+       */
+      expect(third.allowed).toBe(true)
+      expect(fourth.allowed).toBe(false)
+    } finally {
+      await other.close()
+    }
+  })
+
+  it('исчерпанный предел неудачных авторизаций закрывает дверь целиком', async () => {
+    const attacker = { ...request({ authorizationHeader: null }), clientIp: `1.2.3.${stamp % 250}` }
+
+    /** Предел по умолчанию — 20 неудач за минуту; берём с запасом. */
+    for (let attempt = 0; attempt < 21; attempt += 1) {
+      await handleSiteConfig(attacker, source)
+    }
+
+    const result = await handleSiteConfig(attacker, source)
+
+    expect(result.status).toBe(429)
+    expect(result.headers['Retry-After']).toBeDefined()
+  })
+
+  /** Перебор с одного адреса не должен закрывать выдачу законному потребителю. */
+  it('подбор с чужого адреса не мешает нормальному ключу', async () => {
+    const result = await handleSiteConfig(
+      { ...request(), clientIp: `9.9.9.${(stamp + 7) % 250}` },
+      source,
+    )
+
+    expect(result.status).toBe(200)
+  })
+})
+
+afterAll(async () => {
+  await limiter.close()
 })

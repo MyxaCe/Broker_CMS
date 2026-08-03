@@ -1,6 +1,7 @@
 import { verifyDeliveryKey } from '../keys/issue'
 
 import type { DeliverySource, ResolvedRelease } from './handler'
+import type { RateLimiter } from './rate-limit'
 import type { ReleaseSnapshot } from '../releases/snapshot'
 import type { Payload } from 'payload'
 
@@ -14,10 +15,13 @@ import type { Payload } from 'payload'
 export function createPayloadSource(args: {
   readonly payload: Payload
   readonly pepper: string
+  readonly rateLimiter: RateLimiter
 }): DeliverySource {
   const { payload, pepper } = args
 
   return {
+    rateLimiter: args.rateLimiter,
+
     async resolveSiteId(siteSlug) {
       const found = await payload.find({
         collection: 'tenants',

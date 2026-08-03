@@ -38,6 +38,7 @@
     "ajv-formats": "^3",
     "amqplib": "^2.0.1",
     "graphql": "^16.8.1",
+    "ioredis": "^5",
     "next": "16.2.12",
     "payload": "3.86.0",
     "pino": "^9.5.0",
@@ -64,8 +65,10 @@
       "sharp": "0.35.3",
       "postcss": "^8.5.25",
       "dompurify": "^3.4.12",
-      "brace-expansion": "^5.0.8",
-      "esbuild": "^0.25.12"
+      "brace-expansion": "^5.0.9",
+      "esbuild": "^0.25.12",
+      "undici": "^7.29.0",
+      "fast-uri": "^3.1.5"
     }
   }
 }

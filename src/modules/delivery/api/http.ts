@@ -29,7 +29,23 @@ export function readDeliveryRequest(request: Request, siteSlug: string): Deliver
      * разбираются с отказом.
      */
     requestId: request.headers.get('x-request-id') ?? randomUUID(),
+    /**
+     * Берётся первый адрес из `X-Forwarded-For` — тот, который проставил
+     * ближайший к клиенту доверенный прокси. Значение подделываемо, поэтому им
+     * ограничиваются только неудачные авторизации (см. `DeliveryRequest`).
+     */
+    clientIp: firstForwardedFor(request.headers.get('x-forwarded-for')),
   }
+}
+
+function firstForwardedFor(header: string | null): string | null {
+  if (header === null) {
+    return null
+  }
+
+  const first = header.split(',')[0]?.trim()
+
+  return first === undefined || first === '' ? null : first
 }
 
 export async function respondSiteConfig(

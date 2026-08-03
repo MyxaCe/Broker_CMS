@@ -37,7 +37,13 @@ export interface SiteConfigResponse {
  * Коды ошибок. Причины отказа авторизации схлопнуты в один код намеренно:
  * снаружи «ключа нет» и «прав не хватает» обязаны быть неразличимы.
  */
-export const ERROR_CODES = ['unauthorized', 'not-found', 'bad-request', 'internal'] as const
+export const ERROR_CODES = [
+  'unauthorized',
+  'not-found',
+  'bad-request',
+  'rate-limited',
+  'internal',
+] as const
 
 export type ErrorCode = (typeof ERROR_CODES)[number]
 

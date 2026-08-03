@@ -7,6 +7,7 @@ import { readDeliveryRequest } from './http'
 import { buildSiteConfigResponse, DeliveryAssemblyError, resolveLocale } from './site-config'
 
 import type { DeliveryRequest, DeliverySource, ResolvedRelease } from './handler'
+import type { RateLimiter } from './rate-limit'
 import type { ReleaseSnapshot } from '../releases/snapshot'
 
 const SNAPSHOT: ReleaseSnapshot = {
@@ -29,8 +30,15 @@ const RELEASE: ResolvedRelease = {
   snapshot: SNAPSHOT,
 }
 
+/** Ограничитель, который никогда не мешает: пределы проверяются отдельно. */
+const permissive: RateLimiter = {
+  consume: async () => ({ allowed: true, remaining: 100, retryAfterSec: 1 }),
+  peek: async () => ({ allowed: true, remaining: 100, retryAfterSec: 1 }),
+}
+
 function source(overrides: Partial<DeliverySource> = {}): DeliverySource {
   return {
+    rateLimiter: permissive,
     resolveSiteId: async (slug) => (slug === 'apex-de' ? '10' : null),
     authorize: async ({ siteId }) =>
       siteId === '10'
@@ -377,6 +385,7 @@ describe('чтение вебового запроса', () => {
           'if-none-match': '"abc"',
           // Значение заголовка обязано быть ByteString: кириллица здесь невозможна.
           'x-request-id': 'from-proxy-1',
+          'x-forwarded-for': '203.0.113.7, 10.0.0.1',
         },
       }),
       'apex-de',
@@ -390,6 +399,8 @@ describe('чтение вебового запроса', () => {
       variant: null,
       channel: 'staging',
       requestId: 'from-proxy-1',
+      /** Первый адрес в цепочке — тот, что проставил ближайший к клиенту прокси. */
+      clientIp: '203.0.113.7',
     })
   })
 
