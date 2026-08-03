@@ -52,7 +52,7 @@ export type {
   AuditHookOptions,
 } from './audit'
 
-export { runValidation, summarizeReport, ValidatorFailure } from './validation'
+export { adaptValidator, runValidation, summarizeReport, ValidatorFailure } from './validation'
 export type { Finding, FindingSeverity, ValidationReport, Validator } from './validation'
 
 export { toActor } from './auth/actor'
@@ -78,6 +78,7 @@ export {
   resolveField,
   resolveTenant,
   resolveTenantAccess,
+  resolveTenantById,
   resolveTenantSettings,
   revertLeavesEmpty,
   TenantChainError,

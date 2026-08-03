@@ -111,6 +111,25 @@ export function runValidation<TInput>(
   }
 }
 
+/**
+ * Приспосабливает валидатор к более широкому входу.
+ *
+ * Нужно потому, что проверки живут в доменных модулях и знают только про свой
+ * кусок: `contrast-aa` — про пары цветов, `forbidden-claims` — про тексты. Знать
+ * о снапшоте релиза целиком им незачем, иначе каждая проверка окажется связана
+ * со всей моделью публикации.
+ */
+export function adaptValidator<TOuter, TInner>(
+  validator: Validator<TInner>,
+  select: (input: TOuter) => TInner,
+): Validator<TOuter> {
+  return {
+    name: validator.name,
+    description: validator.description,
+    run: (input) => validator.run(select(input)),
+  }
+}
+
 /** Краткое человекочитаемое резюме отчёта — то, что видно до раскрытия деталей. */
 export function summarizeReport(report: ValidationReport): string {
   if (report.passed && report.warnings.length === 0) {

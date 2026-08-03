@@ -31,6 +31,12 @@ export {
   ReleaseNumberingError,
 } from './releases/numbering'
 
+export { buildRelease } from './releases/build'
+export type { BuildReleaseArgs, BuildReleaseResult } from './releases/build'
+export { composeSnapshot, SNAPSHOT_SCHEMA_VERSION } from './releases/snapshot'
+export type { ReleaseSnapshot, ResolvedValue } from './releases/snapshot'
+export { RELEASE_VALIDATORS, siteReadinessValidator } from './releases/validators'
+
 export { Releases, RELEASE_STATUSES } from './releases/releases.collection'
 export type { ReleaseStatus } from './releases/releases.collection'
 export { Channels, CHANNEL_NAMES } from './releases/channels.collection'
