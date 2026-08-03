@@ -72,20 +72,37 @@ jobs:
           --health-timeout 3s
           --health-retries 20
 
+      # Шина нужна по-настоящему: публикация с подтверждениями проверяется
+      # против живого брокера, а не заглушки. Заглушка подтвердила бы что угодно.
+      rabbitmq:
+        image: rabbitmq:3.13-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: cms
+          RABBITMQ_DEFAULT_PASS: ci_only_not_a_secret
+          RABBITMQ_DEFAULT_VHOST: platform
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+
     # Переменные задаются здесь, а не в .env: файлов окружения в репозитории нет
     # и быть не должно. Значения ниже — не секреты: контур существует только на
     # время прогона.
     #
-    # Redis, шина и хранилище тестами не используются, но обязательны по
-    # правилу fail-closed — процесс не стартует с неполной конфигурацией.
-    # Поэтому здесь синтаксически корректные, но никуда не ведущие адреса.
+    # Postgres и шина — настоящие сервисы, тесты работают против них. Redis и
+    # хранилище пока не используются, но переменные обязательны по правилу
+    # fail-closed: процесс не стартует с неполной конфигурацией. Для них здесь
+    # синтаксически корректные, но никуда не ведущие адреса.
     env:
       NODE_ENV: test
       LOG_LEVEL: warn
       APP_PUBLIC_URL: http://localhost:3001
       DATABASE_URL: postgres://cms:ci_only_not_a_secret@localhost:5432/broker_cms_v2_test
       REDIS_URL: redis://localhost:6379
-      BUS_URL: amqp://cms:ci_only_not_a_secret@localhost:5672/platform
+      BUS_URL: amqp://cms:ci_only_not_a_secret@127.0.0.1:5672/platform
       BUS_EXCHANGE: platform.events
       S3_ENDPOINT: http://localhost:9000
       S3_REGION: eu-central-1

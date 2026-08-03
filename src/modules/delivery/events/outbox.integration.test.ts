@@ -2,6 +2,8 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import { ensureEnv } from '@/platform'
+
 import { CMS_EVENTS } from './envelope'
 import { enqueueEvent } from './enqueue'
 import { AmqpPublisher, drainOutbox } from './publisher'
@@ -170,10 +172,13 @@ describe('реальная шина', () => {
       tenantId: `amqp-${stamp}`,
     })
 
-    const publisher = new AmqpPublisher(
-      'amqp://cms:dev_only_not_a_secret@localhost:5673/platform',
-      'platform.events',
-    )
+    /**
+     * Адрес берётся из проверенной конфигурации, а не зашивается в тест:
+     * зашитый адрес работает ровно на той машине, где его написали. Этот тест
+     * из-за него упал в CI, где порт другой.
+     */
+    const env = ensureEnv()
+    const publisher = new AmqpPublisher(env.BUS_URL, env.BUS_EXCHANGE)
 
     try {
       const result = await drainOutbox({ payload, publisher })
