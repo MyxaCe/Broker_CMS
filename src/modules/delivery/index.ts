@@ -31,6 +31,32 @@ export {
   ReleaseNumberingError,
 } from './releases/numbering'
 
+export {
+  BASE_DELAY_MS,
+  isExhausted,
+  MAX_ATTEMPTS,
+  MAX_DELAY_MS,
+  nextAttemptAt,
+  nextAttemptDelayMs,
+} from './events/backoff'
+export {
+  buildEnvelope,
+  buildRoutingKey,
+  CMS_EVENTS,
+  EVENT_DOMAIN,
+  EVENT_VERSION,
+  RoutingKeyError,
+} from './events/envelope'
+export type { CmsEventName, EventEnvelope } from './events/envelope'
+export { enqueueEvent } from './events/enqueue'
+export type { EnqueueArgs } from './events/enqueue'
+export { AmqpPublisher, drainOutbox } from './events/publisher'
+export type { DrainResult, Publisher } from './events/publisher'
+export { Outbox } from './events/outbox.collection'
+
+export { switchChannel } from './releases/publish'
+export type { SwitchChannelArgs, SwitchChannelResult } from './releases/publish'
+
 export { buildRelease } from './releases/build'
 export type { BuildReleaseArgs, BuildReleaseResult } from './releases/build'
 export { composeSnapshot, SNAPSHOT_SCHEMA_VERSION } from './releases/snapshot'

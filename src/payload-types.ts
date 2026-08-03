@@ -71,6 +71,7 @@ export interface Config {
     users: User;
     releases: Release;
     channels: Channel;
+    outbox: Outbox;
     'audit-events': AuditEvent;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -83,6 +84,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     releases: ReleasesSelect<false> | ReleasesSelect<true>;
     channels: ChannelsSelect<false> | ChannelsSelect<true>;
+    outbox: OutboxSelect<false> | OutboxSelect<true>;
     'audit-events': AuditEventsSelect<false> | AuditEventsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -283,6 +285,37 @@ export interface Channel {
   createdAt: string;
 }
 /**
+ * Недоставленное событие видно здесь и повторяется автоматически. Кнопка повтора сбрасывает время следующей попытки.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "outbox".
+ */
+export interface Outbox {
+  id: number;
+  /**
+   * На нём стоит идемпотентность потребителя: повторная доставка того же события не должна применяться дважды.
+   */
+  eventId: string;
+  routingKey: string;
+  payload:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  occurredAt: string;
+  publishedAt?: string | null;
+  attempts: number;
+  nextAttemptAt: string;
+  lastError?: string | null;
+  tenantId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Только добавление. Изменение и удаление записей запрещены и на уровне приложения, и на уровне базы данных.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -362,6 +395,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'channels';
         value: number | Channel;
+      } | null)
+    | ({
+        relationTo: 'outbox';
+        value: number | Outbox;
       } | null)
     | ({
         relationTo: 'audit-events';
@@ -503,6 +540,23 @@ export interface ChannelsSelect<T extends boolean = true> {
   switchedAt?: T;
   switchedById?: T;
   switchedByEmail?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "outbox_select".
+ */
+export interface OutboxSelect<T extends boolean = true> {
+  eventId?: T;
+  routingKey?: T;
+  payload?: T;
+  occurredAt?: T;
+  publishedAt?: T;
+  attempts?: T;
+  nextAttemptAt?: T;
+  lastError?: T;
+  tenantId?: T;
   updatedAt?: T;
   createdAt?: T;
 }
