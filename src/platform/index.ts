@@ -33,6 +33,8 @@ export type { Role } from './auth/roles'
 
 export { DECLARED_ROUTE_FILES, scanRouteFiles } from './http/declared-routes'
 
+export { createLogger } from './logging/logger'
+
 export {
   actorFrom,
   AUDIT_ACTION_LABELS,

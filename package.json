@@ -23,6 +23,7 @@
     "migrate:create": "node scripts/migrate-create.mjs",
     "migrate:down": "node --env-file-if-exists=.env ./node_modules/payload/bin.js migrate:down",
     "migrate:status": "node --env-file=.env ./node_modules/payload/bin.js migrate:status",
+    "worker:outbox": "node --env-file=.env ./node_modules/payload/bin.js run src/workers/publish-outbox.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "node --env-file-if-exists=.env --env-file-if-exists=.env.test ./node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts",

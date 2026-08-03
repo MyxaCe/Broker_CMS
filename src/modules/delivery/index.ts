@@ -52,6 +52,8 @@ export { enqueueEvent } from './events/enqueue'
 export type { EnqueueArgs } from './events/enqueue'
 export { AmqpPublisher, drainOutbox } from './events/publisher'
 export type { DrainResult, Publisher } from './events/publisher'
+export { runPublishWorker } from './events/publish-worker'
+export type { PublishWorkerOptions, PublishWorkerResult } from './events/publish-worker'
 export { Outbox } from './events/outbox.collection'
 
 export { authorizeDeliveryRequest } from './keys/authorize'
