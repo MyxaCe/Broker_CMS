@@ -140,16 +140,32 @@ describe('секреты и связи не утекают в журнал', () 
     expect(dump).not.toContain(PASSWORD)
   })
 
-  /**
-   * Фиксирует ТЕКУЩЕЕ поведение, а не желаемое: Payload не возвращает пароль
-   * в документе, поэтому обобщённый хук его не видит, и смена пароля в журнал
-   * не попадает вовсе — [[DEBT-004]].
-   *
-   * Тест намеренно упадёт, когда пробел закроют: это напоминание обновить его
-   * вместе с реализацией, а не молчаливое согласие с пробелом.
-   */
-  it('смена пароля пока НЕ фиксируется — известный пробел, DEBT-004', () => {
-    expect(dump).not.toContain('password')
+  it('смена пароля фиксируется — без значения', async () => {
+    await payload.update({
+      collection: 'users',
+      id: userId,
+      data: { password: `${PASSWORD}-новый` } as never,
+      overrideAccess: true,
+    })
+
+    const events = await eventsFor('users', userId)
+    const latest = JSON.stringify(events.at(-1))
+
+    expect(latest).toContain('password')
+    expect(JSON.stringify(events)).not.toContain(PASSWORD)
+  })
+
+  it('смена только пароля не теряется как «изменений нет»', async () => {
+    const before = (await eventsFor('users', userId)).length
+
+    await payload.update({
+      collection: 'users',
+      id: userId,
+      data: { password: `${PASSWORD}-ещё` } as never,
+      overrideAccess: true,
+    })
+
+    expect((await eventsFor('users', userId)).length).toBe(before + 1)
   })
 
   it('связанный документ сворачивается до идентификатора, а не копируется целиком', async () => {
@@ -176,6 +192,61 @@ describe('секреты и связи не утекают в журнал', () 
      */
     expect(events).not.toContain('Аудит-бренд')
     expect(events).toContain('"parent"')
+  })
+})
+
+describe('события аутентификации', () => {
+  const email = `login-${Date.now()}@example.test`
+  let userId: number | string
+
+  beforeAll(async () => {
+    const user = await payload.create({
+      collection: 'users',
+      data: {
+        email,
+        password: PASSWORD,
+        fullName: 'Вход',
+        role: 'developer',
+        tenants: [],
+        isActive: true,
+      } as never,
+      overrideAccess: true,
+    })
+
+    userId = user.id
+  })
+
+  it('успешный вход фиксируется', async () => {
+    await payload.login({ collection: 'users', data: { email, password: PASSWORD } })
+
+    const events = await eventsFor('users', userId)
+    const logins = events.filter((event) => event.action === 'login')
+
+    expect(logins.length).toBeGreaterThanOrEqual(1)
+    expect(logins.at(-1)?.actorEmail).toBe(email)
+  })
+
+  /**
+   * Фиксирует ФАКТИЧЕСКОЕ поведение: у Payload нет хука на неудачный вход,
+   * поэтому такое событие в журнал не попадает. Проверено, а не предположено.
+   *
+   * Тест упадёт, когда пробел закроют собственной ручкой входа, — это
+   * напоминание обновить его вместе с реализацией, а не согласие с пробелом.
+   * См. [[DEBT-005]].
+   */
+  it('неудачный вход пока НЕ фиксируется — у Payload нет такого хука', async () => {
+    const before = (await eventsFor('users', userId)).length
+
+    try {
+      await payload.login({ collection: 'users', data: { email, password: 'неверный-пароль' } })
+    } catch {
+      // Отказ ожидаем — интересует только след в журнале.
+    }
+
+    const after = await eventsFor('users', userId)
+
+    expect(after.length).toBe(before)
+    expect(after.some((event) => event.action === 'login-failed')).toBe(false)
   })
 })
 

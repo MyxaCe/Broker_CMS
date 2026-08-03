@@ -1,4 +1,4 @@
-import { auditHooks } from '../audit/record'
+import { auditHooks, markSecretChanged, recordLogin, recordLogout } from '../audit/record'
 import { normalizeRelationIds } from '../shared/relation'
 import {
   createTenantAccess,
@@ -112,6 +112,34 @@ export const Users: CollectionConfig = {
      */
     afterChange: [auditHooks({ tenantOf: () => ({ id: null, slug: null }) }).afterChange],
     afterDelete: [auditHooks({ tenantOf: () => ({ id: null, slug: null }) }).afterDelete],
+
+    /**
+     * Пароль не доходит до `afterChange`: Payload не возвращает его в документе,
+     * поэтому его смена выглядит как отсутствие изменений. Отметка ставится
+     * здесь — там, где значение ещё видно, — и попадает в событие изменения.
+     * Само значение при этом никуда не записывается.
+     */
+    beforeChange: [
+      ({ context, data, operation }) => {
+        if (operation === 'update' && typeof data.password === 'string' && data.password !== '') {
+          markSecretChanged(context as Record<string, unknown>, 'password')
+        }
+
+        return data
+      },
+    ],
+
+    afterLogin: [
+      async ({ collection, req, user }) => {
+        await recordLogin({ req, user, collectionSlug: collection.slug })
+      },
+    ],
+
+    afterLogout: [
+      async ({ collection, req }) => {
+        await recordLogout({ req, collectionSlug: collection.slug })
+      },
+    ],
 
     beforeValidate: [
       ({ data }) => {

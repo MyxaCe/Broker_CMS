@@ -1,5 +1,6 @@
-import { computeChanges, summarizeChanges } from './changes'
+import { computeChanges, REDACTED, summarizeChanges } from './changes'
 
+import type { AuditChange } from './changes'
 import type { AuditActor, AuditEventInput } from './types'
 import type {
   CollectionAfterChangeHook,
@@ -57,6 +58,41 @@ export async function recordAuditEvent(
   })
 }
 
+/**
+ * Ключ, под которым в контексте запроса копятся изменения, невидимые для
+ * обобщённого сравнения документов.
+ *
+ * Нужен потому, что часть изменений до `afterChange` просто не доходит: пароль
+ * Payload не возвращает в документе, поэтому его смена выглядит как отсутствие
+ * изменений. Отметка ставится там, где значение ещё видно, — в `beforeChange`.
+ */
+const EXTRA_CHANGES_KEY = '__auditExtraChanges'
+
+export function markAuditChange(context: Record<string, unknown>, change: AuditChange): void {
+  const existing = context[EXTRA_CHANGES_KEY]
+
+  if (Array.isArray(existing)) {
+    existing.push(change)
+    return
+  }
+
+  context[EXTRA_CHANGES_KEY] = [change]
+}
+
+/** Отметить смену секретного поля, значение которого нельзя показывать. */
+export function markSecretChanged(context: Record<string, unknown>, field: string): void {
+  markAuditChange(context, { field, before: REDACTED, after: REDACTED })
+}
+
+export function extraChangesOf(context: unknown): AuditChange[] {
+  if (context === null || typeof context !== 'object') {
+    return []
+  }
+
+  const value = (context as Record<string, unknown>)[EXTRA_CHANGES_KEY]
+  return Array.isArray(value) ? (value as AuditChange[]) : []
+}
+
 export interface AuditHookOptions {
   /**
    * Какому тенанту принадлежит запись. Возвращает `null`, если событие
@@ -85,6 +121,7 @@ export function auditHooks(options: AuditHookOptions): {
 } {
   const afterChange: CollectionAfterChangeHook = async ({
     collection,
+    context,
     doc,
     operation,
     previousDoc,
@@ -94,7 +131,11 @@ export function auditHooks(options: AuditHookOptions): {
     const before =
       operation === 'create' ? null : ((previousDoc as unknown as Record<string, unknown>) ?? null)
 
-    const changes = computeChanges(before, after)
+    /**
+     * К обычному сравнению документов добавляются отметки, поставленные там,
+     * где значение ещё было видно, — например, смена пароля.
+     */
+    const changes = [...computeChanges(before, after), ...extraChangesOf(context)]
 
     /**
      * Изменение без содержательных отличий не записывается: сохранение формы
@@ -146,4 +187,67 @@ export function auditHooks(options: AuditHookOptions): {
   }
 
   return { afterChange, afterDelete }
+}
+
+/**
+ * События аутентификации.
+ *
+ * Вынесены отдельно, потому что это не изменения документа: обобщённый хук их
+ * не видит по определению. Именно эти события чаще всего и открывают журнал —
+ * «кто и когда входил» ([[DEBT-004]]).
+ */
+export async function recordLogin(args: {
+  readonly req: PayloadRequest
+  readonly user: unknown
+  readonly collectionSlug: string
+}): Promise<void> {
+  const actor = actorFrom(args.user)
+
+  await recordAuditEvent(
+    args.req.payload,
+    {
+      action: 'login',
+      targetCollection: args.collectionSlug,
+      targetId: actor.id,
+      tenantId: null,
+      tenantSlug: null,
+      actor,
+      summary: `вход: ${actor.email ?? actor.id ?? 'неизвестно'}`,
+      changes: [],
+      requestId: requestIdOf(args.req),
+    },
+    args.req,
+  )
+}
+
+export async function recordLogout(args: {
+  readonly req: PayloadRequest
+  readonly collectionSlug: string
+}): Promise<void> {
+  const actor = actorFrom(args.req.user)
+
+  /**
+   * Выход без действующего лица записывать нечего: это либо уже истёкшая
+   * сессия, либо повторный запрос. Событие «неизвестно кто вышел» journal
+   * только засоряет.
+   */
+  if (actor.id === null) {
+    return
+  }
+
+  await recordAuditEvent(
+    args.req.payload,
+    {
+      action: 'logout',
+      targetCollection: args.collectionSlug,
+      targetId: actor.id,
+      tenantId: null,
+      tenantSlug: null,
+      actor,
+      summary: `выход: ${actor.email ?? actor.id}`,
+      changes: [],
+      requestId: requestIdOf(args.req),
+    },
+    args.req,
+  )
 }

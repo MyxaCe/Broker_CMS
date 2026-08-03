@@ -292,7 +292,16 @@ export interface AuditEvent {
   id: number;
   occurredAt: string;
   action:
-    'create' | 'update' | 'delete' | 'login' | 'login-failed' | 'access-denied' | 'publish' | 'rollback' | 'approve';
+    | 'create'
+    | 'update'
+    | 'delete'
+    | 'login'
+    | 'logout'
+    | 'login-failed'
+    | 'access-denied'
+    | 'publish'
+    | 'rollback'
+    | 'approve';
   targetCollection: string;
   targetId?: string | null;
   tenantId?: string | null;
