@@ -52,6 +52,9 @@ export type {
   AuditHookOptions,
 } from './audit'
 
+export { runValidation, summarizeReport, ValidatorFailure } from './validation'
+export type { Finding, FindingSeverity, ValidationReport, Validator } from './validation'
+
 export { toActor } from './auth/actor'
 export { validateUserDraft } from './auth/user-rules'
 export type { UserDraft } from './auth/user-rules'
