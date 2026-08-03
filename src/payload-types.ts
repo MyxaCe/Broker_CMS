@@ -72,6 +72,7 @@ export interface Config {
     releases: Release;
     channels: Channel;
     outbox: Outbox;
+    'delivery-keys': DeliveryKey;
     'audit-events': AuditEvent;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
@@ -85,6 +86,7 @@ export interface Config {
     releases: ReleasesSelect<false> | ReleasesSelect<true>;
     channels: ChannelsSelect<false> | ChannelsSelect<true>;
     outbox: OutboxSelect<false> | OutboxSelect<true>;
+    'delivery-keys': DeliveryKeysSelect<false> | DeliveryKeysSelect<true>;
     'audit-events': AuditEventsSelect<false> | AuditEventsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -316,6 +318,43 @@ export interface Outbox {
   createdAt: string;
 }
 /**
+ * Секрет ключа показывается один раз при выдаче и нигде не хранится. Потерянный ключ не восстанавливается — выпускается новый, старый отзывается.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "delivery-keys".
+ */
+export interface DeliveryKey {
+  id: number;
+  /**
+   * Кто именно ходит этим ключом: сайт, кабинет, терминал.
+   */
+  name: string;
+  /**
+   * Открытая часть: по ней находится запись. Секретом не является.
+   */
+  keyId: string;
+  secretHash: string;
+  /**
+   * Утёкший ключ одного потребителя не должен открывать данные другого — поэтому прав выдаётся ровно столько, сколько нужно.
+   */
+  scopes: ('delivery:read' | 'preview:read' | 'terminal:read')[];
+  /**
+   * Пустая привязка означает, что ключ не открывает ничего. Это отказ, а не доступ ко всему.
+   */
+  sites?: (number | Tenant)[] | null;
+  /**
+   * Отзыв ключа — снятие этого флага; запись остаётся для аудита.
+   */
+  isActive: boolean;
+  /**
+   * Пусто — бессрочно. Для ключей подрядчиков срок стоит задавать всегда.
+   */
+  expiresAt?: string | null;
+  lastUsedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Только добавление. Изменение и удаление записей запрещены и на уровне приложения, и на уровне базы данных.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -399,6 +438,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'outbox';
         value: number | Outbox;
+      } | null)
+    | ({
+        relationTo: 'delivery-keys';
+        value: number | DeliveryKey;
       } | null)
     | ({
         relationTo: 'audit-events';
@@ -557,6 +600,22 @@ export interface OutboxSelect<T extends boolean = true> {
   nextAttemptAt?: T;
   lastError?: T;
   tenantId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "delivery-keys_select".
+ */
+export interface DeliveryKeysSelect<T extends boolean = true> {
+  name?: T;
+  keyId?: T;
+  secretHash?: T;
+  scopes?: T;
+  sites?: T;
+  isActive?: T;
+  expiresAt?: T;
+  lastUsedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

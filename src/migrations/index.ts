@@ -4,6 +4,7 @@ import * as migration_20260730_224419_add_releases_channels from './20260730_224
 import * as migration_20260803_133059_audit_logout_action from './20260803_133059_audit_logout_action'
 import * as migration_20260803_140000_release_number_unique from './20260803_140000_release_number_unique'
 import * as migration_20260803_143926_add_outbox from './20260803_143926_add_outbox'
+import * as migration_20260803_150837_add_delivery_keys from './20260803_150837_add_delivery_keys'
 
 export const migrations = [
   {
@@ -35,5 +36,10 @@ export const migrations = [
     up: migration_20260803_143926_add_outbox.up,
     down: migration_20260803_143926_add_outbox.down,
     name: '20260803_143926_add_outbox',
+  },
+  {
+    up: migration_20260803_150837_add_delivery_keys.up,
+    down: migration_20260803_150837_add_delivery_keys.down,
+    name: '20260803_150837_add_delivery_keys',
   },
 ]

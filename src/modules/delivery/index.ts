@@ -54,6 +54,30 @@ export { AmqpPublisher, drainOutbox } from './events/publisher'
 export type { DrainResult, Publisher } from './events/publisher'
 export { Outbox } from './events/outbox.collection'
 
+export { authorizeDeliveryRequest } from './keys/authorize'
+export type { AuthDecision, DenyReason, StoredKey } from './keys/authorize'
+export {
+  extractBearer,
+  generateKey,
+  hashSecret,
+  KEY_PREFIX,
+  KeyFormatError,
+  parseKey,
+  secretMatches,
+} from './keys/key-format'
+export type { GeneratedKey, ParsedKey } from './keys/key-format'
+export {
+  DELIVERY_SCOPES,
+  hasScope,
+  isDeliveryScope,
+  normalizeScopes,
+  SCOPE_LABELS,
+} from './keys/scopes'
+export type { DeliveryScope } from './keys/scopes'
+export { issueDeliveryKey, verifyDeliveryKey } from './keys/issue'
+export type { IssuedKey } from './keys/issue'
+export { DeliveryKeys } from './keys/keys.collection'
+
 export { switchChannel } from './releases/publish'
 export type { SwitchChannelArgs, SwitchChannelResult } from './releases/publish'
 
