@@ -21,6 +21,12 @@ export const CMS_EVENTS = {
   releasePublished: 'release.published',
   releaseRolledBack: 'release.rolled_back',
   streamPublished: 'stream.published',
+  /**
+   * Отдельное событие, а не `stream.published` с флагом: «появилось» и
+   * «погасло» — противоположные факты, и подписчик, которому нужно только
+   * одно из них, не должен разбирать тело, чтобы это понять.
+   */
+  streamExpired: 'stream.expired',
 } as const
 
 export type CmsEventName = (typeof CMS_EVENTS)[keyof typeof CMS_EVENTS]

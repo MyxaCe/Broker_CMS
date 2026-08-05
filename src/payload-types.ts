@@ -74,6 +74,8 @@ export interface Config {
     tags: Tag;
     authors: Author;
     articles: Article;
+    videos: Video;
+    promos: Promo;
     releases: Release;
     channels: Channel;
     outbox: Outbox;
@@ -93,6 +95,8 @@ export interface Config {
     tags: TagsSelect<false> | TagsSelect<true>;
     authors: AuthorsSelect<false> | AuthorsSelect<true>;
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
+    videos: VideosSelect<false> | VideosSelect<true>;
+    promos: PromosSelect<false> | PromosSelect<true>;
     releases: ReleasesSelect<false> | ReleasesSelect<true>;
     channels: ChannelsSelect<false> | ChannelsSelect<true>;
     outbox: OutboxSelect<false> | OutboxSelect<true>;
@@ -441,6 +445,111 @@ export interface Article {
   createdAt: string;
 }
 /**
+ * Состояние эфира («скоро», «в эфире», «запись») вычисляется из времени и не хранится: ручное поле гарантированно протухнет.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "videos".
+ */
+export interface Video {
+  id: number;
+  title: string;
+  slug: string;
+  /**
+   * Материал принадлежит одному сайту. Изоляция тенантов стоит на этом поле.
+   */
+  site: number | Tenant;
+  description?: string | null;
+  provider: 'youtube' | 'vimeo' | 'self-hosted';
+  /**
+   * Для YouTube и Vimeo. Для собственного хранилища заполняется файл ниже.
+   */
+  externalId?: string | null;
+  media?: (number | null) | Media;
+  poster?: (number | null) | Media;
+  /**
+   * Пусто — это ролик, а не трансляция: он сразу считается записью. Проставлять фиктивное время ради формы не нужно.
+   */
+  startsAt?: string | null;
+  /**
+   * Пусто у начавшегося эфира означает «идёт»: у прямой трансляции время окончания обычно неизвестно заранее.
+   */
+  endsAt?: string | null;
+  speakers?: (number | Author)[] | null;
+  tags?: (number | Tag)[] | null;
+  /**
+   * Состояния «запланировано» здесь нет: это следствие пары «опубликовано + дата в будущем», а не отдельное состояние.
+   */
+  status: 'draft' | 'published' | 'archived';
+  /**
+   * Момент появления на витрине. Дата в будущем означает эмбарго: до неё материал невидим снаружи, даже будучи опубликованным.
+   */
+  publishAt?: string | null;
+  /**
+   * Пусто — висит бессрочно. Материал гаснет сам, без чьего-либо участия.
+   */
+  unpublishAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Гаснет само по времени окончания — снимать вручную не нужно и не следует: ручное снятие забывают.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promos".
+ */
+export interface Promo {
+  id: number;
+  title: string;
+  slug: string;
+  /**
+   * Материал принадлежит одному сайту. Изоляция тенантов стоит на этом поле.
+   */
+  site: number | Tenant;
+  /**
+   * Короткая метка: «Новое», «−50%».
+   */
+  badge?: string | null;
+  description?: string | null;
+  /**
+   * Обязательны: предложение без условий в регулируемом домене — это нарушение, а не недоработка вёрстки.
+   */
+  terms: string;
+  image?: (number | null) | Media;
+  ctaLabel?: string | null;
+  /**
+   * Внешний адрес только по https: смешанное содержимое ломает страницу.
+   */
+  ctaHref?: string | null;
+  /**
+   * Пусто — во всех юрисдикциях сайта. Предложение, недопустимое в юрисдикции, ограничивается здесь.
+   */
+  jurisdictions?:
+    | {
+        code: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Больше — выше. При равенстве побеждает более позднее по времени начала.
+   */
+  priority: number;
+  featured?: boolean | null;
+  /**
+   * Состояния «запланировано» здесь нет: это следствие пары «опубликовано + дата в будущем», а не отдельное состояние.
+   */
+  status: 'draft' | 'published' | 'archived';
+  /**
+   * Момент появления на витрине. Дата в будущем означает эмбарго: до неё материал невидим снаружи, даже будучи опубликованным.
+   */
+  publishAt?: string | null;
+  /**
+   * Пусто — висит бессрочно. Материал гаснет сам, без чьего-либо участия.
+   */
+  unpublishAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Собранный релиз неизменяем: правки после сборки невозможны ни через интерфейс, ни напрямую в базе. Откат выполняется переключением канала.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -678,6 +787,14 @@ export interface PayloadLockedDocument {
         value: number | Article;
       } | null)
     | ({
+        relationTo: 'videos';
+        value: number | Video;
+      } | null)
+    | ({
+        relationTo: 'promos';
+        value: number | Promo;
+      } | null)
+    | ({
         relationTo: 'releases';
         value: number | Release;
       } | null)
@@ -901,6 +1018,57 @@ export interface ArticlesSelect<T extends boolean = true> {
       };
   featured?: T;
   pinned?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "videos_select".
+ */
+export interface VideosSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  site?: T;
+  description?: T;
+  provider?: T;
+  externalId?: T;
+  media?: T;
+  poster?: T;
+  startsAt?: T;
+  endsAt?: T;
+  speakers?: T;
+  tags?: T;
+  status?: T;
+  publishAt?: T;
+  unpublishAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promos_select".
+ */
+export interface PromosSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  site?: T;
+  badge?: T;
+  description?: T;
+  terms?: T;
+  image?: T;
+  ctaLabel?: T;
+  ctaHref?: T;
+  jurisdictions?:
+    | T
+    | {
+        code?: T;
+        id?: T;
+      };
+  priority?: T;
+  featured?: T;
+  status?: T;
+  publishAt?: T;
+  unpublishAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

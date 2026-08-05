@@ -2,6 +2,7 @@ import { auditHooks } from '@/platform'
 
 import { createStreamReadAccess, createStreamWriteAccess, streamDeleteAccess } from '../access'
 import { publishingFields, siteField } from '../publishing-fields'
+import { siteOf } from '../shared/site-of'
 import { STREAM_STATUS_LABELS } from '../visibility'
 
 import { estimateReadingMinutes } from './reading-time'
@@ -182,18 +183,3 @@ export const Articles: CollectionConfig = {
 }
 
 export const ARTICLE_STATUS_LABELS = STREAM_STATUS_LABELS
-
-function siteOf(doc: Record<string, unknown>): { id: string | null; slug: string | null } {
-  const site = doc.site
-
-  if (site !== null && typeof site === 'object' && 'id' in site) {
-    const record = site as Record<string, unknown>
-
-    return {
-      id: record.id === undefined || record.id === null ? null : String(record.id),
-      slug: typeof record.slug === 'string' ? record.slug : null,
-    }
-  }
-
-  return { id: site === undefined || site === null ? null : String(site), slug: null }
-}

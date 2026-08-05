@@ -16,9 +16,11 @@ import { DeliveryKeys } from './modules/delivery/keys/keys.collection'
 import { Channels } from './modules/delivery/releases/channels.collection'
 import { Releases } from './modules/delivery/releases/releases.collection'
 import { Articles } from './modules/stream/articles/articles.collection'
+import { Promos } from './modules/stream/promo/promos.collection'
 import { Authors } from './modules/stream/taxonomy/authors.collection'
 import { Categories } from './modules/stream/taxonomy/categories.collection'
 import { Tags } from './modules/stream/taxonomy/tags.collection'
+import { Videos } from './modules/stream/video/videos.collection'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -47,6 +49,8 @@ export default buildConfig({
     Tags,
     Authors,
     Articles,
+    Videos,
+    Promos,
     Releases,
     Channels,
     Outbox,

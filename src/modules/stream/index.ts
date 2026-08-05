@@ -50,7 +50,28 @@ export type { ArticleFeedItem } from './feed/article-item'
 export { loadArticleFeed } from './feed/load'
 export type { FeedPage } from './feed/load'
 
+export {
+  BROADCAST_LABELS,
+  BROADCAST_STATES,
+  broadcastState,
+  nextBroadcastTransition,
+} from './video/broadcast'
+export type { Broadcast, BroadcastState } from './video/broadcast'
+
+export { ownerOf, siteOf, tenantOfField } from './shared/site-of'
+
+export {
+  changedTagsFor,
+  SCHEDULED_COLLECTIONS,
+  TRANSITION_KINDS,
+  transitionWindow,
+} from './schedule/transitions'
+export type { PendingTransition, ScheduledCollection, TransitionKind } from './schedule/transitions'
+
 export { Articles } from './articles/articles.collection'
+export { Videos, VIDEO_PROVIDERS } from './video/videos.collection'
+export type { VideoProvider } from './video/videos.collection'
+export { Promos } from './promo/promos.collection'
 export { Authors } from './taxonomy/authors.collection'
 export { Categories } from './taxonomy/categories.collection'
 export { Tags } from './taxonomy/tags.collection'

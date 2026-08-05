@@ -49,7 +49,15 @@ const users: Record<string, TypedUser> = {}
  * секунды, а поведение предсказуемо.
  */
 type WipeableCollection =
-  'users' | 'tenants' | 'articles' | 'media' | 'categories' | 'tags' | 'authors'
+  | 'users'
+  | 'tenants'
+  | 'articles'
+  | 'videos'
+  | 'promos'
+  | 'media'
+  | 'categories'
+  | 'tags'
+  | 'authors'
 
 async function wipeCollection(collection: WipeableCollection): Promise<void> {
   const existing = await payload.find({
@@ -74,6 +82,8 @@ async function wipeCollection(collection: WipeableCollection): Promise<void> {
  */
 async function wipe(): Promise<void> {
   await wipeCollection('articles')
+  await wipeCollection('videos')
+  await wipeCollection('promos')
   await wipeCollection('media')
   await wipeCollection('categories')
   await wipeCollection('tags')

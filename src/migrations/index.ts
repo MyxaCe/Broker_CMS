@@ -7,6 +7,8 @@ import * as migration_20260803_143926_add_outbox from './20260803_143926_add_out
 import * as migration_20260803_150837_add_delivery_keys from './20260803_150837_add_delivery_keys'
 import * as migration_20260805_113731_add_stream_and_media from './20260805_113731_add_stream_and_media'
 import * as migration_20260805_120000_stream_slug_unique from './20260805_120000_stream_slug_unique'
+import * as migration_20260805_130521_add_videos_and_promos from './20260805_130521_add_videos_and_promos'
+import * as migration_20260805_131000_video_promo_unique from './20260805_131000_video_promo_unique'
 
 export const migrations = [
   {
@@ -53,5 +55,15 @@ export const migrations = [
     up: migration_20260805_120000_stream_slug_unique.up,
     down: migration_20260805_120000_stream_slug_unique.down,
     name: '20260805_120000_stream_slug_unique',
+  },
+  {
+    up: migration_20260805_130521_add_videos_and_promos.up,
+    down: migration_20260805_130521_add_videos_and_promos.down,
+    name: '20260805_130521_add_videos_and_promos',
+  },
+  {
+    up: migration_20260805_131000_video_promo_unique.up,
+    down: migration_20260805_131000_video_promo_unique.down,
+    name: '20260805_131000_video_promo_unique',
   },
 ]

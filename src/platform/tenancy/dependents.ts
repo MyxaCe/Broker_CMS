@@ -16,6 +16,8 @@ import type { Payload, PayloadRequest } from 'payload'
 /** Коллекции, чья запись без тенанта не имеет смысла. */
 const DEPENDENT_COLLECTIONS = [
   { collection: 'articles', field: 'site', label: 'материалы' },
+  { collection: 'videos', field: 'site', label: 'видео' },
+  { collection: 'promos', field: 'site', label: 'промо' },
   { collection: 'media', field: 'owner', label: 'файлы' },
   { collection: 'categories', field: 'owner', label: 'категории' },
   { collection: 'tags', field: 'owner', label: 'теги' },

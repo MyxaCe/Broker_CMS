@@ -1,8 +1,8 @@
 import { auditHooks } from '@/platform'
 
 import { createStreamWriteAccess, streamDeleteAccess } from '../access'
+import { ownerOf } from '../shared/site-of'
 
-import { ownerOf } from './categories.collection'
 import { descriptionField, ownerField, slugField, titleField } from './shared-fields'
 
 import type { CollectionConfig } from 'payload'

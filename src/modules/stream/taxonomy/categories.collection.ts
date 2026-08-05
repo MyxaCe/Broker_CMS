@@ -1,6 +1,7 @@
 import { auditHooks } from '@/platform'
 
 import { createStreamWriteAccess, streamDeleteAccess } from '../access'
+import { ownerOf } from '../shared/site-of'
 
 import { descriptionField, ownerField, slugField, titleField } from './shared-fields'
 
@@ -55,19 +56,4 @@ export const Categories: CollectionConfig = {
     afterChange: [auditHooks({ tenantOf: ownerOf }).afterChange],
     afterDelete: [auditHooks({ tenantOf: ownerOf }).afterDelete],
   },
-}
-
-export function ownerOf(doc: Record<string, unknown>): { id: string | null; slug: string | null } {
-  const owner = doc.owner
-
-  if (owner !== null && typeof owner === 'object' && 'id' in owner) {
-    const record = owner as Record<string, unknown>
-
-    return {
-      id: record.id === undefined || record.id === null ? null : String(record.id),
-      slug: typeof record.slug === 'string' ? record.slug : null,
-    }
-  }
-
-  return { id: owner === undefined || owner === null ? null : String(owner), slug: null }
 }
