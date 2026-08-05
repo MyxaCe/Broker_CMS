@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cms.broker.platform/contracts/v1/article-feed.json",
+  "title": "Лента материалов, версия 1",
+  "description": "Страница ленты. В отличие от конфигурации сайта, собирается не из релиза, а из текущего состояния потока: релиз в разрешении обозначен значением stream.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "site", "resolution", "items", "page"],
+  "properties": {
+    "contract": { "const": "v1" },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug"],
+      "properties": {
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" }
+      }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locale", "jurisdiction", "variant"],
+      "properties": {
+        "locale": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+        "jurisdiction": { "type": "string", "minLength": 1 },
+        "variant": { "type": "string", "minLength": 1 }
+      }
+    },
+    "pinned": {
+      "description": "Закреплённые материалы. Отдаются только на первой странице и не участвуют в курсоре: иначе позиция сдвигалась бы от закрепления, а не от публикации.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/item" }
+    },
+    "items": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/item" }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["size", "excluded"],
+      "properties": {
+        "size": { "type": "integer", "minimum": 0 },
+        "nextCursor": {
+          "description": "Непрозрачная строка. Отсутствует, когда следующей страницы нет.",
+          "type": "string",
+          "minLength": 1
+        },
+        "excluded": {
+          "description": "Сколько записей исключено сборщиком из-за незаполненных обязательных полей. Ненулевое значение означает, что лента короче ожидаемого, и требует внимания редактора: молча укоротившаяся лента ищется неделями.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug", "title", "publishedAt", "readingMinutes", "tags", "authors"],
+      "properties": {
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "title": { "type": "string", "minLength": 1 },
+        "excerpt": { "type": ["string", "null"] },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "readingMinutes": { "type": "integer", "minimum": 0 },
+        "category": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["slug", "title"],
+          "properties": {
+            "slug": { "type": "string", "minLength": 1 },
+            "title": { "type": "string", "minLength": 1 }
+          }
+        },
+        "tags": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["slug", "title"],
+            "properties": {
+              "slug": { "type": "string", "minLength": 1 },
+              "title": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "cover": {
+          "description": "Обложка без альтернативного текста не отдаётся вовсе: недоступная картинка на витрине хуже её отсутствия.",
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["url", "alt"],
+          "properties": {
+            "url": { "type": "string", "minLength": 1 },
+            "alt": { "type": "string", "minLength": 1 }
+          }
+        },
+        "instruments": {
+          "description": "Символы MDS. Терминал показывает материал в карточке инструмента.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "featured": { "type": "boolean" },
+        "pinned": { "type": "boolean" }
+      }
+    }
+  }
+}

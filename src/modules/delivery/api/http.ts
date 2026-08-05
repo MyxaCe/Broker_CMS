@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto'
 
+import { handleArticleFeed } from './feed-handler'
 import { handleSiteConfig } from './handler'
 
-import type { DeliveryRequest, DeliverySource } from './handler'
+import type { FeedDeliveryRequest } from './feed-handler'
+import type { DeliveryRequest, DeliveryResponse, DeliverySource } from './handler'
 
 /**
  * Перевод между вебовым запросом и обработчиком доставки.
@@ -48,18 +50,65 @@ function firstForwardedFor(header: string | null): string | null {
   return first === undefined || first === '' ? null : first
 }
 
+/**
+ * Читает параметры ленты поверх общих.
+ *
+ * Числовой параметр разбирается строго: `limit=много` — это ошибка запроса, а
+ * не повод молча взять умолчание. Тихая подмена непонятого параметра прячет
+ * опечатку потребителя до того момента, когда он начнёт считать записи.
+ */
+export function readFeedRequest(request: Request, siteSlug: string): FeedDeliveryRequest {
+  const url = new URL(request.url)
+  const parameter = (name: string) => url.searchParams.get(name)
+  const limit = parameter('limit')
+
+  return {
+    ...readDeliveryRequest(request, siteSlug),
+    cursor: parameter('cursor'),
+    limit: limit === null ? null : Number.parseInt(limit, 10),
+    category: parameter('category'),
+    tag: parameter('tag'),
+    author: parameter('author'),
+    instrument: parameter('instrument'),
+    jurisdiction: parameter('jurisdiction'),
+    since: parameter('since'),
+    until: parameter('until'),
+    /** Отсутствие параметра и `featured=false` — разное: второе не сужает выборку. */
+    featured: parameter('featured') === 'true' ? true : null,
+  }
+}
+
+export async function respondArticleFeed(
+  request: Request,
+  siteSlug: string,
+  source: DeliverySource,
+): Promise<Response> {
+  const parsed = readFeedRequest(request, siteSlug)
+
+  return finish(parsed.requestId, await handleArticleFeed(parsed, source))
+}
+
 export async function respondSiteConfig(
   request: Request,
   siteSlug: string,
   source: DeliverySource,
 ): Promise<Response> {
   const parsed = readDeliveryRequest(request, siteSlug)
-  const result = await handleSiteConfig(parsed, source)
 
+  return finish(parsed.requestId, await handleSiteConfig(parsed, source))
+}
+
+/**
+ * Превращает решение обработчика в вебовый ответ.
+ *
+ * Один путь на все ресурсы: разные пути означали бы, что заголовок или код
+ * можно случайно потерять в одном из них.
+ */
+function finish(requestId: string | undefined, result: DeliveryResponse): Response {
   const headers = new Headers(result.headers)
 
-  if (parsed.requestId !== undefined) {
-    headers.set('X-Request-Id', parsed.requestId)
+  if (requestId !== undefined) {
+    headers.set('X-Request-Id', requestId)
   }
 
   if (result.body === null) {

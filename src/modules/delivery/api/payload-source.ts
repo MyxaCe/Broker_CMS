@@ -1,3 +1,6 @@
+import { loadArticleFeed } from '@/modules/stream'
+import { resolveTenantById } from '@/platform'
+
 import { verifyDeliveryKey } from '../keys/issue'
 
 import type { DeliverySource, ResolvedRelease } from './handler'
@@ -38,6 +41,20 @@ export function createPayloadSource(args: {
 
     async authorize({ authorizationHeader, siteId, requiredScope }) {
       return verifyDeliveryKey({ payload, pepper, authorizationHeader, requiredScope, siteId })
+    },
+
+    async loadSiteResolution(siteId) {
+      const settings = await resolveTenantById(payload, siteId)
+
+      return {
+        defaultLocale: settings.defaultLocale.value ?? null,
+        availableLocales: settings.availableLocales.entries.map((entry) => entry.value),
+        jurisdiction: settings.jurisdiction.value ?? null,
+      }
+    },
+
+    async loadArticles({ siteId, request }) {
+      return loadArticleFeed({ payload, request: { siteId, ...request } })
     },
 
     async loadChannelRelease({ siteId, channel }) {

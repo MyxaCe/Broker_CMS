@@ -82,15 +82,31 @@ export { DeliveryKeys } from './keys/keys.collection'
 
 export { buildSiteConfigResponse, DeliveryAssemblyError, resolveLocale } from './api/site-config'
 export type { ReleaseFacts, SiteConfigRequest } from './api/site-config'
-export { handleSiteConfig } from './api/handler'
+export { errorResponse, handleSiteConfig, openDeliveryRequest } from './api/handler'
 export type {
+  ArticleFeedFilters,
   DeliveryRequest,
   DeliveryResponse,
   DeliverySource,
   ResolvedRelease,
+  SiteResolution,
 } from './api/handler'
+export { buildArticleFeedResponse } from './api/article-feed'
+export type { FeedResolution } from './api/article-feed'
+export {
+  BASE_FEED_TTL_SECONDS,
+  feedTtlSeconds,
+  handleArticleFeed,
+  STREAM_RELEASE_AXIS,
+} from './api/feed-handler'
+export type { FeedDeliveryRequest } from './api/feed-handler'
 export { createPayloadSource } from './api/payload-source'
-export { readDeliveryRequest, respondSiteConfig } from './api/http'
+export {
+  readDeliveryRequest,
+  readFeedRequest,
+  respondArticleFeed,
+  respondSiteConfig,
+} from './api/http'
 export {
   decide,
   DEFAULT_AUTH_FAILURE_RULE,

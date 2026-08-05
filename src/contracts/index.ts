@@ -20,7 +20,14 @@
  */
 
 export { CONTRACT_VERSION, ERROR_CODES } from './types'
-export type { ErrorCode, ErrorResponse, SiteConfigResponse } from './types'
+export type {
+  ArticleFeedItemResponse,
+  ArticleFeedResponse,
+  ErrorCode,
+  ErrorResponse,
+  FeedItemReference,
+  SiteConfigResponse,
+} from './types'
 
 export {
   checkAgainstSchema,

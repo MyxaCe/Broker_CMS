@@ -33,6 +33,43 @@ export interface SiteConfigResponse {
   }
 }
 
+export interface FeedItemReference {
+  readonly slug: string
+  readonly title: string
+}
+
+export interface ArticleFeedItemResponse {
+  readonly slug: string
+  readonly title: string
+  readonly excerpt: string | null
+  readonly publishedAt: string
+  readonly readingMinutes: number
+  readonly category: FeedItemReference | null
+  readonly tags: readonly string[]
+  readonly authors: readonly FeedItemReference[]
+  readonly cover: { readonly url: string; readonly alt: string } | null
+  readonly instruments: readonly string[]
+  readonly featured: boolean
+  readonly pinned: boolean
+}
+
+export interface ArticleFeedResponse {
+  readonly contract: typeof CONTRACT_VERSION
+  readonly site: { readonly slug: string }
+  readonly resolution: {
+    readonly locale: string
+    readonly jurisdiction: string
+    readonly variant: string
+  }
+  readonly pinned?: readonly ArticleFeedItemResponse[]
+  readonly items: readonly ArticleFeedItemResponse[]
+  readonly page: {
+    readonly size: number
+    readonly nextCursor?: string
+    readonly excluded: number
+  }
+}
+
 /**
  * Коды ошибок. Причины отказа авторизации схлопнуты в один код намеренно:
  * снаружи «ключа нет» и «прав не хватает» обязаны быть неразличимы.

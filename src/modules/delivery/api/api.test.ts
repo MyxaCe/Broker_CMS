@@ -45,6 +45,19 @@ function source(overrides: Partial<DeliverySource> = {}): DeliverySource {
         ? { kind: 'allow', keyId: 'abc', siteIds: ['10'] }
         : { kind: 'deny', reason: 'site-not-allowed' },
     loadChannelRelease: async () => RELEASE,
+    /** Лента проверяется отдельно; здесь заглушки, чтобы источник был полным. */
+    loadSiteResolution: async () => ({
+      defaultLocale: 'de',
+      availableLocales: ['de', 'en'],
+      jurisdiction: 'eu-mifid',
+    }),
+    loadArticles: async () => ({
+      items: [],
+      pinned: [],
+      nextCursor: null,
+      excluded: [],
+      nextTransitionAt: null,
+    }),
     ...overrides,
   }
 }

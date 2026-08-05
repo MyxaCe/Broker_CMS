@@ -124,6 +124,18 @@ function source(limiter: RateLimiter, allow = true): DeliverySource {
       builtAt: '2026-08-03T10:00:00.000Z',
       snapshot: SNAPSHOT,
     }),
+    loadSiteResolution: async () => ({
+      defaultLocale: 'de',
+      availableLocales: ['de', 'en'],
+      jurisdiction: 'eu-mifid',
+    }),
+    loadArticles: async () => ({
+      items: [],
+      pinned: [],
+      nextCursor: null,
+      excluded: [],
+      nextTransitionAt: null,
+    }),
   }
 }
 
