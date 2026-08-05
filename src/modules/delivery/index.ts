@@ -105,9 +105,19 @@ export {
   filtersOf,
   handleArticleFeed,
   handlePromoBoard,
+  handleSyndication,
   handleVideoFeed,
   STREAM_RELEASE_AXIS,
 } from './api/feed-handler'
+export {
+  escapeXml,
+  renderAtom,
+  renderRss,
+  renderSyndication,
+  stripInvalidXml,
+  SYNDICATION_CONTENT_TYPE,
+} from './api/syndication'
+export type { SyndicationFormat, SyndicationOptions } from './api/syndication'
 export type { FeedDeliveryRequest } from './api/feed-handler'
 export { createPayloadSource } from './api/payload-source'
 export {
@@ -116,6 +126,7 @@ export {
   respondArticleFeed,
   respondPromoBoard,
   respondSiteConfig,
+  respondSyndication,
   respondVideoFeed,
 } from './api/http'
 export {

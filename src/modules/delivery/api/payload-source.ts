@@ -46,10 +46,21 @@ export function createPayloadSource(args: {
     async loadSiteResolution(siteId) {
       const settings = await resolveTenantById(payload, siteId)
 
+      const site = await payload.findByID({
+        collection: 'tenants',
+        id: siteId,
+        depth: 0,
+        overrideAccess: true,
+        disableErrors: true,
+      })
+
       return {
         defaultLocale: settings.defaultLocale.value ?? null,
         availableLocales: settings.availableLocales.entries.map((entry) => entry.value),
         jurisdiction: settings.jurisdiction.value ?? null,
+        publicUrl:
+          typeof site?.publicUrl === 'string' && site.publicUrl !== '' ? site.publicUrl : null,
+        title: typeof site?.name === 'string' && site.name !== '' ? site.name : null,
       }
     },
 

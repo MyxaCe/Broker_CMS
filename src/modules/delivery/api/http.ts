@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto'
 
-import { handleArticleFeed, handlePromoBoard, handleVideoFeed } from './feed-handler'
+import {
+  handleArticleFeed,
+  handlePromoBoard,
+  handleSyndication,
+  handleVideoFeed,
+} from './feed-handler'
+
+import type { SyndicationFormat } from './syndication'
 import { handleSiteConfig } from './handler'
 
 import type { FeedDeliveryRequest } from './feed-handler'
@@ -98,6 +105,17 @@ export async function respondVideoFeed(
   return finish(parsed.requestId, await handleVideoFeed(parsed, source))
 }
 
+export async function respondSyndication(
+  request: Request,
+  siteSlug: string,
+  source: DeliverySource,
+  format: SyndicationFormat,
+): Promise<Response> {
+  const parsed = readFeedRequest(request, siteSlug)
+
+  return finish(parsed.requestId, await handleSyndication(parsed, source, format))
+}
+
 export async function respondPromoBoard(
   request: Request,
   siteSlug: string,
@@ -129,6 +147,11 @@ function finish(requestId: string | undefined, result: DeliveryResponse): Respon
 
   if (requestId !== undefined) {
     headers.set('X-Request-Id', requestId)
+  }
+
+  /** Готовое тело в ином формате — отправляется как есть, ничего не досочиняя. */
+  if (result.text !== undefined) {
+    return new Response(result.text, { status: result.status, headers })
   }
 
   if (result.body === null) {

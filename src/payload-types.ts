@@ -152,6 +152,10 @@ export interface Tenant {
    * Попадает в URL и в ключ кеша выдачи. После первой публикации не меняется: смена slug — это новый тенант, а не переименование.
    */
   slug: string;
+  /**
+   * Например https://apex.de. Без него лента RSS и карта сайта не собираются: ссылкам некуда вести.
+   */
+  publicUrl?: string | null;
   kind: 'brand' | 'region' | 'site';
   /**
    * Пусто только у бренда. Сайт наследуется от региона или напрямую от бренда.
@@ -863,6 +867,7 @@ export interface PayloadMigration {
 export interface TenantsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
+  publicUrl?: T;
   kind?: T;
   parent?: T;
   jurisdiction?:

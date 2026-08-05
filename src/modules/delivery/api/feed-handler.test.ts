@@ -252,6 +252,8 @@ describe('отказы ленты', () => {
           defaultLocale: 'de',
           availableLocales: ['de'],
           jurisdiction: null,
+          publicUrl: null,
+          title: null,
         }),
       }),
       NOW,

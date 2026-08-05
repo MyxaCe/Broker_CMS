@@ -40,6 +40,8 @@ export function stubDeliverySource(overrides: Partial<DeliverySource> = {}): Del
       defaultLocale: 'de',
       availableLocales: ['de', 'en'],
       jurisdiction: 'eu-mifid',
+      publicUrl: 'https://apex.example.test',
+      title: 'Apex Germany',
     }),
     loadArticles: async () => emptyFeedPage(),
     loadVideos: async () => emptyFeedPage(),

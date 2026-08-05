@@ -123,6 +123,33 @@ export const Tenants: CollectionConfig = {
       },
     },
     {
+      /**
+       * Публичный адрес сайта (ТЗ 5.4).
+       *
+       * В карточке тенанта, а не в переменной окружения: сайтов двадцать, и
+       * глобальная переменная выражает адрес ровно одного из них. Нужен там,
+       * где ответ содержит ссылки наружу — в RSS, картах сайта, предпросмотре.
+       */
+      name: 'publicUrl',
+      type: 'text',
+      label: 'Публичный адрес',
+      validate: (value: unknown) => {
+        if (value === null || value === undefined || value === '') {
+          return true
+        }
+
+        if (typeof value !== 'string' || !/^https:\/\/[^\s/]+/.test(value)) {
+          return 'Адрес по https, например https://apex.de'
+        }
+
+        return true
+      },
+      admin: {
+        description:
+          'Например https://apex.de. Без него лента RSS и карта сайта не собираются: ссылкам некуда вести.',
+      },
+    },
+    {
       name: 'kind',
       type: 'select',
       required: true,

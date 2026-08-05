@@ -8,6 +8,9 @@ import {
   buildVideoFeedResponse,
 } from './article-feed'
 import { errorResponse, openDeliveryRequest } from './handler'
+import { renderSyndication, SYNDICATION_CONTENT_TYPE } from './syndication'
+
+import type { SyndicationFormat } from './syndication'
 
 import type {
   ArticleFeedFilters,
@@ -95,11 +98,22 @@ async function serveStreamResource<TBody>(args: {
   readonly resource: string
   readonly load: (
     siteId: string,
-    resolution: { locale: string; jurisdiction: string },
+    resolution: {
+      locale: string
+      jurisdiction: string
+      publicUrl: string | null
+      title: string | null
+    },
   ) => Promise<{
     body: TBody
     nextTransitionAt: string | null
     variant: string
+    /**
+     * Необязательная сериализация в иной формат. Считается **после** проверки
+     * схемой и от того же объекта: правило «наружу уходит только проверенное»
+     * сохраняется и там, где формат не JSON.
+     */
+    render?: () => { text: string; contentType: string }
   }>
 }): Promise<DeliveryResponse> {
   const { request, source, now } = args
@@ -137,7 +151,12 @@ async function serveStreamResource<TBody>(args: {
   let loaded
 
   try {
-    loaded = await args.load(opened.siteId, { locale, jurisdiction: resolution.jurisdiction })
+    loaded = await args.load(opened.siteId, {
+      locale,
+      jurisdiction: resolution.jurisdiction,
+      publicUrl: resolution.publicUrl,
+      title: resolution.title,
+    })
   } catch (error) {
     if (error instanceof FeedQueryError) {
       return errorResponse(400, 'bad-request', error.message, request.requestId)
@@ -180,6 +199,18 @@ async function serveStreamResource<TBody>(args: {
 
   if (matchesETag(request.ifNoneMatch, etag)) {
     return { status: 304, headers, body: null, cacheKey }
+  }
+
+  if (loaded.render !== undefined) {
+    const rendered = loaded.render()
+
+    return {
+      status: 200,
+      headers: { ...headers, 'Content-Type': rendered.contentType },
+      body: null,
+      text: rendered.text,
+      cacheKey,
+    }
   }
 
   return { status: 200, headers, body: loaded.body as never, cacheKey }
@@ -227,6 +258,63 @@ export async function handleVideoFeed(
       })
 
       return { body, nextTransitionAt: page.nextTransitionAt, variant: body.resolution.variant }
+    },
+  })
+}
+
+/**
+ * Лента в формате RSS или Atom (ТЗ 1.2).
+ *
+ * Тело собирается **из уже проверенного схемой** ответа ленты, а не из базы:
+ * так правило «наружу уходит только проверенное» сохраняется и для XML,
+ * который JSON-схемой проверить нельзя.
+ */
+export async function handleSyndication(
+  request: FeedDeliveryRequest,
+  source: DeliverySource,
+  format: SyndicationFormat,
+  now: Date = new Date(),
+): Promise<DeliveryResponse> {
+  return serveStreamResource({
+    request,
+    source,
+    now,
+    resource: `syndication-${format}`,
+    load: async (siteId, resolution) => {
+      if (resolution.publicUrl === null) {
+        /**
+         * Лента без публичного адреса сайта бессмысленна: ссылкам некуда
+         * вести. Отдавать её с пустыми ссылками хуже, чем отказать — читалка
+         * молча покажет неработающие записи.
+         */
+        throw new FeedQueryError('У сайта не задан публичный адрес — ленту собрать не из чего.')
+      }
+
+      const page = await source.loadArticles({ siteId, request: filtersOf(request) })
+      const body = buildArticleFeedResponse({
+        siteSlug: request.siteSlug,
+        page,
+        resolution: { ...resolution, variant: request.variant },
+      })
+
+      return {
+        body,
+        nextTransitionAt: page.nextTransitionAt,
+        variant: body.resolution.variant,
+        /**
+         * Сериализация задаётся здесь, а не в общем ходе: только тут известно,
+         * что ответ уходит XML-ом и откуда взять адрес сайта.
+         */
+        render: () => ({
+          text: renderSyndication(format, {
+            feed: body,
+            siteUrl: resolution.publicUrl!,
+            title: resolution.title ?? request.siteSlug,
+            now,
+          }),
+          contentType: SYNDICATION_CONTENT_TYPE[format],
+        }),
+      }
     },
   })
 }
