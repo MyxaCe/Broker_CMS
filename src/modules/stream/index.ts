@@ -32,6 +32,24 @@ export { publishingFields, siteField } from './publishing-fields'
 
 export { countWords, estimateReadingMinutes, extractText } from './articles/reading-time'
 
+export { afterCursorWhere, CursorError, decodeCursor, encodeCursor } from './feed/cursor'
+export type { CursorPosition } from './feed/cursor'
+export { mapFeed, MappingError, requireText, requireValue } from './feed/mapper'
+export type { MappedItem, MappingOutcome } from './feed/mapper'
+export {
+  buildFeedQuery,
+  buildPinnedQuery,
+  DEFAULT_PAGE_SIZE,
+  FEED_SORT_FIELD,
+  FeedQueryError,
+  MAX_PAGE_SIZE,
+} from './feed/query'
+export type { FeedFilters, FeedQuery, FeedRequest } from './feed/query'
+export { toArticleFeedItem } from './feed/article-item'
+export type { ArticleFeedItem } from './feed/article-item'
+export { loadArticleFeed } from './feed/load'
+export type { FeedPage } from './feed/load'
+
 export { Articles } from './articles/articles.collection'
 export { Authors } from './taxonomy/authors.collection'
 export { Categories } from './taxonomy/categories.collection'
