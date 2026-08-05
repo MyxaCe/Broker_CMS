@@ -30,6 +30,14 @@ export class FeedQueryError extends Error {
 
 export interface FeedFilters {
   readonly siteId: string | number
+  /**
+   * Язык записей. Обязателен по смыслу, а не по типу: лента без языка
+   * смешала бы немецкие и английские материалы в одном списке.
+   *
+   * Необязателен в типе только ради служебных вызовов вроде планировщика,
+   * которым язык безразличен.
+   */
+  readonly locale?: string | null
   readonly category?: string | null
   readonly tag?: string | null
   readonly author?: string | null
@@ -86,6 +94,10 @@ function normalizeLimit(requested: number | null | undefined): number {
 
 export function buildFeedQuery(request: FeedRequest): FeedQuery {
   const conditions: Where[] = [{ site: { equals: request.siteId } }]
+
+  if (request.locale) {
+    conditions.push({ locale: { equals: request.locale } })
+  }
 
   if (request.category) {
     conditions.push({ 'category.slug': { equals: request.category } })
@@ -170,12 +182,18 @@ export function buildFeedQuery(request: FeedRequest): FeedQuery {
  * Из этого следует и то, что закреплённое не участвует в курсоре: иначе
  * позиция сдвигалась бы от закрепления, а не от публикации.
  */
-export function buildPinnedQuery(siteId: string | number): {
+export function buildPinnedQuery(
+  siteId: string | number,
+  locale?: string | null,
+): {
   where: Where
   sort: readonly string[]
 } {
-  return {
-    where: { and: [{ site: { equals: siteId } }, { pinned: { equals: true } }] },
-    sort: FEED_SORT,
+  const conditions: Where[] = [{ site: { equals: siteId } }, { pinned: { equals: true } }]
+
+  if (locale) {
+    conditions.push({ locale: { equals: locale } })
   }
+
+  return { where: { and: conditions }, sort: FEED_SORT }
 }

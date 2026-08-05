@@ -10,6 +10,7 @@ import * as migration_20260805_120000_stream_slug_unique from './20260805_120000
 import * as migration_20260805_130521_add_videos_and_promos from './20260805_130521_add_videos_and_promos'
 import * as migration_20260805_131000_video_promo_unique from './20260805_131000_video_promo_unique'
 import * as migration_20260805_134523_add_tenant_public_url from './20260805_134523_add_tenant_public_url'
+import * as migration_20260805_151838_add_stream_locale from './20260805_151838_add_stream_locale'
 
 export const migrations = [
   {
@@ -71,5 +72,10 @@ export const migrations = [
     up: migration_20260805_134523_add_tenant_public_url.up,
     down: migration_20260805_134523_add_tenant_public_url.down,
     name: '20260805_134523_add_tenant_public_url',
+  },
+  {
+    up: migration_20260805_151838_add_stream_locale.up,
+    down: migration_20260805_151838_add_stream_locale.down,
+    name: '20260805_151838_add_stream_locale',
   },
 ]

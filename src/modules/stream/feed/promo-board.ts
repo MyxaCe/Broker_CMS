@@ -96,11 +96,16 @@ export function toPromoItem(doc: Record<string, unknown>): PromoItem {
 export async function loadPromoBoard(args: {
   readonly payload: Payload
   readonly siteId: string | number
+  readonly locale?: string | null
   readonly jurisdiction?: string | null
   readonly now?: Date
 }): Promise<PromoBoard> {
   const now = args.now ?? new Date()
   const conditions: Where[] = [{ site: { equals: args.siteId } }]
+
+  if (args.locale) {
+    conditions.push({ locale: { equals: args.locale } })
+  }
 
   /** Пустой список юрисдикций означает «во всех» — как и у материалов. */
   if (args.jurisdiction) {

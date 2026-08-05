@@ -1,7 +1,8 @@
 import { auditHooks } from '@/platform'
 
 import { createStreamReadAccess, createStreamWriteAccess, streamDeleteAccess } from '../access'
-import { publishingFields, siteField } from '../publishing-fields'
+import { localeField } from '../locale-field'
+import { localeConsistencyHook, publishingFields, siteField } from '../publishing-fields'
 import { siteOf } from '../shared/site-of'
 
 import type { CollectionConfig } from 'payload'
@@ -55,6 +56,7 @@ export const Promos: CollectionConfig = {
       },
     },
     siteField,
+    localeField,
 
     {
       name: 'badge',
@@ -130,6 +132,8 @@ export const Promos: CollectionConfig = {
   ],
 
   hooks: {
+    beforeValidate: [localeConsistencyHook],
+
     afterChange: [auditHooks({ tenantOf: siteOf }).afterChange],
     afterDelete: [auditHooks({ tenantOf: siteOf }).afterDelete],
   },

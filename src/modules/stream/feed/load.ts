@@ -114,7 +114,7 @@ async function loadPinned<TItem>(args: {
   readonly request: FeedRequest
   readonly map: (doc: Record<string, unknown>) => TItem
 }) {
-  const pinnedQuery = buildPinnedQuery(args.request.siteId)
+  const pinnedQuery = buildPinnedQuery(args.request.siteId, args.request.locale)
 
   const found = await args.payload.find({
     collection: args.collection,

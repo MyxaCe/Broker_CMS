@@ -32,6 +32,7 @@ async function makeArticle(key: string, data: Record<string, unknown>): Promise<
       title: `Материал ${key}`,
       slug: `${key}-${stamp}`,
       site: siteId,
+      locale: 'en',
       status: 'published',
       publishAt: '2026-01-01T00:00:00.000Z',
       ...data,
@@ -148,6 +149,7 @@ describe('снаружи виден только опубликованный м
         title: 'Под эмбарго',
         slug: `embargo-${stamp}`,
         site: siteId,
+        locale: 'en',
         status: 'published',
         publishAt: new Date(Date.now() + 60_000).toISOString(),
       } as never,
@@ -259,6 +261,7 @@ describe('уникальность машинного имени', () => {
           title: 'Двойник',
           slug: `visible-${stamp}`,
           site: siteId,
+          locale: 'en',
           status: 'draft',
         } as never,
       }),
@@ -305,6 +308,7 @@ describe('время чтения вычисляется при сохранен
         title: 'С текстом',
         slug: `with-body-${stamp}`,
         site: siteId,
+        locale: 'en',
         status: 'draft',
         body: {
           root: {

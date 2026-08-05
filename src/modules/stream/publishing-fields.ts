@@ -1,6 +1,9 @@
+import { normalizeRelationId } from '@/platform'
+
+import { assertLocaleDeclared } from './locale-field'
 import { STREAM_STATUS_LABELS, STREAM_STATUSES } from './visibility'
 
-import type { Field } from 'payload'
+import type { CollectionBeforeValidateHook, Field } from 'payload'
 
 /**
  * Поля публикации, общие для всех сущностей потока (ТЗ 1.2).
@@ -21,6 +24,30 @@ export const siteField: Field = {
   admin: {
     description: 'Материал принадлежит одному сайту. Изоляция тенантов стоит на этом поле.',
   },
+}
+
+/**
+ * Проверка связи «язык записи объявлен у её сайта».
+ *
+ * Хук общий для всех сущностей потока: правило одно, и три его копии — это
+ * три места, где оно может разойтись.
+ */
+export const localeConsistencyHook: CollectionBeforeValidateHook = async ({
+  data,
+  originalDoc,
+  req,
+}) => {
+  if (!data) return data
+
+  const effective = { ...((originalDoc as Record<string, unknown> | undefined) ?? {}), ...data }
+
+  await assertLocaleDeclared({
+    payload: req.payload,
+    siteId: normalizeRelationId(effective.site),
+    locale: effective.locale,
+  })
+
+  return data
 }
 
 export const publishingFields: readonly Field[] = [

@@ -31,7 +31,13 @@ import type {
  * совпадает оно потому, что написано один раз.
  */
 
-export interface FeedDeliveryRequest extends DeliveryRequest, ArticleFeedFilters {}
+/**
+ * `locale` исключён из фильтров намеренно: у запроса он свой — это **ось
+ * разрешения** (ADR-0003), то есть запрошенный язык, который ещё может
+ * оказаться необъявленным. В фильтры уходит уже разрешённый и проверенный.
+ * Два поля с одним именем и разным смыслом — верный способ подставить не то.
+ */
+export interface FeedDeliveryRequest extends DeliveryRequest, Omit<ArticleFeedFilters, 'locale'> {}
 
 /** Ось релиза для потока: он не собирается релизами (ADR-0021). */
 export const STREAM_RELEASE_AXIS = 'stream'
@@ -69,8 +75,16 @@ export function feedTtlSeconds(nextTransitionAt: string | null, now: Date): numb
   return Math.min(BASE_FEED_TTL_SECONDS, Math.floor(untilMs / 1000))
 }
 
-export function filtersOf(request: FeedDeliveryRequest): ArticleFeedFilters {
+/**
+ * Фильтры для загрузчика.
+ *
+ * Язык передаётся отдельным аргументом, а не берётся из запроса: он уже
+ * разрешён (запрошенный либо умолчание сайта) и проверен на объявленность.
+ * Брать его из запроса значило бы разрешать язык дважды и по-разному.
+ */
+export function filtersOf(request: FeedDeliveryRequest, locale?: string): ArticleFeedFilters {
   return {
+    ...(locale === undefined ? {} : { locale }),
     cursor: request.cursor ?? null,
     limit: request.limit ?? null,
     category: request.category ?? null,
@@ -174,7 +188,7 @@ async function serveStreamResource<TBody>(args: {
      * лента без него делят одну запись кеша и вытесняют друг друга — дефект,
      * который проявляется только под нагрузкой.
      */
-    resource: `${args.resource}:${contentHash(filtersOf(request)).slice(0, 16)}`,
+    resource: `${args.resource}:${contentHash(filtersOf(request, locale)).slice(0, 16)}`,
     locale,
     jurisdiction: resolution.jurisdiction,
     variant: loaded.variant,
@@ -227,7 +241,10 @@ export async function handleArticleFeed(
     now,
     resource: 'articles',
     load: async (siteId, resolution) => {
-      const page = await source.loadArticles({ siteId, request: filtersOf(request) })
+      const page = await source.loadArticles({
+        siteId,
+        request: filtersOf(request, resolution.locale),
+      })
       const body = buildArticleFeedResponse({
         siteSlug: request.siteSlug,
         page,
@@ -250,7 +267,10 @@ export async function handleVideoFeed(
     now,
     resource: 'videos',
     load: async (siteId, resolution) => {
-      const page = await source.loadVideos({ siteId, request: filtersOf(request) })
+      const page = await source.loadVideos({
+        siteId,
+        request: filtersOf(request, resolution.locale),
+      })
       const body = buildVideoFeedResponse({
         siteSlug: request.siteSlug,
         page,
@@ -290,7 +310,10 @@ export async function handleSyndication(
         throw new FeedQueryError('У сайта не задан публичный адрес — ленту собрать не из чего.')
       }
 
-      const page = await source.loadArticles({ siteId, request: filtersOf(request) })
+      const page = await source.loadArticles({
+        siteId,
+        request: filtersOf(request, resolution.locale),
+      })
       const body = buildArticleFeedResponse({
         siteSlug: request.siteSlug,
         page,
@@ -337,6 +360,7 @@ export async function handlePromoBoard(
        */
       const board = await source.loadPromos({
         siteId,
+        locale: resolution.locale,
         jurisdiction: request.jurisdiction ?? resolution.jurisdiction,
       })
 

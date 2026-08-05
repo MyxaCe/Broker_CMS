@@ -1,7 +1,8 @@
 import { auditHooks } from '@/platform'
 
 import { createStreamReadAccess, createStreamWriteAccess, streamDeleteAccess } from '../access'
-import { publishingFields, siteField } from '../publishing-fields'
+import { localeField } from '../locale-field'
+import { localeConsistencyHook, publishingFields, siteField } from '../publishing-fields'
 import { siteOf } from '../shared/site-of'
 import { STREAM_STATUS_LABELS } from '../visibility'
 
@@ -57,6 +58,7 @@ export const Articles: CollectionConfig = {
       admin: { description: 'Попадает в адрес материала. После публикации менять нельзя.' },
     },
     siteField,
+    localeField,
     {
       name: 'excerpt',
       type: 'textarea',
@@ -164,6 +166,8 @@ export const Articles: CollectionConfig = {
   ],
 
   hooks: {
+    beforeValidate: [localeConsistencyHook],
+
     beforeChange: [
       ({ data }) => {
         /**

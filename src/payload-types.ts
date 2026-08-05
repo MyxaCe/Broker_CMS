@@ -377,6 +377,10 @@ export interface Article {
    */
   site: number | Tenant;
   /**
+   * Код из числа объявленных у сайта: en, de, ru. Материал на другом языке — отдельная запись, а не перевод этой.
+   */
+  locale: string;
+  /**
    * Показывается в ленте и в выдаче поисковых систем. Без него лента выглядит пустой.
    */
   excerpt?: string | null;
@@ -462,6 +466,10 @@ export interface Video {
    * Материал принадлежит одному сайту. Изоляция тенантов стоит на этом поле.
    */
   site: number | Tenant;
+  /**
+   * Код из числа объявленных у сайта: en, de, ru. Материал на другом языке — отдельная запись, а не перевод этой.
+   */
+  locale: string;
   description?: string | null;
   provider: 'youtube' | 'vimeo' | 'self-hosted';
   /**
@@ -509,6 +517,10 @@ export interface Promo {
    * Материал принадлежит одному сайту. Изоляция тенантов стоит на этом поле.
    */
   site: number | Tenant;
+  /**
+   * Код из числа объявленных у сайта: en, de, ru. Материал на другом языке — отдельная запись, а не перевод этой.
+   */
+  locale: string;
   /**
    * Короткая метка: «Новое», «−50%».
    */
@@ -998,6 +1010,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   site?: T;
+  locale?: T;
   excerpt?: T;
   body?: T;
   cover?: T;
@@ -1034,6 +1047,7 @@ export interface VideosSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   site?: T;
+  locale?: T;
   description?: T;
   provider?: T;
   externalId?: T;
@@ -1057,6 +1071,7 @@ export interface PromosSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   site?: T;
+  locale?: T;
   badge?: T;
   description?: T;
   terms?: T;

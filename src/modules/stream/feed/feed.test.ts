@@ -188,6 +188,18 @@ describe('запрос ленты', () => {
     expect(dump).not.toContain('unpublishAt')
   })
 
+  /**
+   * Язык — ось разрешения, а не пользовательский фильтр: лента обязана быть
+   * одноязычной, иначе читатель видит половину списка на чужом языке.
+   */
+  it('язык уходит в условие выборки', () => {
+    expect(JSON.stringify(buildFeedQuery({ ...base, locale: 'de' }).where)).toContain('"locale"')
+  })
+
+  it('закреплённое тоже ограничено языком', () => {
+    expect(JSON.stringify(buildPinnedQuery(10, 'de').where)).toContain('"locale"')
+  })
+
   it.each([
     ['category', 'analytics', 'category.slug'],
     ['tag', 'rates', 'tags.slug'],

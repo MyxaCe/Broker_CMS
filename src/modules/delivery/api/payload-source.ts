@@ -72,8 +72,8 @@ export function createPayloadSource(args: {
       return loadVideoFeed({ payload, request: { siteId, ...request } })
     },
 
-    async loadPromos({ siteId, jurisdiction }) {
-      return loadPromoBoard({ payload, siteId, jurisdiction })
+    async loadPromos({ siteId, locale, jurisdiction }) {
+      return loadPromoBoard({ payload, siteId, locale, jurisdiction })
     },
 
     async loadChannelRelease({ siteId, channel }) {

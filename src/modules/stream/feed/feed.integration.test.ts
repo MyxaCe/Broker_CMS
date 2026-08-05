@@ -72,6 +72,7 @@ beforeAll(async () => {
         title: `Материал ${index}`,
         slug: `feed-${index}-${stamp}`,
         site: site.id,
+        locale: 'en',
         status: 'published',
         publishAt:
           index % 2 === 0
@@ -91,6 +92,7 @@ beforeAll(async () => {
       title: 'Черновик',
       slug: `feed-draft-${stamp}`,
       site: site.id,
+      locale: 'en',
       status: 'draft',
       publishAt: SHARED_MOMENT,
     } as never,
@@ -103,6 +105,7 @@ beforeAll(async () => {
       title: 'Истёкший',
       slug: `feed-expired-${stamp}`,
       site: site.id,
+      locale: 'en',
       status: 'published',
       publishAt: '2026-06-01T00:00:00.000Z',
       unpublishAt: '2026-06-02T00:00:00.000Z',
@@ -188,6 +191,94 @@ describe('в ленту попадает только видимое', () => {
   })
 })
 
+describe('лента одноязычна', () => {
+  /**
+   * Материалы на разных языках — самостоятельные записи (решение заказчика от
+   * 2026-08-05). Смешать их в одном списке значит показать читателю половину
+   * ленты на чужом языке.
+   */
+  it('запрошенный язык отсекает записи на другом', async () => {
+    await payload.create({
+      collection: 'tenants',
+      data: {
+        name: 'Лента — двуязычный бренд',
+        slug: `feed-bi-brand-${stamp}`,
+        kind: 'brand',
+        jurisdiction: { mode: 'override', value: 'eu-mifid' },
+        availableLocales: { mode: 'extend', items: [{ code: 'en' }, { code: 'de' }] },
+        defaultLocale: { mode: 'override', value: 'en' },
+      } as never,
+      overrideAccess: true,
+    })
+
+    const bilingual = await payload.create({
+      collection: 'tenants',
+      data: {
+        name: 'Лента — двуязычный сайт',
+        slug: `feed-bi-site-${stamp}`,
+        kind: 'site',
+        parent: (
+          await payload.find({
+            collection: 'tenants',
+            where: { slug: { equals: `feed-bi-brand-${stamp}` } },
+            pagination: false,
+            overrideAccess: true,
+          })
+        ).docs[0]!.id,
+      } as never,
+      overrideAccess: true,
+    })
+
+    for (const locale of ['en', 'en', 'de']) {
+      await payload.create({
+        collection: 'articles',
+        overrideAccess: true,
+        data: {
+          title: `Материал ${locale}`,
+          slug: `feed-bi-${locale}-${Math.random().toString(36).slice(2, 8)}-${stamp}`,
+          site: bilingual.id,
+          locale,
+          status: 'published',
+          publishAt: '2026-07-01T00:00:00.000Z',
+        } as never,
+      })
+    }
+
+    const english = await loadArticleFeed({
+      payload,
+      request: { siteId: bilingual.id, locale: 'en', limit: 100 },
+    })
+    const german = await loadArticleFeed({
+      payload,
+      request: { siteId: bilingual.id, locale: 'de', limit: 100 },
+    })
+
+    expect(english.items).toHaveLength(2)
+    expect(german.items).toHaveLength(1)
+  })
+
+  /**
+   * Материал на языке, не объявленном у сайта, существовал бы в админке и
+   * никогда не попадал в выдачу: лента спрашивает язык из разрешения сайта.
+   * Редактор видел бы свою работу и не понимал, почему её нет на витрине.
+   */
+  it('материал на необъявленном языке не создаётся', async () => {
+    await expect(
+      payload.create({
+        collection: 'articles',
+        overrideAccess: true,
+        data: {
+          title: 'На французском',
+          slug: `feed-fr-${stamp}`,
+          site: siteId,
+          locale: 'fr',
+          status: 'draft',
+        } as never,
+      }),
+    ).rejects.toThrow(/fr/)
+  })
+})
+
 describe('фильтры', () => {
   it('по категории отдаётся только её материалы', async () => {
     const page = await loadArticleFeed({
@@ -236,6 +327,7 @@ describe('ближайший переход ограничивает срок ж
         title: 'Гаснет через час',
         slug: `feed-fading-${stamp}`,
         site: siteId,
+        locale: 'en',
         status: 'published',
         publishAt: '2026-08-01T00:00:00.000Z',
         unpublishAt: expiresAt,
@@ -266,6 +358,7 @@ describe('закреплённое', () => {
         title: 'Закреплённый',
         slug: `feed-pinned-${stamp}`,
         site: siteId,
+        locale: 'en',
         status: 'published',
         publishAt: '2026-01-01T00:00:00.000Z',
         pinned: true,

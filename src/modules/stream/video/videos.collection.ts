@@ -1,7 +1,8 @@
 import { auditHooks } from '@/platform'
 
 import { createStreamReadAccess, createStreamWriteAccess, streamDeleteAccess } from '../access'
-import { publishingFields, siteField } from '../publishing-fields'
+import { localeField } from '../locale-field'
+import { localeConsistencyHook, publishingFields, siteField } from '../publishing-fields'
 import { siteOf } from '../shared/site-of'
 
 import type { CollectionConfig } from 'payload'
@@ -53,6 +54,7 @@ export const Videos: CollectionConfig = {
       },
     },
     siteField,
+    localeField,
     { name: 'description', type: 'textarea', label: 'Описание' },
 
     {
@@ -134,6 +136,7 @@ export const Videos: CollectionConfig = {
      * читатель, а не редактор.
      */
     beforeValidate: [
+      localeConsistencyHook,
       ({ data }) => {
         if (!data) return data
 
