@@ -69,6 +69,11 @@ export interface Config {
   collections: {
     tenants: Tenant;
     users: User;
+    media: Media;
+    categories: Category;
+    tags: Tag;
+    authors: Author;
+    articles: Article;
     releases: Release;
     channels: Channel;
     outbox: Outbox;
@@ -83,6 +88,11 @@ export interface Config {
   collectionsSelect: {
     tenants: TenantsSelect<false> | TenantsSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
+    categories: CategoriesSelect<false> | CategoriesSelect<true>;
+    tags: TagsSelect<false> | TagsSelect<true>;
+    authors: AuthorsSelect<false> | AuthorsSelect<true>;
+    articles: ArticlesSelect<false> | ArticlesSelect<true>;
     releases: ReleasesSelect<false> | ReleasesSelect<true>;
     channels: ChannelsSelect<false> | ChannelsSelect<true>;
     outbox: OutboxSelect<false> | OutboxSelect<true>;
@@ -209,6 +219,226 @@ export interface User {
     | null;
   password?: string | null;
   collection: 'users';
+}
+/**
+ * Альтернативный текст обязателен: без него материал не пройдёт сборку релиза. Это требование доступности, а не формальность.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  /**
+   * Что изображено — словами. Читается вслух скринридером и показывается, когда картинка не загрузилась.
+   */
+  alt: string;
+  /**
+   * Файл бренда доступен всем его сайтам — так же, как категории.
+   */
+  owner: number | Tenant;
+  /**
+   * Автор или агентство. Требуется по условиям фотобанков и служит доказательством права на использование.
+   */
+  credit?: string | null;
+  /**
+   * Видимая подпись под изображением. В отличие от alt — необязательна.
+   */
+  caption?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * Раздел, в котором живёт материал. У записи она одна. Категория бренда доступна всем его сайтам.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: number;
+  title: string;
+  /**
+   * Попадает в адреса. После публикации менять нельзя — ломаются ссылки.
+   */
+  slug: string;
+  /**
+   * Бренд, регион или сайт. Запись доступна владельцу и всему его поддереву: категория бренда видна всем его сайтам.
+   */
+  owner: number | Tenant;
+  /**
+   * Используется на странице раздела и в разметке для поисковых систем.
+   */
+  description?: string | null;
+  /**
+   * Меньше — выше в списках. Одинаковые значения сортируются по названию.
+   */
+  order?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Сквозная подборка. Тегов у записи может быть много, раздела они не задают.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags".
+ */
+export interface Tag {
+  id: number;
+  title: string;
+  /**
+   * Попадает в адреса. После публикации менять нельзя — ломаются ссылки.
+   */
+  slug: string;
+  /**
+   * Бренд, регион или сайт. Запись доступна владельцу и всему его поддереву: категория бренда видна всем его сайтам.
+   */
+  owner: number | Tenant;
+  /**
+   * Используется на странице раздела и в разметке для поисковых систем.
+   */
+  description?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Карточка автора уходит в разметку страницы. Для финансовой тематики это влияет на ранжирование напрямую.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "authors".
+ */
+export interface Author {
+  id: number;
+  title: string;
+  /**
+   * Попадает в адреса. После публикации менять нельзя — ломаются ссылки.
+   */
+  slug: string;
+  /**
+   * Бренд, регион или сайт. Запись доступна владельцу и всему его поддереву: категория бренда видна всем его сайтам.
+   */
+  owner: number | Tenant;
+  /**
+   * Например: аналитик рынка облигаций. Общие слова здесь работают против нас.
+   */
+  role: string;
+  /**
+   * Опыт и квалификация: чем подтверждается право этого человека писать о рынке.
+   */
+  bio?: string | null;
+  photo?: (number | null) | Media;
+  /**
+   * Внешние подтверждения личности: LinkedIn, публикации, профиль регулятора.
+   */
+  links?:
+    | {
+        label: string;
+        href: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Оговорка о том, что материалы не являются инвестиционной рекомендацией. Требуется регулятором и подставляется в материалы автора.
+   */
+  disclaimer?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Публикуется мгновенно по наступлении даты — сборка релиза не требуется. Снять с витрины можно датой окончания или архивом; удаление оставлено только разработчику.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "articles".
+ */
+export interface Article {
+  id: number;
+  title: string;
+  /**
+   * Попадает в адрес материала. После публикации менять нельзя.
+   */
+  slug: string;
+  /**
+   * Материал принадлежит одному сайту. Изоляция тенантов стоит на этом поле.
+   */
+  site: number | Tenant;
+  /**
+   * Показывается в ленте и в выдаче поисковых систем. Без него лента выглядит пустой.
+   */
+  excerpt?: string | null;
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  cover?: (number | null) | Media;
+  /**
+   * Ровно одна: она задаёт раздел и адрес.
+   */
+  category?: (number | null) | Category;
+  tags?: (number | Tag)[] | null;
+  authors?: (number | Author)[] | null;
+  /**
+   * Откуда взят материал, если он не оригинальный.
+   */
+  source?: string | null;
+  /**
+   * Состояния «запланировано» здесь нет: это следствие пары «опубликовано + дата в будущем», а не отдельное состояние.
+   */
+  status: 'draft' | 'published' | 'archived';
+  /**
+   * Момент появления на витрине. Дата в будущем означает эмбарго: до неё материал невидим снаружи, даже будучи опубликованным.
+   */
+  publishAt?: string | null;
+  /**
+   * Пусто — висит бессрочно. Материал гаснет сам, без чьего-либо участия.
+   */
+  unpublishAt?: string | null;
+  /**
+   * Вычисляется из текста при сохранении. Правится только через правку текста.
+   */
+  readingMinutes?: number | null;
+  /**
+   * Символы MDS. Терминал показывает материал в карточке инструмента. Символ, которого нет в снапшоте MDS, наружу не отдаётся.
+   */
+  relatedInstruments?:
+    | {
+        symbol: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Пусто — материал доступен во всех юрисдикциях сайта. Механизм разграничения появится на M5; поле заполняется уже сейчас.
+   */
+  jurisdictions?:
+    | {
+        code: string;
+        id?: string | null;
+      }[]
+    | null;
+  featured?: boolean | null;
+  /**
+   * Держится вверху ленты независимо от даты.
+   */
+  pinned?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * Собранный релиз неизменяем: правки после сборки невозможны ни через интерфейс, ни напрямую в базе. Откат выполняется переключением канала.
@@ -428,6 +658,26 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'media';
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'categories';
+        value: number | Category;
+      } | null)
+    | ({
+        relationTo: 'tags';
+        value: number | Tag;
+      } | null)
+    | ({
+        relationTo: 'authors';
+        value: number | Author;
+      } | null)
+    | ({
+        relationTo: 'articles';
+        value: number | Article;
+      } | null)
+    | ({
         relationTo: 'releases';
         value: number | Release;
       } | null)
@@ -549,6 +799,110 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media_select".
+ */
+export interface MediaSelect<T extends boolean = true> {
+  alt?: T;
+  owner?: T;
+  credit?: T;
+  caption?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories_select".
+ */
+export interface CategoriesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  owner?: T;
+  description?: T;
+  order?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags_select".
+ */
+export interface TagsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  owner?: T;
+  description?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "authors_select".
+ */
+export interface AuthorsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  owner?: T;
+  role?: T;
+  bio?: T;
+  photo?: T;
+  links?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        id?: T;
+      };
+  disclaimer?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "articles_select".
+ */
+export interface ArticlesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  site?: T;
+  excerpt?: T;
+  body?: T;
+  cover?: T;
+  category?: T;
+  tags?: T;
+  authors?: T;
+  source?: T;
+  status?: T;
+  publishAt?: T;
+  unpublishAt?: T;
+  readingMinutes?: T;
+  relatedInstruments?:
+    | T
+    | {
+        symbol?: T;
+        id?: T;
+      };
+  jurisdictions?:
+    | T
+    | {
+        code?: T;
+        id?: T;
+      };
+  featured?: T;
+  pinned?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

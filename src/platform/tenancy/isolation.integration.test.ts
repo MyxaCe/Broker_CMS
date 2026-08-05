@@ -48,7 +48,10 @@ const users: Record<string, TypedUser> = {}
  * drizzle. Поштучное удаление медленнее, но на объёме фикстуры это доли
  * секунды, а поведение предсказуемо.
  */
-async function wipeCollection(collection: 'users' | 'tenants'): Promise<void> {
+type WipeableCollection =
+  'users' | 'tenants' | 'articles' | 'media' | 'categories' | 'tags' | 'authors'
+
+async function wipeCollection(collection: WipeableCollection): Promise<void> {
   const existing = await payload.find({
     collection,
     pagination: false,
@@ -61,8 +64,20 @@ async function wipeCollection(collection: 'users' | 'tenants'): Promise<void> {
   }
 }
 
+/**
+ * Порядок обязателен и идёт от зависимого к тому, от чего зависят.
+ *
+ * Тенант с материалами не удаляется — и это правильное поведение, а не помеха
+ * тесту: обязательная связь не обнуляется, поэтому удаление сайта с новостями
+ * невозможно by design. Здесь фикстура сносится целиком, значит сносить надо
+ * в правильном порядке.
+ */
 async function wipe(): Promise<void> {
-  // Порядок важен: пользователи ссылаются на тенантов.
+  await wipeCollection('articles')
+  await wipeCollection('media')
+  await wipeCollection('categories')
+  await wipeCollection('tags')
+  await wipeCollection('authors')
   await wipeCollection('users')
   await wipeCollection('tenants')
 }

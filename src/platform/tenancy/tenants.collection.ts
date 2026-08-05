@@ -1,6 +1,7 @@
 import { auditHooks } from '../audit/record'
 import { normalizeRelationId } from '../shared/relation'
 
+import { countDependents, describeDependents } from './dependents'
 import { resolveTenantSettings, validateResolvedSettings } from './layers'
 import { createTenantAccess, crossTenantOnly } from './payload-access'
 import { loadTenantLayers } from './resolve-tenant'
@@ -165,6 +166,21 @@ export const Tenants: CollectionConfig = {
     /** Изменения тенанта относятся к нему самому (ТЗ 5.2). */
     afterChange: [auditHooks({ tenantOf: tenantSelf }).afterChange],
     afterDelete: [auditHooks({ tenantOf: tenantSelf }).afterDelete],
+
+    /**
+     * Удаление тенанта, на который что-то ссылается, и так невозможно —
+     * обязательная связь не обнуляется. Но без этой проверки человек видит
+     * сообщение про нарушенное ограничение вместо причины.
+     */
+    beforeDelete: [
+      async ({ id, req }) => {
+        const dependents = await countDependents({ payload: req.payload, tenantId: id, req })
+
+        if (dependents.length > 0) {
+          throw new Error(describeDependents(dependents))
+        }
+      },
+    ],
 
     beforeValidate: [
       async ({ data, originalDoc, req }) => {

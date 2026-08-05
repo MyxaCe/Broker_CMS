@@ -5,6 +5,8 @@ import * as migration_20260803_133059_audit_logout_action from './20260803_13305
 import * as migration_20260803_140000_release_number_unique from './20260803_140000_release_number_unique'
 import * as migration_20260803_143926_add_outbox from './20260803_143926_add_outbox'
 import * as migration_20260803_150837_add_delivery_keys from './20260803_150837_add_delivery_keys'
+import * as migration_20260805_113731_add_stream_and_media from './20260805_113731_add_stream_and_media'
+import * as migration_20260805_120000_stream_slug_unique from './20260805_120000_stream_slug_unique'
 
 export const migrations = [
   {
@@ -41,5 +43,15 @@ export const migrations = [
     up: migration_20260803_150837_add_delivery_keys.up,
     down: migration_20260803_150837_add_delivery_keys.down,
     name: '20260803_150837_add_delivery_keys',
+  },
+  {
+    up: migration_20260805_113731_add_stream_and_media.up,
+    down: migration_20260805_113731_add_stream_and_media.down,
+    name: '20260805_113731_add_stream_and_media',
+  },
+  {
+    up: migration_20260805_120000_stream_slug_unique.up,
+    down: migration_20260805_120000_stream_slug_unique.down,
+    name: '20260805_120000_stream_slug_unique',
   },
 ]
