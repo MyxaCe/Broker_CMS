@@ -4,6 +4,7 @@ import addFormats from 'ajv-formats'
 import articleFeedSchema from './schemas/article-feed.v1.json'
 import errorSchema from './schemas/error.v1.json'
 import promoBoardSchema from './schemas/promo-board.v1.json'
+import searchSchema from './schemas/search.v1.json'
 import siteConfigSchema from './schemas/site-config.v1.json'
 import videoFeedSchema from './schemas/video-feed.v1.json'
 
@@ -27,6 +28,7 @@ export const SCHEMA_IDS = {
   articleFeed: 'article-feed.v1',
   videoFeed: 'video-feed.v1',
   promoBoard: 'promo-board.v1',
+  search: 'search.v1',
   error: 'error.v1',
 } as const
 
@@ -48,6 +50,7 @@ const validators: Record<SchemaId, ValidateFunction> = {
   [SCHEMA_IDS.articleFeed]: ajv.compile(articleFeedSchema),
   [SCHEMA_IDS.videoFeed]: ajv.compile(videoFeedSchema),
   [SCHEMA_IDS.promoBoard]: ajv.compile(promoBoardSchema),
+  [SCHEMA_IDS.search]: ajv.compile(searchSchema),
   [SCHEMA_IDS.error]: ajv.compile(errorSchema),
 }
 

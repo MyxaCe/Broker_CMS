@@ -1,10 +1,11 @@
-import { FeedQueryError } from '@/modules/stream'
+import { FeedQueryError, normalizeQuery, SearchError } from '@/modules/stream'
 
 import { buildCacheKey, buildETag, contentHash, matchesETag } from '../cache-key'
 
 import {
   buildArticleFeedResponse,
   buildPromoBoardResponse,
+  buildSearchResponse,
   buildVideoFeedResponse,
 } from './article-feed'
 import { errorResponse, openDeliveryRequest } from './handler'
@@ -337,6 +338,61 @@ export async function handleSyndication(
           }),
           contentType: SYNDICATION_CONTENT_TYPE[format],
         }),
+      }
+    },
+  })
+}
+
+/**
+ * Полнотекстовый поиск (ТЗ 1.2).
+ *
+ * Запрос входит в ключ кеша через тот же отпечаток фильтров — он часть
+ * фильтров и есть.
+ */
+export async function handleSearch(
+  request: FeedDeliveryRequest,
+  source: DeliverySource,
+  now: Date = new Date(),
+): Promise<DeliveryResponse> {
+  return serveStreamResource({
+    request,
+    source,
+    now,
+    resource: 'search',
+    load: async (siteId, resolution) => {
+      let result
+
+      try {
+        result = await source.search({
+          siteId,
+          locale: resolution.locale,
+          query: request.query ?? '',
+          limit: request.limit ?? null,
+        })
+      } catch (error) {
+        /**
+         * Ошибка разбора запроса — это `400`, а не `500`: виноват ввод, а не
+         * сервис. Сообщение отдаётся как есть: оно про сам запрос и ничего о
+         * нашем устройстве не раскрывает.
+         */
+        if (error instanceof SearchError) {
+          throw new FeedQueryError(error.message)
+        }
+
+        throw error
+      }
+
+      const body = buildSearchResponse({
+        siteSlug: request.siteSlug,
+        query: normalizeQuery(request.query),
+        result,
+        resolution: { ...resolution, variant: request.variant },
+      })
+
+      return {
+        body,
+        nextTransitionAt: result.nextTransitionAt,
+        variant: body.resolution.variant,
       }
     },
   })

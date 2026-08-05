@@ -1,9 +1,10 @@
 import { normalizeRelationId } from '@/platform'
 
 import { assertLocaleDeclared } from './locale-field'
+import { buildSearchText, truncateSearchText } from './search/text-index'
 import { STREAM_STATUS_LABELS, STREAM_STATUSES } from './visibility'
 
-import type { CollectionBeforeValidateHook, Field } from 'payload'
+import type { CollectionBeforeChangeHook, CollectionBeforeValidateHook, Field } from 'payload'
 
 /**
  * Поля публикации, общие для всех сущностей потока (ТЗ 1.2).
@@ -46,6 +47,32 @@ export const localeConsistencyHook: CollectionBeforeValidateHook = async ({
     siteId: normalizeRelationId(effective.site),
     locale: effective.locale,
   })
+
+  return data
+}
+
+/**
+ * Текст для полнотекстового поиска (ТЗ 1.2).
+ *
+ * Хранится отдельным полем, а не собирается на лету: тело материала — это
+ * структура редактора, и достать из неё слова в SQL невозможно. Поле скрыто и
+ * только для чтения — редактировать его бессмысленно, оно пересобирается при
+ * каждом сохранении.
+ */
+export const searchTextField: Field = {
+  name: 'searchText',
+  type: 'textarea',
+  label: 'Текст для поиска',
+  admin: {
+    hidden: true,
+    readOnly: true,
+    description: 'Собирается автоматически из заголовка, анонса и текста.',
+  },
+}
+
+/** Пересобирает текст поиска при каждом сохранении. */
+export const searchTextHook: CollectionBeforeChangeHook = ({ data }) => {
+  data.searchText = truncateSearchText(buildSearchText(data))
 
   return data
 }

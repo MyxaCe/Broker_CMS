@@ -2,7 +2,13 @@ import { auditHooks } from '@/platform'
 
 import { createStreamReadAccess, createStreamWriteAccess, streamDeleteAccess } from '../access'
 import { localeField } from '../locale-field'
-import { localeConsistencyHook, publishingFields, siteField } from '../publishing-fields'
+import {
+  localeConsistencyHook,
+  publishingFields,
+  searchTextField,
+  searchTextHook,
+  siteField,
+} from '../publishing-fields'
 import { siteOf } from '../shared/site-of'
 import { STREAM_STATUS_LABELS } from '../visibility'
 
@@ -113,6 +119,7 @@ export const Articles: CollectionConfig = {
     },
 
     ...publishingFields,
+    searchTextField,
 
     {
       name: 'readingMinutes',
@@ -179,6 +186,7 @@ export const Articles: CollectionConfig = {
 
         return data
       },
+      searchTextHook,
     ],
 
     afterChange: [auditHooks({ tenantOf: siteOf }).afterChange],

@@ -96,6 +96,7 @@ export type {
 export {
   buildArticleFeedResponse,
   buildPromoBoardResponse,
+  buildSearchResponse,
   buildVideoFeedResponse,
 } from './api/article-feed'
 export type { FeedResolution } from './api/article-feed'
@@ -105,6 +106,7 @@ export {
   filtersOf,
   handleArticleFeed,
   handlePromoBoard,
+  handleSearch,
   handleSyndication,
   handleVideoFeed,
   STREAM_RELEASE_AXIS,
@@ -125,6 +127,7 @@ export {
   readFeedRequest,
   respondArticleFeed,
   respondPromoBoard,
+  respondSearch,
   respondSiteConfig,
   respondSyndication,
   respondVideoFeed,

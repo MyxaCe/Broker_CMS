@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cms.broker.platform/contracts/v1/search.json",
+  "title": "Результаты поиска, версия 1",
+  "description": "Материалы и видео, найденные по запросу в пределах сайта и языка. Порядок общий по релевантности: разделение по типу — задача интерфейса, а выдача отдаёт самое подходящее первым.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "site", "resolution", "query", "hits", "excluded"],
+  "properties": {
+    "contract": { "const": "v1" },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug"],
+      "properties": { "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" } }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locale", "jurisdiction", "variant"],
+      "properties": {
+        "locale": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+        "jurisdiction": { "type": "string", "minLength": 1 },
+        "variant": { "type": "string", "minLength": 1 }
+      }
+    },
+    "query": {
+      "description": "Запрос в том виде, в котором он был разобран. Возвращается, чтобы потребитель видел, что именно искалось после нормализации.",
+      "type": "string",
+      "minLength": 1
+    },
+    "hits": { "type": "array", "items": { "$ref": "#/$defs/hit" } },
+    "excluded": { "type": "integer", "minimum": 0 }
+  },
+  "$defs": {
+    "hit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "slug", "title", "publishedAt"],
+      "properties": {
+        "kind": { "enum": ["article", "video"] },
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "title": { "type": "string", "minLength": 1 },
+        "excerpt": { "type": ["string", "null"] },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "category": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["slug", "title"],
+          "properties": {
+            "slug": { "type": "string", "minLength": 1 },
+            "title": { "type": "string", "minLength": 1 }
+          }
+        },
+        "cover": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["url", "alt"],
+          "properties": {
+            "url": { "type": "string", "minLength": 1 },
+            "alt": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  }
+}

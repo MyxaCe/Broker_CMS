@@ -28,7 +28,34 @@ export {
 } from './visibility'
 export type { Publishable, StreamStatus, VisibilityState } from './visibility'
 
-export { publishingFields, siteField } from './publishing-fields'
+export {
+  localeConsistencyHook,
+  publishingFields,
+  searchTextField,
+  searchTextHook,
+  siteField,
+} from './publishing-fields'
+export { assertLocaleDeclared, localeField } from './locale-field'
+
+export {
+  buildSearchText,
+  FALLBACK_SEARCH_CONFIG,
+  MAX_SEARCH_TEXT_LENGTH,
+  searchConfigFor,
+  TEXT_SEARCH_CONFIG,
+  truncateSearchText,
+} from './search/text-index'
+export {
+  DEFAULT_SEARCH_LIMIT,
+  MAX_QUERY_LENGTH,
+  MAX_SEARCH_LIMIT,
+  MIN_QUERY_LENGTH,
+  normalizeQuery,
+  normalizeSearchLimit,
+  searchStream,
+  SearchError,
+} from './search/search'
+export type { SearchHit, SearchKind, SearchResult } from './search/search'
 
 export { countWords, estimateReadingMinutes, extractText } from './articles/reading-time'
 

@@ -46,6 +46,7 @@ export function stubDeliverySource(overrides: Partial<DeliverySource> = {}): Del
     loadArticles: async () => emptyFeedPage(),
     loadVideos: async () => emptyFeedPage(),
     loadPromos: async () => ({ items: [], excluded: [], nextTransitionAt: null }),
+    search: async () => ({ hits: [], excluded: [], nextTransitionAt: null }),
     ...overrides,
   }
 }

@@ -28,6 +28,8 @@ export type {
   FeedItemReference,
   PromoBoardResponse,
   PromoItemResponse,
+  SearchHitResponse,
+  SearchResponse,
   SiteConfigResponse,
   VideoFeedItemResponse,
   VideoFeedResponse,

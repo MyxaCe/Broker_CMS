@@ -2,12 +2,18 @@ import { CONTRACT_VERSION, SCHEMA_IDS, validateOutgoing } from '@/contracts'
 
 import { DEFAULT_VARIANT } from '../cache-key'
 
-import type { ArticleFeedResponse, PromoBoardResponse, VideoFeedResponse } from '@/contracts'
+import type {
+  ArticleFeedResponse,
+  PromoBoardResponse,
+  SearchResponse,
+  VideoFeedResponse,
+} from '@/contracts'
 import type {
   ArticleFeedItem,
   FeedPage,
   PromoBoard,
   PromoItem,
+  SearchResult,
   VideoFeedItem,
 } from '@/modules/stream'
 
@@ -118,6 +124,39 @@ export function buildPromoBoardResponse(args: {
   }
 
   return validateOutgoing<PromoBoardResponse>(SCHEMA_IDS.promoBoard, payload)
+}
+
+/**
+ * Сборка ответа поиска.
+ *
+ * Элемент выдачи намеренно беднее элемента ленты: результаты поиска
+ * показывают списком, и теги с авторами там не нужны. Отдавать больше «на
+ * всякий случай» — это лишний трафик на каждом нажатии клавиши.
+ */
+export function buildSearchResponse(args: {
+  readonly siteSlug: string
+  readonly query: string
+  readonly result: SearchResult
+  readonly resolution: FeedResolution
+}): SearchResponse {
+  const payload = {
+    contract: CONTRACT_VERSION,
+    site: { slug: args.siteSlug },
+    resolution: resolutionOf(args.resolution),
+    query: args.query,
+    hits: args.result.hits.map((hit) => ({
+      kind: hit.kind,
+      slug: hit.item.slug,
+      title: hit.item.title,
+      excerpt: 'excerpt' in hit.item ? hit.item.excerpt : hit.item.description,
+      publishedAt: hit.item.publishedAt,
+      category: 'category' in hit.item ? hit.item.category : null,
+      cover: 'cover' in hit.item ? hit.item.cover : hit.item.poster,
+    })),
+    excluded: args.result.excluded.length,
+  }
+
+  return validateOutgoing<SearchResponse>(SCHEMA_IDS.search, payload)
 }
 
 export function buildArticleFeedResponse(args: {

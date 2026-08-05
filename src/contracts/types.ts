@@ -129,6 +129,29 @@ export interface PromoBoardResponse {
   readonly excluded: number
 }
 
+export interface SearchHitResponse {
+  readonly kind: 'article' | 'video'
+  readonly slug: string
+  readonly title: string
+  readonly excerpt: string | null
+  readonly publishedAt: string
+  readonly category: FeedItemReference | null
+  readonly cover: { readonly url: string; readonly alt: string } | null
+}
+
+export interface SearchResponse {
+  readonly contract: typeof CONTRACT_VERSION
+  readonly site: { readonly slug: string }
+  readonly resolution: {
+    readonly locale: string
+    readonly jurisdiction: string
+    readonly variant: string
+  }
+  readonly query: string
+  readonly hits: readonly SearchHitResponse[]
+  readonly excluded: number
+}
+
 /**
  * Коды ошибок. Причины отказа авторизации схлопнуты в один код намеренно:
  * снаружи «ключа нет» и «прав не хватает» обязаны быть неразличимы.

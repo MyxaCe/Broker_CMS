@@ -423,6 +423,10 @@ export interface Article {
    */
   unpublishAt?: string | null;
   /**
+   * Собирается автоматически из заголовка, анонса и текста.
+   */
+  searchText?: string | null;
+  /**
    * Вычисляется из текста при сохранении. Правится только через правку текста.
    */
   readingMinutes?: number | null;
@@ -500,6 +504,10 @@ export interface Video {
    * Пусто — висит бессрочно. Материал гаснет сам, без чьего-либо участия.
    */
   unpublishAt?: string | null;
+  /**
+   * Собирается автоматически из заголовка, анонса и текста.
+   */
+  searchText?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1021,6 +1029,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   status?: T;
   publishAt?: T;
   unpublishAt?: T;
+  searchText?: T;
   readingMinutes?: T;
   relatedInstruments?:
     | T
@@ -1060,6 +1069,7 @@ export interface VideosSelect<T extends boolean = true> {
   status?: T;
   publishAt?: T;
   unpublishAt?: T;
+  searchText?: T;
   updatedAt?: T;
   createdAt?: T;
 }

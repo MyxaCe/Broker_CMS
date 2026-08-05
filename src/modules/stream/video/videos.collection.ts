@@ -2,7 +2,13 @@ import { auditHooks } from '@/platform'
 
 import { createStreamReadAccess, createStreamWriteAccess, streamDeleteAccess } from '../access'
 import { localeField } from '../locale-field'
-import { localeConsistencyHook, publishingFields, siteField } from '../publishing-fields'
+import {
+  localeConsistencyHook,
+  publishingFields,
+  searchTextField,
+  searchTextHook,
+  siteField,
+} from '../publishing-fields'
 import { siteOf } from '../shared/site-of'
 
 import type { CollectionConfig } from 'payload'
@@ -127,9 +133,12 @@ export const Videos: CollectionConfig = {
     },
 
     ...publishingFields,
+    searchTextField,
   ],
 
   hooks: {
+    beforeChange: [searchTextHook],
+
     /**
      * Источник и идентификатор обязаны быть согласованы: ролик YouTube без
      * идентификатора — это пустой проигрыватель на витрине, и увидит его

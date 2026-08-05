@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import {
   handleArticleFeed,
   handlePromoBoard,
+  handleSearch,
   handleSyndication,
   handleVideoFeed,
 } from './feed-handler'
@@ -82,7 +83,18 @@ export function readFeedRequest(request: Request, siteSlug: string): FeedDeliver
     until: parameter('until'),
     /** Отсутствие параметра и `featured=false` — разное: второе не сужает выборку. */
     featured: parameter('featured') === 'true' ? true : null,
+    query: parameter('q'),
   }
+}
+
+export async function respondSearch(
+  request: Request,
+  siteSlug: string,
+  source: DeliverySource,
+): Promise<Response> {
+  const parsed = readFeedRequest(request, siteSlug)
+
+  return finish(parsed.requestId, await handleSearch(parsed, source))
 }
 
 export async function respondArticleFeed(
