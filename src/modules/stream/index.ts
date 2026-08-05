@@ -47,7 +47,11 @@ export {
 export type { FeedFilters, FeedQuery, FeedRequest } from './feed/query'
 export { toArticleFeedItem } from './feed/article-item'
 export type { ArticleFeedItem } from './feed/article-item'
-export { loadArticleFeed } from './feed/load'
+export { toVideoFeedItem } from './feed/video-item'
+export type { VideoFeedItem } from './feed/video-item'
+export { loadPromoBoard, toPromoItem } from './feed/promo-board'
+export type { PromoBoard, PromoItem } from './feed/promo-board'
+export { loadArticleFeed, loadStreamFeed, loadVideoFeed } from './feed/load'
 export type { FeedPage } from './feed/load'
 
 export {

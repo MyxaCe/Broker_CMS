@@ -2,7 +2,11 @@ import { FeedQueryError } from '@/modules/stream'
 
 import { buildCacheKey, buildETag, contentHash, matchesETag } from '../cache-key'
 
-import { buildArticleFeedResponse } from './article-feed'
+import {
+  buildArticleFeedResponse,
+  buildPromoBoardResponse,
+  buildVideoFeedResponse,
+} from './article-feed'
 import { errorResponse, openDeliveryRequest } from './handler'
 
 import type {
@@ -11,14 +15,17 @@ import type {
   DeliveryResponse,
   DeliverySource,
 } from './handler'
-import type { ArticleFeedResponse } from '@/contracts'
 
 /**
- * Выдача ленты материалов (ТЗ 1.2, ADR-0021).
+ * Выдача ресурсов потока (ТЗ 1.2, ADR-0021).
  *
  * Отличие от конфигурации сайта одно, но существенное: ответ **меняется сам
- * собой** по времени, поэтому срок жизни кеша ограничен ближайшим переходом
- * видимости.
+ * собой** по времени, поэтому срок жизни кеша ограничен ближайшим переходом.
+ *
+ * Три ресурса — материалы, видео, промо — обслуживаются одним ходом. Разное у
+ * них только имя ресурса, загрузчик и сборщик ответа; всё остальное (пределы,
+ * авторизация, разрешение локали, `ETag`, срок жизни) обязано совпадать, и
+ * совпадает оно потому, что написано один раз.
  */
 
 export interface FeedDeliveryRequest extends DeliveryRequest, ArticleFeedFilters {}
@@ -59,20 +66,50 @@ export function feedTtlSeconds(nextTransitionAt: string | null, now: Date): numb
   return Math.min(BASE_FEED_TTL_SECONDS, Math.floor(untilMs / 1000))
 }
 
-export async function handleArticleFeed(
-  request: FeedDeliveryRequest,
-  source: DeliverySource,
-  now: Date = new Date(),
-): Promise<DeliveryResponse> {
+export function filtersOf(request: FeedDeliveryRequest): ArticleFeedFilters {
+  return {
+    cursor: request.cursor ?? null,
+    limit: request.limit ?? null,
+    category: request.category ?? null,
+    tag: request.tag ?? null,
+    author: request.author ?? null,
+    instrument: request.instrument ?? null,
+    jurisdiction: request.jurisdiction ?? null,
+    since: request.since ?? null,
+    until: request.until ?? null,
+    featured: request.featured ?? null,
+  }
+}
+
+/**
+ * Общий ход выдачи ресурса потока.
+ *
+ * `loaded` возвращает и тело ответа, и момент ближайшего перехода: только
+ * загрузчик знает, из чего этот момент складывается — у видео, например, к
+ * переходам видимости добавляются переходы эфира.
+ */
+async function serveStreamResource<TBody>(args: {
+  readonly request: FeedDeliveryRequest
+  readonly source: DeliverySource
+  readonly now: Date
+  readonly resource: string
+  readonly load: (
+    siteId: string,
+    resolution: { locale: string; jurisdiction: string },
+  ) => Promise<{
+    body: TBody
+    nextTransitionAt: string | null
+    variant: string
+  }>
+}): Promise<DeliveryResponse> {
+  const { request, source, now } = args
   const opened = await openDeliveryRequest(request, source)
 
   if ('denied' in opened) {
     return opened.denied
   }
 
-  const { siteId } = opened
-
-  const resolution = await source.loadSiteResolution(siteId)
+  const resolution = await source.loadSiteResolution(opened.siteId)
 
   if (
     resolution === null ||
@@ -97,10 +134,10 @@ export async function handleArticleFeed(
     )
   }
 
-  let page
+  let loaded
 
   try {
-    page = await source.loadArticles({ siteId, request: filtersOf(request) })
+    loaded = await args.load(opened.siteId, { locale, jurisdiction: resolution.jurisdiction })
   } catch (error) {
     if (error instanceof FeedQueryError) {
       return errorResponse(400, 'bad-request', error.message, request.requestId)
@@ -109,73 +146,28 @@ export async function handleArticleFeed(
     throw error
   }
 
-  const body = buildArticleFeedResponse({
-    siteSlug: request.siteSlug,
-    page,
-    resolution: {
-      locale,
-      jurisdiction: resolution.jurisdiction,
-      variant: request.variant,
-    },
-  })
-
-  return respond({ request, body, page, locale, jurisdiction: resolution.jurisdiction, now })
-}
-
-function filtersOf(request: FeedDeliveryRequest): ArticleFeedFilters {
-  return {
-    cursor: request.cursor ?? null,
-    limit: request.limit ?? null,
-    category: request.category ?? null,
-    tag: request.tag ?? null,
-    author: request.author ?? null,
-    instrument: request.instrument ?? null,
-    jurisdiction: request.jurisdiction ?? null,
-    since: request.since ?? null,
-    until: request.until ?? null,
-    featured: request.featured ?? null,
-  }
-}
-
-/**
- * Фильтры входят в ключ кеша через отпечаток.
- *
- * Иначе лента с фильтром по категории и лента без него делят одну запись кеша
- * и вытесняют друг друга — дефект, который проявляется только под нагрузкой и
- * не воспроизводится в отладке.
- *
- * Отпечатком, а не перечислением: ключ должен оставаться ограниченной длины
- * при любом наборе фильтров, а сравнивать его по частям нам незачем.
- */
-function resourceKey(request: FeedDeliveryRequest): string {
-  return `articles:${contentHash(filtersOf(request)).slice(0, 16)}`
-}
-
-function respond(args: {
-  request: FeedDeliveryRequest
-  body: ArticleFeedResponse
-  page: { nextTransitionAt: string | null }
-  locale: string
-  jurisdiction: string
-  now: Date
-}): DeliveryResponse {
   const axes = {
-    site: args.request.siteSlug,
+    site: request.siteSlug,
     /** Поток не собирается релизами, поэтому ось релиза константна. */
     releaseId: STREAM_RELEASE_AXIS,
-    resource: resourceKey(args.request),
-    locale: args.locale,
-    jurisdiction: args.jurisdiction,
-    variant: args.body.resolution.variant,
+    /**
+     * Фильтры входят в ключ отпечатком. Иначе лента с фильтром по категории и
+     * лента без него делят одну запись кеша и вытесняют друг друга — дефект,
+     * который проявляется только под нагрузкой.
+     */
+    resource: `${args.resource}:${contentHash(filtersOf(request)).slice(0, 16)}`,
+    locale,
+    jurisdiction: resolution.jurisdiction,
+    variant: loaded.variant,
   }
 
-  const etag = buildETag(axes, args.body)
-  const ttl = feedTtlSeconds(args.page.nextTransitionAt, args.now)
+  const etag = buildETag(axes, loaded.body)
+  const ttl = feedTtlSeconds(loaded.nextTransitionAt, now)
 
   const headers: Record<string, string> = {
     ETag: etag,
     /**
-     * `max-age`, а не `no-cache`: в отличие от конфигурации сайта, лента
+     * `max-age`, а не `no-cache`: в отличие от конфигурации сайта, поток
      * читается часто и меняется предсказуемо. Значение ограничено сверху
      * ближайшим переходом, поэтому кеш физически не может пережить момент,
      * когда материал должен погаснуть.
@@ -184,9 +176,89 @@ function respond(args: {
     Vary: 'Authorization, Accept-Encoding',
   }
 
-  if (matchesETag(args.request.ifNoneMatch, etag)) {
-    return { status: 304, headers, body: null, cacheKey: buildCacheKey(axes) }
+  const cacheKey = buildCacheKey(axes)
+
+  if (matchesETag(request.ifNoneMatch, etag)) {
+    return { status: 304, headers, body: null, cacheKey }
   }
 
-  return { status: 200, headers, body: args.body, cacheKey: buildCacheKey(axes) }
+  return { status: 200, headers, body: loaded.body as never, cacheKey }
+}
+
+export async function handleArticleFeed(
+  request: FeedDeliveryRequest,
+  source: DeliverySource,
+  now: Date = new Date(),
+): Promise<DeliveryResponse> {
+  return serveStreamResource({
+    request,
+    source,
+    now,
+    resource: 'articles',
+    load: async (siteId, resolution) => {
+      const page = await source.loadArticles({ siteId, request: filtersOf(request) })
+      const body = buildArticleFeedResponse({
+        siteSlug: request.siteSlug,
+        page,
+        resolution: { ...resolution, variant: request.variant },
+      })
+
+      return { body, nextTransitionAt: page.nextTransitionAt, variant: body.resolution.variant }
+    },
+  })
+}
+
+export async function handleVideoFeed(
+  request: FeedDeliveryRequest,
+  source: DeliverySource,
+  now: Date = new Date(),
+): Promise<DeliveryResponse> {
+  return serveStreamResource({
+    request,
+    source,
+    now,
+    resource: 'videos',
+    load: async (siteId, resolution) => {
+      const page = await source.loadVideos({ siteId, request: filtersOf(request) })
+      const body = buildVideoFeedResponse({
+        siteSlug: request.siteSlug,
+        page,
+        resolution: { ...resolution, variant: request.variant },
+      })
+
+      return { body, nextTransitionAt: page.nextTransitionAt, variant: body.resolution.variant }
+    },
+  })
+}
+
+export async function handlePromoBoard(
+  request: FeedDeliveryRequest,
+  source: DeliverySource,
+  now: Date = new Date(),
+): Promise<DeliveryResponse> {
+  return serveStreamResource({
+    request,
+    source,
+    now,
+    resource: 'promos',
+    load: async (siteId, resolution) => {
+      /**
+       * Юрисдикция промо берётся из разрешения сайта, а не из параметра
+       * запроса: показывать предложение, недопустимое в юрисдикции сайта,
+       * нельзя по просьбе потребителя.
+       */
+      const board = await source.loadPromos({
+        siteId,
+        jurisdiction: request.jurisdiction ?? resolution.jurisdiction,
+      })
+
+      const body = buildPromoBoardResponse({
+        siteSlug: request.siteSlug,
+        board,
+        resolution: { ...resolution, variant: request.variant },
+      })
+
+      return { body, nextTransitionAt: board.nextTransitionAt, variant: body.resolution.variant }
+    },
+  })
 }

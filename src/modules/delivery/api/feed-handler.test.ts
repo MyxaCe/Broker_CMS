@@ -9,17 +9,13 @@ import {
   STREAM_RELEASE_AXIS,
 } from './feed-handler'
 
+import { stubDeliverySource } from './source.fixture'
+
 import type { FeedDeliveryRequest } from './feed-handler'
 import type { DeliverySource } from './handler'
-import type { RateLimiter } from './rate-limit'
 import type { ArticleFeedItem, FeedPage } from '@/modules/stream'
 
 const NOW = new Date('2026-08-05T12:00:00.000Z')
-
-const permissive: RateLimiter = {
-  consume: async () => ({ allowed: true, remaining: 100, retryAfterSec: 1 }),
-  peek: async () => ({ allowed: true, remaining: 100, retryAfterSec: 1 }),
-}
 
 function item(overrides: Partial<ArticleFeedItem> = {}): ArticleFeedItem {
   return {
@@ -39,7 +35,7 @@ function item(overrides: Partial<ArticleFeedItem> = {}): ArticleFeedItem {
   }
 }
 
-function page(overrides: Partial<FeedPage> = {}): FeedPage {
+function page(overrides: Partial<FeedPage<ArticleFeedItem>> = {}): FeedPage<ArticleFeedItem> {
   return {
     items: [item()],
     pinned: [],
@@ -51,22 +47,15 @@ function page(overrides: Partial<FeedPage> = {}): FeedPage {
 }
 
 function source(overrides: Partial<DeliverySource> = {}): DeliverySource {
-  return {
-    rateLimiter: permissive,
+  return stubDeliverySource({
     resolveSiteId: async (slug) => (slug === 'apex-de' ? '10' : null),
     authorize: async ({ siteId }) =>
       siteId === '10'
         ? { kind: 'allow', keyId: 'abc', siteIds: ['10'] }
         : { kind: 'deny', reason: 'site-not-allowed' },
-    loadChannelRelease: async () => null,
-    loadSiteResolution: async () => ({
-      defaultLocale: 'de',
-      availableLocales: ['de', 'en'],
-      jurisdiction: 'eu-mifid',
-    }),
     loadArticles: async () => page(),
     ...overrides,
-  }
+  })
 }
 
 function request(overrides: Partial<FeedDeliveryRequest> = {}): FeedDeliveryRequest {

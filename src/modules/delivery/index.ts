@@ -93,12 +93,19 @@ export type {
   ResolvedRelease,
   SiteResolution,
 } from './api/handler'
-export { buildArticleFeedResponse } from './api/article-feed'
+export {
+  buildArticleFeedResponse,
+  buildPromoBoardResponse,
+  buildVideoFeedResponse,
+} from './api/article-feed'
 export type { FeedResolution } from './api/article-feed'
 export {
   BASE_FEED_TTL_SECONDS,
   feedTtlSeconds,
+  filtersOf,
   handleArticleFeed,
+  handlePromoBoard,
+  handleVideoFeed,
   STREAM_RELEASE_AXIS,
 } from './api/feed-handler'
 export type { FeedDeliveryRequest } from './api/feed-handler'
@@ -107,7 +114,9 @@ export {
   readDeliveryRequest,
   readFeedRequest,
   respondArticleFeed,
+  respondPromoBoard,
   respondSiteConfig,
+  respondVideoFeed,
 } from './api/http'
 export {
   decide,

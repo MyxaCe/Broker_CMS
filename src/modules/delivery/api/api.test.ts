@@ -6,8 +6,9 @@ import { handleSiteConfig } from './handler'
 import { readDeliveryRequest } from './http'
 import { buildSiteConfigResponse, DeliveryAssemblyError, resolveLocale } from './site-config'
 
+import { stubDeliverySource } from './source.fixture'
+
 import type { DeliveryRequest, DeliverySource, ResolvedRelease } from './handler'
-import type { RateLimiter } from './rate-limit'
 import type { ReleaseSnapshot } from '../releases/snapshot'
 
 const SNAPSHOT: ReleaseSnapshot = {
@@ -30,36 +31,16 @@ const RELEASE: ResolvedRelease = {
   snapshot: SNAPSHOT,
 }
 
-/** Ограничитель, который никогда не мешает: пределы проверяются отдельно. */
-const permissive: RateLimiter = {
-  consume: async () => ({ allowed: true, remaining: 100, retryAfterSec: 1 }),
-  peek: async () => ({ allowed: true, remaining: 100, retryAfterSec: 1 }),
-}
-
 function source(overrides: Partial<DeliverySource> = {}): DeliverySource {
-  return {
-    rateLimiter: permissive,
+  return stubDeliverySource({
     resolveSiteId: async (slug) => (slug === 'apex-de' ? '10' : null),
     authorize: async ({ siteId }) =>
       siteId === '10'
         ? { kind: 'allow', keyId: 'abc', siteIds: ['10'] }
         : { kind: 'deny', reason: 'site-not-allowed' },
     loadChannelRelease: async () => RELEASE,
-    /** Лента проверяется отдельно; здесь заглушки, чтобы источник был полным. */
-    loadSiteResolution: async () => ({
-      defaultLocale: 'de',
-      availableLocales: ['de', 'en'],
-      jurisdiction: 'eu-mifid',
-    }),
-    loadArticles: async () => ({
-      items: [],
-      pinned: [],
-      nextCursor: null,
-      excluded: [],
-      nextTransitionAt: null,
-    }),
     ...overrides,
-  }
+  })
 }
 
 function request(overrides: Partial<DeliveryRequest> = {}): DeliveryRequest {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { handleSiteConfig } from './handler'
+import { stubDeliverySource } from './source.fixture'
 import {
   decide,
   DEFAULT_AUTH_FAILURE_RULE,
@@ -110,7 +111,7 @@ const SNAPSHOT: ReleaseSnapshot = {
 }
 
 function source(limiter: RateLimiter, allow = true): DeliverySource {
-  return {
+  return stubDeliverySource({
     rateLimiter: limiter,
     resolveSiteId: async () => '10',
     authorize: async () =>
@@ -124,19 +125,7 @@ function source(limiter: RateLimiter, allow = true): DeliverySource {
       builtAt: '2026-08-03T10:00:00.000Z',
       snapshot: SNAPSHOT,
     }),
-    loadSiteResolution: async () => ({
-      defaultLocale: 'de',
-      availableLocales: ['de', 'en'],
-      jurisdiction: 'eu-mifid',
-    }),
-    loadArticles: async () => ({
-      items: [],
-      pinned: [],
-      nextCursor: null,
-      excluded: [],
-      nextTransitionAt: null,
-    }),
-  }
+  })
 }
 
 function request(overrides: Partial<DeliveryRequest> = {}): DeliveryRequest {

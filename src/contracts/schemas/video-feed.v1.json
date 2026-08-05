@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cms.broker.platform/contracts/v1/video-feed.json",
+  "title": "Лента видео, версия 1",
+  "description": "Страница ленты видео и трансляций. Состояние эфира вычисляется в момент ответа и в базе не хранится, поэтому срок жизни ответа ограничен ближайшим переходом — как видимости, так и самого эфира.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "site", "resolution", "items", "page"],
+  "properties": {
+    "contract": { "const": "v1" },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug"],
+      "properties": { "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" } }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locale", "jurisdiction", "variant"],
+      "properties": {
+        "locale": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+        "jurisdiction": { "type": "string", "minLength": 1 },
+        "variant": { "type": "string", "minLength": 1 }
+      }
+    },
+    "items": { "type": "array", "items": { "$ref": "#/$defs/video" } },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["size", "excluded"],
+      "properties": {
+        "size": { "type": "integer", "minimum": 0 },
+        "nextCursor": { "type": "string", "minLength": 1 },
+        "excluded": { "type": "integer", "minimum": 0 }
+      }
+    }
+  },
+  "$defs": {
+    "video": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug", "title", "publishedAt", "provider", "broadcast", "speakers", "tags"],
+      "properties": {
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "title": { "type": "string", "minLength": 1 },
+        "description": { "type": ["string", "null"] },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "provider": { "enum": ["youtube", "vimeo", "self-hosted"] },
+        "externalId": {
+          "description": "Идентификатор у внешнего источника. Ролик без него и без файла в ленту не попадает: пустой проигрыватель увидит читатель.",
+          "type": ["string", "null"]
+        },
+        "fileUrl": { "type": ["string", "null"] },
+        "poster": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["url", "alt"],
+          "properties": {
+            "url": { "type": "string", "minLength": 1 },
+            "alt": { "type": "string", "minLength": 1 }
+          }
+        },
+        "broadcast": {
+          "description": "Состояние вычислено на момент ответа. Потребитель не должен его кешировать дольше, чем разрешает Cache-Control.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["state"],
+          "properties": {
+            "state": { "enum": ["upcoming", "live", "past"] },
+            "startsAt": { "type": ["string", "null"], "format": "date-time" },
+            "endsAt": { "type": ["string", "null"], "format": "date-time" }
+          }
+        },
+        "speakers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["slug", "title"],
+            "properties": {
+              "slug": { "type": "string", "minLength": 1 },
+              "title": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "tags": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    }
+  }
+}

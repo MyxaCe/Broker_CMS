@@ -2,8 +2,14 @@ import { CONTRACT_VERSION, SCHEMA_IDS, validateOutgoing } from '@/contracts'
 
 import { DEFAULT_VARIANT } from '../cache-key'
 
-import type { ArticleFeedResponse } from '@/contracts'
-import type { ArticleFeedItem, FeedPage } from '@/modules/stream'
+import type { ArticleFeedResponse, PromoBoardResponse, VideoFeedResponse } from '@/contracts'
+import type {
+  ArticleFeedItem,
+  FeedPage,
+  PromoBoard,
+  PromoItem,
+  VideoFeedItem,
+} from '@/modules/stream'
 
 /**
  * Сборка ответа ленты (ТЗ 1.2, ADR-0019, ADR-0021).
@@ -35,9 +41,88 @@ function toItem(item: ArticleFeedItem) {
   }
 }
 
+function toVideo(item: VideoFeedItem) {
+  return {
+    slug: item.slug,
+    title: item.title,
+    description: item.description,
+    publishedAt: item.publishedAt,
+    provider: item.provider,
+    externalId: item.externalId,
+    fileUrl: item.fileUrl,
+    poster: item.poster,
+    broadcast: {
+      state: item.broadcast.state,
+      startsAt: item.broadcast.startsAt,
+      endsAt: item.broadcast.endsAt,
+    },
+    speakers: item.speakers.map((speaker) => ({ slug: speaker.slug, title: speaker.title })),
+    tags: [...item.tags],
+  }
+}
+
+function toPromo(item: PromoItem) {
+  return {
+    slug: item.slug,
+    title: item.title,
+    badge: item.badge,
+    description: item.description,
+    terms: item.terms,
+    cta: item.cta,
+    image: item.image,
+    jurisdictions: [...item.jurisdictions],
+    priority: item.priority,
+    featured: item.featured,
+  }
+}
+
+function resolutionOf(resolution: FeedResolution) {
+  return {
+    locale: resolution.locale,
+    jurisdiction: resolution.jurisdiction,
+    variant: resolution.variant ?? DEFAULT_VARIANT,
+  }
+}
+
+export function buildVideoFeedResponse(args: {
+  readonly siteSlug: string
+  readonly page: FeedPage<VideoFeedItem>
+  readonly resolution: FeedResolution
+}): VideoFeedResponse {
+  const payload = {
+    contract: CONTRACT_VERSION,
+    site: { slug: args.siteSlug },
+    resolution: resolutionOf(args.resolution),
+    items: args.page.items.map(toVideo),
+    page: {
+      size: args.page.items.length,
+      ...(args.page.nextCursor === null ? {} : { nextCursor: args.page.nextCursor }),
+      excluded: args.page.excluded.length,
+    },
+  }
+
+  return validateOutgoing<VideoFeedResponse>(SCHEMA_IDS.videoFeed, payload)
+}
+
+export function buildPromoBoardResponse(args: {
+  readonly siteSlug: string
+  readonly board: PromoBoard
+  readonly resolution: FeedResolution
+}): PromoBoardResponse {
+  const payload = {
+    contract: CONTRACT_VERSION,
+    site: { slug: args.siteSlug },
+    resolution: resolutionOf(args.resolution),
+    items: args.board.items.map(toPromo),
+    excluded: args.board.excluded.length,
+  }
+
+  return validateOutgoing<PromoBoardResponse>(SCHEMA_IDS.promoBoard, payload)
+}
+
 export function buildArticleFeedResponse(args: {
   readonly siteSlug: string
-  readonly page: FeedPage
+  readonly page: FeedPage<ArticleFeedItem>
   readonly resolution: FeedResolution
 }): ArticleFeedResponse {
   const { page } = args

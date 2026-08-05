@@ -1,4 +1,4 @@
-import { loadArticleFeed } from '@/modules/stream'
+import { loadArticleFeed, loadPromoBoard, loadVideoFeed } from '@/modules/stream'
 import { resolveTenantById } from '@/platform'
 
 import { verifyDeliveryKey } from '../keys/issue'
@@ -55,6 +55,14 @@ export function createPayloadSource(args: {
 
     async loadArticles({ siteId, request }) {
       return loadArticleFeed({ payload, request: { siteId, ...request } })
+    },
+
+    async loadVideos({ siteId, request }) {
+      return loadVideoFeed({ payload, request: { siteId, ...request } })
+    },
+
+    async loadPromos({ siteId, jurisdiction }) {
+      return loadPromoBoard({ payload, siteId, jurisdiction })
     },
 
     async loadChannelRelease({ siteId, channel }) {

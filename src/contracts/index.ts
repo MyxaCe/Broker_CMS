@@ -26,7 +26,11 @@ export type {
   ErrorCode,
   ErrorResponse,
   FeedItemReference,
+  PromoBoardResponse,
+  PromoItemResponse,
   SiteConfigResponse,
+  VideoFeedItemResponse,
+  VideoFeedResponse,
 } from './types'
 
 export {

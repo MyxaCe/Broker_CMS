@@ -70,6 +70,65 @@ export interface ArticleFeedResponse {
   }
 }
 
+export interface VideoFeedItemResponse {
+  readonly slug: string
+  readonly title: string
+  readonly description: string | null
+  readonly publishedAt: string
+  readonly provider: string
+  readonly externalId: string | null
+  readonly fileUrl: string | null
+  readonly poster: { readonly url: string; readonly alt: string } | null
+  readonly broadcast: {
+    readonly state: 'upcoming' | 'live' | 'past'
+    readonly startsAt: string | null
+    readonly endsAt: string | null
+  }
+  readonly speakers: readonly FeedItemReference[]
+  readonly tags: readonly string[]
+}
+
+export interface VideoFeedResponse {
+  readonly contract: typeof CONTRACT_VERSION
+  readonly site: { readonly slug: string }
+  readonly resolution: {
+    readonly locale: string
+    readonly jurisdiction: string
+    readonly variant: string
+  }
+  readonly items: readonly VideoFeedItemResponse[]
+  readonly page: {
+    readonly size: number
+    readonly nextCursor?: string
+    readonly excluded: number
+  }
+}
+
+export interface PromoItemResponse {
+  readonly slug: string
+  readonly title: string
+  readonly badge: string | null
+  readonly description: string | null
+  readonly terms: string
+  readonly cta: { readonly label: string; readonly href: string } | null
+  readonly image: { readonly url: string; readonly alt: string } | null
+  readonly jurisdictions: readonly string[]
+  readonly priority: number
+  readonly featured: boolean
+}
+
+export interface PromoBoardResponse {
+  readonly contract: typeof CONTRACT_VERSION
+  readonly site: { readonly slug: string }
+  readonly resolution: {
+    readonly locale: string
+    readonly jurisdiction: string
+    readonly variant: string
+  }
+  readonly items: readonly PromoItemResponse[]
+  readonly excluded: number
+}
+
 /**
  * Коды ошибок. Причины отказа авторизации схлопнуты в один код намеренно:
  * снаружи «ключа нет» и «прав не хватает» обязаны быть неразличимы.

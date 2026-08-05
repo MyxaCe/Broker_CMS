@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cms.broker.platform/contracts/v1/promo-board.json",
+  "title": "Промо-доска, версия 1",
+  "description": "Действующие промо-блоки сайта, упорядоченные приоритетом. Не лента: курсора нет, потому что блоков единицы и показываются они все сразу.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "site", "resolution", "items", "excluded"],
+  "properties": {
+    "contract": { "const": "v1" },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug"],
+      "properties": { "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" } }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locale", "jurisdiction", "variant"],
+      "properties": {
+        "locale": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+        "jurisdiction": { "type": "string", "minLength": 1 },
+        "variant": { "type": "string", "minLength": 1 }
+      }
+    },
+    "items": { "type": "array", "items": { "$ref": "#/$defs/promo" } },
+    "excluded": {
+      "description": "Сколько промо исключено сборщиком. Обычно это незаполненные условия — и это нарушение, а не косметика: такое промо не должно показываться.",
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "$defs": {
+    "promo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug", "title", "terms", "priority", "featured", "jurisdictions"],
+      "properties": {
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "title": { "type": "string", "minLength": 1 },
+        "badge": { "type": ["string", "null"] },
+        "description": { "type": ["string", "null"] },
+        "terms": {
+          "description": "Обязательны и здесь, а не только в форме: предложение без условий в регулируемом домене — нарушение, и лучше его отсутствие на витрине.",
+          "type": "string",
+          "minLength": 1
+        },
+        "cta": {
+          "description": "Либо целиком, либо никак: половина кнопки хуже её отсутствия, потому что по ней кликают.",
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["label", "href"],
+          "properties": {
+            "label": { "type": "string", "minLength": 1 },
+            "href": { "type": "string", "minLength": 1 }
+          }
+        },
+        "image": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["url", "alt"],
+          "properties": {
+            "url": { "type": "string", "minLength": 1 },
+            "alt": { "type": "string", "minLength": 1 }
+          }
+        },
+        "jurisdictions": {
+          "description": "Пустой список означает «во всех юрисдикциях сайта».",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "priority": { "type": "integer" },
+        "featured": { "type": "boolean" }
+      }
+    }
+  }
+}

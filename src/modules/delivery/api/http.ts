@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import { handleArticleFeed } from './feed-handler'
+import { handleArticleFeed, handlePromoBoard, handleVideoFeed } from './feed-handler'
 import { handleSiteConfig } from './handler'
 
 import type { FeedDeliveryRequest } from './feed-handler'
@@ -86,6 +86,26 @@ export async function respondArticleFeed(
   const parsed = readFeedRequest(request, siteSlug)
 
   return finish(parsed.requestId, await handleArticleFeed(parsed, source))
+}
+
+export async function respondVideoFeed(
+  request: Request,
+  siteSlug: string,
+  source: DeliverySource,
+): Promise<Response> {
+  const parsed = readFeedRequest(request, siteSlug)
+
+  return finish(parsed.requestId, await handleVideoFeed(parsed, source))
+}
+
+export async function respondPromoBoard(
+  request: Request,
+  siteSlug: string,
+  source: DeliverySource,
+): Promise<Response> {
+  const parsed = readFeedRequest(request, siteSlug)
+
+  return finish(parsed.requestId, await handlePromoBoard(parsed, source))
 }
 
 export async function respondSiteConfig(
