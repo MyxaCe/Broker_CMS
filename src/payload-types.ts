@@ -80,6 +80,7 @@ export interface Config {
     'design-roles': DesignRole;
     'design-component-tokens': DesignComponentToken;
     pages: Page;
+    'global-areas': GlobalArea;
     releases: Release;
     channels: Channel;
     outbox: Outbox;
@@ -105,6 +106,7 @@ export interface Config {
     'design-roles': DesignRolesSelect<false> | DesignRolesSelect<true>;
     'design-component-tokens': DesignComponentTokensSelect<false> | DesignComponentTokensSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    'global-areas': GlobalAreasSelect<false> | GlobalAreasSelect<true>;
     releases: ReleasesSelect<false> | ReleasesSelect<true>;
     channels: ChannelsSelect<false> | ChannelsSelect<true>;
     outbox: OutboxSelect<false> | OutboxSelect<true>;
@@ -737,6 +739,59 @@ export interface Page {
   createdAt: string;
 }
 /**
+ * Области вне страницы: шапка, подвал, предупреждения. Наследуются по цепочке бренд → регион → сайт.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "global-areas".
+ */
+export interface GlobalArea {
+  id: number;
+  title: string;
+  kind: 'header' | 'footer' | 'announcement' | 'cookie-banner' | 'risk-warning' | 'popup';
+  /**
+   * Бренд, регион или сайт. Область бренда действует на всех его сайтах, пока сайт не объявит свою того же типа.
+   */
+  owner: number | Tenant;
+  locale: string;
+  /**
+   * Снятие флага у полосы риск-предупреждения заблокирует сборку релиза в юрисдикциях, где оно обязательно.
+   */
+  isActive: boolean;
+  /**
+   * Дерево блоков — то же, что и на странице.
+   */
+  blocks?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  riskWarning?: {
+    /**
+     * Формулировка регулятора. Проверяется на непустоту при сборке релиза — пустая полоса не считается предупреждением.
+     */
+    text?: string | null;
+    /**
+     * Требуется в ЕС и Великобритании. Число приходит от бэк-офиса и обновляется ежеквартально.
+     */
+    lossPercentage?: number | null;
+  };
+  /**
+   * Пусто — область показывается во всех юрисдикциях сайта.
+   */
+  jurisdictions?:
+    | {
+        code: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Собранный релиз неизменяем: правки после сборки невозможны ни через интерфейс, ни напрямую в базе. Откат выполняется переключением канала.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -996,6 +1051,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'pages';
         value: number | Page;
+      } | null)
+    | ({
+        relationTo: 'global-areas';
+        value: number | GlobalArea;
       } | null)
     | ({
         relationTo: 'releases';
@@ -1358,6 +1417,32 @@ export interface PagesSelect<T extends boolean = true> {
     | {
         path?: T;
         changedAt?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "global-areas_select".
+ */
+export interface GlobalAreasSelect<T extends boolean = true> {
+  title?: T;
+  kind?: T;
+  owner?: T;
+  locale?: T;
+  isActive?: T;
+  blocks?: T;
+  riskWarning?:
+    | T
+    | {
+        text?: T;
+        lossPercentage?: T;
+      };
+  jurisdictions?:
+    | T
+    | {
+        code?: T;
         id?: T;
       };
   updatedAt?: T;

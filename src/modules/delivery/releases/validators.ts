@@ -1,4 +1,9 @@
-import { contrastValidator, forbiddenClaimsValidator, tokenGraphValidator } from '@/modules/design'
+import {
+  complianceValidator,
+  contrastValidator,
+  forbiddenClaimsValidator,
+  tokenGraphValidator,
+} from '@/modules/design'
 import { adaptValidator } from '@/platform'
 
 import type { ReleaseSnapshot } from './snapshot'
@@ -98,4 +103,11 @@ export const RELEASE_VALIDATORS: readonly Validator<ReleaseSnapshot>[] = [
   adaptValidator(tokenGraphValidator, (snapshot) => ({ tokenIssues: snapshot.tokenIssues })),
   adaptValidator(contrastValidator, (snapshot) => ({ colorPairs: snapshot.colorPairs })),
   adaptValidator(forbiddenClaimsValidator, (snapshot) => ({ texts: snapshot.texts })),
+  /**
+   * Комплаенс — последним: его находки самые дорогие для чтения, и показывать
+   * их поверх списка технических расхождений значило бы утопить главное.
+   */
+  adaptValidator(complianceValidator, (snapshot) => ({
+    complianceFindings: snapshot.complianceFindings,
+  })),
 ]

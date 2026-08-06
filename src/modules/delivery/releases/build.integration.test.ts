@@ -39,6 +39,29 @@ beforeAll(async () => {
 
   brandId = brand.id
 
+  /**
+   * Полоса риск-предупреждения на каждую локаль бренда.
+   *
+   * Появилась вместе с комплаенс-гейтом (ТЗ 2.4) и уронила этот тест — то есть
+   * гейт сработал ровно так, как задуман: сайт в регулируемой юрисдикции без
+   * предупреждения не собирается. Фикстура приведена к реальности, а не гейт
+   * ослаблен.
+   */
+  for (const locale of ['en', 'de']) {
+    await payload.create({
+      collection: 'global-areas',
+      overrideAccess: true,
+      data: {
+        title: `Предупреждение (${locale})`,
+        kind: 'risk-warning',
+        owner: brandId,
+        locale,
+        isActive: true,
+        riskWarning: { text: 'Торговля CFD сопряжена с высоким риском.', lossPercentage: 74 },
+      } as never,
+    })
+  }
+
   const ready = await payload.create({
     collection: 'tenants',
     data: {

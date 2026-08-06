@@ -15,6 +15,7 @@ import { Outbox } from './modules/delivery/events/outbox.collection'
 import { DeliveryKeys } from './modules/delivery/keys/keys.collection'
 import { Channels } from './modules/delivery/releases/channels.collection'
 import { Releases } from './modules/delivery/releases/releases.collection'
+import { GlobalAreas } from './modules/design/compliance/global-areas.collection'
 import { Pages } from './modules/design/pages/pages.collection'
 import {
   DesignComponentTokens,
@@ -61,6 +62,7 @@ export default buildConfig({
     DesignRoles,
     DesignComponentTokens,
     Pages,
+    GlobalAreas,
     Releases,
     Channels,
     Outbox,

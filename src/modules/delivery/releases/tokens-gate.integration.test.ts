@@ -58,6 +58,23 @@ beforeAll(async () => {
 
   brandId = brand.id
 
+  /**
+   * Полоса предупреждения нужна, чтобы релиз падал по проверяемой здесь
+   * причине — контрасту, — а не по комплаенсу (ТЗ 2.4).
+   */
+  await payload.create({
+    collection: 'global-areas',
+    overrideAccess: true,
+    data: {
+      title: 'Предупреждение о риске',
+      kind: 'risk-warning',
+      owner: brand.id,
+      locale: 'en',
+      isActive: true,
+      riskWarning: { text: 'Торговля CFD сопряжена с высоким риском.', lossPercentage: 74 },
+    } as never,
+  })
+
   const good = await payload.create({
     collection: 'tenants',
     data: {

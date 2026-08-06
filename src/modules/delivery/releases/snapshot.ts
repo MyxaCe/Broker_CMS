@@ -55,6 +55,16 @@ export interface ReleaseSnapshot {
    * старую разметку с новыми цветами.
    */
   readonly tokens: Readonly<Record<string, Readonly<Record<string, string>>>>
+  /**
+   * Нарушения комплаенса на момент сборки (ТЗ 2.4). Непустой список блокирует
+   * релиз: отсутствующее предупреждение о риске — это не предупреждение в
+   * интерфейсе, а нарушение, которое уже произошло бы на витрине.
+   */
+  readonly complianceFindings: readonly {
+    readonly code: string
+    readonly message: string
+    readonly location: string
+  }[]
 }
 
 /**
@@ -72,6 +82,11 @@ export function composeSnapshot(
     texts?: readonly TextItem[]
     tokenIssues?: readonly { readonly code: string; readonly message: string }[]
     tokens?: Readonly<Record<string, Readonly<Record<string, string>>>>
+    complianceFindings?: readonly {
+      readonly code: string
+      readonly message: string
+      readonly location: string
+    }[]
   } = {},
 ): ReleaseSnapshot {
   return {
@@ -94,5 +109,6 @@ export function composeSnapshot(
     texts: content.texts ?? [],
     tokenIssues: content.tokenIssues ?? [],
     tokens: content.tokens ?? {},
+    complianceFindings: content.complianceFindings ?? [],
   }
 }

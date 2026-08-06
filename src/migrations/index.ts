@@ -16,6 +16,7 @@ import * as migration_20260806_102334_add_design_tokens from './20260806_102334_
 import * as migration_20260806_103000_design_token_unique from './20260806_103000_design_token_unique'
 import * as migration_20260806_113842_add_pages from './20260806_113842_add_pages'
 import * as migration_20260806_114500_page_path_unique from './20260806_114500_page_path_unique'
+import * as migration_20260806_115914_add_global_areas from './20260806_115914_add_global_areas'
 
 export const migrations = [
   {
@@ -107,5 +108,10 @@ export const migrations = [
     up: migration_20260806_114500_page_path_unique.up,
     down: migration_20260806_114500_page_path_unique.down,
     name: '20260806_114500_page_path_unique',
+  },
+  {
+    up: migration_20260806_115914_add_global_areas.up,
+    down: migration_20260806_115914_add_global_areas.down,
+    name: '20260806_115914_add_global_areas',
   },
 ]

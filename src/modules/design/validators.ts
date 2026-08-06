@@ -76,6 +76,36 @@ export const tokenGraphValidator: Validator<TokenGraphInput> = {
   },
 }
 
+export interface ComplianceValidatorInput {
+  readonly complianceFindings: readonly {
+    readonly code: string
+    readonly message: string
+    readonly location: string
+  }[]
+}
+
+/**
+ * Комплаенс-ограничители (ТЗ 2.4).
+ *
+ * Все находки блокирующие без исключений. Предупреждение здесь было бы
+ * бессмысленным: «релиз собран, но предупреждения о риске на сайте нет» — это
+ * не предупреждение, а описание нарушения, которое уже произошло.
+ */
+export const complianceValidator: Validator<ComplianceValidatorInput> = {
+  name: 'compliance',
+  description: 'Риск-предупреждение, alt у изображений, юрисдикционная видимость (ТЗ 2.4).',
+
+  run(input) {
+    return input.complianceFindings.map((finding) => ({
+      validator: 'compliance',
+      severity: 'blocking' as const,
+      code: finding.code,
+      message: finding.message,
+      location: finding.location,
+    }))
+  },
+}
+
 export interface ForbiddenClaimsInput {
   readonly texts: readonly TextItem[]
   /** Дополнительные формулировки бренда или юрисдикции — не замена основного словаря. */

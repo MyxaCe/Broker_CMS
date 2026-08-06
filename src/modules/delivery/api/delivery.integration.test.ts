@@ -50,6 +50,25 @@ async function makeSite(name: string, slug: string) {
     overrideAccess: true,
   })
 
+  /**
+   * Полоса риск-предупреждения на каждую локаль: без неё релиз не собирается
+   * (ТЗ 2.4), а этому тесту нужен собранный релиз, чтобы было что отдавать.
+   */
+  for (const locale of ['de', 'en']) {
+    await payload.create({
+      collection: 'global-areas',
+      overrideAccess: true,
+      data: {
+        title: `Предупреждение (${locale})`,
+        kind: 'risk-warning',
+        owner: brand.id,
+        locale,
+        isActive: true,
+        riskWarning: { text: 'Торговля CFD сопряжена с высоким риском.', lossPercentage: 74 },
+      } as never,
+    })
+  }
+
   return payload.create({
     collection: 'tenants',
     data: { name, slug, kind: 'site', parent: brand.id } as never,

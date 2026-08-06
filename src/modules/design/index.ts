@@ -26,8 +26,47 @@ export type { ContrastUsage } from './contrast'
 export { DEFAULT_FORBIDDEN_PHRASES, findForbiddenPhrases } from './forbidden-claims'
 export type { ContentClass, ForbiddenMatch, TextItem } from './forbidden-claims'
 
-export { contrastValidator, forbiddenClaimsValidator, tokenGraphValidator } from './validators'
-export type { ColorPair, ContrastInput, ForbiddenClaimsInput, TokenGraphInput } from './validators'
+export {
+  complianceValidator,
+  contrastValidator,
+  forbiddenClaimsValidator,
+  tokenGraphValidator,
+} from './validators'
+export type {
+  ColorPair,
+  ComplianceValidatorInput,
+  ContrastInput,
+  ForbiddenClaimsInput,
+  TokenGraphInput,
+} from './validators'
+
+export { isKnownJurisdiction, JURISDICTIONS, requirementsFor } from './compliance/jurisdictions'
+export type { JurisdictionRequirements } from './compliance/jurisdictions'
+
+export {
+  BLOCK_DISCLAIMERS,
+  checkImageAlt,
+  checkJurisdictionVisibility,
+  checkRiskWarning,
+  collectBlocks,
+  collectMediaReferences,
+  requiredDisclaimers,
+  runComplianceRules,
+} from './compliance/rules'
+export type {
+  ComplianceFinding,
+  ComplianceInput,
+  CompliancePageInput,
+  RiskWarningArea,
+} from './compliance/rules'
+
+export { loadComplianceInput } from './compliance/load'
+export {
+  GLOBAL_AREA_KINDS,
+  GLOBAL_AREA_LABELS,
+  GlobalAreas,
+} from './compliance/global-areas.collection'
+export type { GlobalAreaKind } from './compliance/global-areas.collection'
 
 export {
   PRIMITIVE_CATEGORIES,

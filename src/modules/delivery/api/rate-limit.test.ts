@@ -110,6 +110,7 @@ const SNAPSHOT: ReleaseSnapshot = {
   texts: [],
   tokenIssues: [],
   tokens: {},
+  complianceFindings: [],
 }
 
 function source(limiter: RateLimiter, allow = true): DeliverySource {

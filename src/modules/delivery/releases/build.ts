@@ -1,4 +1,9 @@
-import { collectContrastPairs, loadTokenSet } from '@/modules/design'
+import {
+  collectContrastPairs,
+  loadComplianceInput,
+  loadTokenSet,
+  runComplianceRules,
+} from '@/modules/design'
 import { resolveTenantById, runValidation, summarizeReport } from '@/platform'
 
 import { contentHash } from '../cache-key'
@@ -96,6 +101,18 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
    */
   const { resolved } = await loadTokenSet({ payload, siteId: args.siteId })
 
+  /**
+   * Комплаенс проверяется по состоянию на момент сборки: страницы, области и
+   * файлы читаются здесь, а не при выдаче. Иначе релиз, собранный вчера, мог
+   * бы стать нарушением сегодня — от правки, которой никто не публиковал.
+   */
+  const complianceInput = await loadComplianceInput({
+    payload,
+    siteId: args.siteId,
+    jurisdiction: settings.jurisdiction.value ?? null,
+    locales: settings.availableLocales.entries.map((entry) => entry.value),
+  })
+
   const snapshot = composeSnapshot(
     {
       id: siteId,
@@ -114,6 +131,7 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
         message: issue.message,
       })),
       tokens: resolved.byTheme,
+      complianceFindings: runComplianceRules(complianceInput),
     },
   )
 

@@ -23,6 +23,7 @@ const SNAPSHOT: ReleaseSnapshot = {
   texts: [],
   tokenIssues: [],
   tokens: {},
+  complianceFindings: [],
 }
 
 const RELEASE: ResolvedRelease = {
