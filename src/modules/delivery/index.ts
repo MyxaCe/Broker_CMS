@@ -84,7 +84,13 @@ export { DeliveryKeys } from './keys/keys.collection'
 
 export { buildSiteConfigResponse, DeliveryAssemblyError, resolveLocale } from './api/site-config'
 export type { ReleaseFacts, SiteConfigRequest } from './api/site-config'
-export { errorResponse, handleSiteConfig, openDeliveryRequest } from './api/handler'
+export { buildBootstrapResponse } from './api/bootstrap'
+export {
+  errorResponse,
+  handleBootstrap,
+  handleSiteConfig,
+  openDeliveryRequest,
+} from './api/handler'
 export type {
   ArticleFeedFilters,
   DeliveryRequest,
@@ -126,6 +132,7 @@ export {
   readDeliveryRequest,
   readFeedRequest,
   respondArticleFeed,
+  respondBootstrap,
   respondPromoBoard,
   respondSearch,
   respondSiteConfig,

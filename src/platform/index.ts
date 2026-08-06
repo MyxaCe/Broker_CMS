@@ -74,6 +74,7 @@ export {
   canRevertToInherited,
   collectSubtree,
   expandTenantScope,
+  loadTenantChainIds,
   MAX_CHAIN_DEPTH,
   resolveCollection,
   resolveEffectiveAccess,

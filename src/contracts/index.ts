@@ -23,9 +23,12 @@ export { CONTRACT_VERSION, ERROR_CODES } from './types'
 export type {
   ArticleFeedItemResponse,
   ArticleFeedResponse,
+  BootstrapResponse,
   ErrorCode,
   ErrorResponse,
   FeedItemReference,
+  GlobalAreaResponse,
+  NavItemResponse,
   PromoBoardResponse,
   PromoItemResponse,
   SearchHitResponse,

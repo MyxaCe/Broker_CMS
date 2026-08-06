@@ -80,6 +80,8 @@ export interface Config {
     'design-roles': DesignRole;
     'design-component-tokens': DesignComponentToken;
     pages: Page;
+    sections: Section;
+    navigations: Navigation;
     'global-areas': GlobalArea;
     releases: Release;
     channels: Channel;
@@ -106,6 +108,8 @@ export interface Config {
     'design-roles': DesignRolesSelect<false> | DesignRolesSelect<true>;
     'design-component-tokens': DesignComponentTokensSelect<false> | DesignComponentTokensSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    sections: SectionsSelect<false> | SectionsSelect<true>;
+    navigations: NavigationsSelect<false> | NavigationsSelect<true>;
     'global-areas': GlobalAreasSelect<false> | GlobalAreasSelect<true>;
     releases: ReleasesSelect<false> | ReleasesSelect<true>;
     channels: ChannelsSelect<false> | ChannelsSelect<true>;
@@ -739,6 +743,71 @@ export interface Page {
   createdAt: string;
 }
 /**
+ * Общий кусок страницы. Секция бренда действует на всех его сайтах, пока сайт не заведёт свою с тем же ключом.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sections".
+ */
+export interface Section {
+  id: number;
+  title: string;
+  /**
+   * Ссылка страницы указывает на ключ, а не на запись: сайт может перекрыть секцию бренда, заведя свою с тем же ключом.
+   */
+  key: string;
+  owner: number | Tenant;
+  locale: string;
+  /**
+   * Снятие флага оставит ссылки на секцию незаполненными — это будет видно в отчёте сборки релиза.
+   */
+  isActive: boolean;
+  /**
+   * Дерево блоков — то же, что и на странице.
+   */
+  blocks?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Дерево пунктов, а не список адресов. Пункт ссылается на страницу — удалённая страница видна как расхождение, а не как 404.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "navigations".
+ */
+export interface Navigation {
+  id: number;
+  title: string;
+  placement: 'primary' | 'footer' | 'utility' | 'mobile' | 'legal';
+  /**
+   * Бренд, регион или сайт. Меню бренда действует на всех его сайтах, пока сайт не объявит своё того же размещения и языка.
+   */
+  owner: number | Tenant;
+  locale: string;
+  isActive: boolean;
+  /**
+   * Дерево: подпись, назначение (страница, внешний адрес, заголовок раздела), вложенные пункты.
+   */
+  items?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Области вне страницы: шапка, подвал, предупреждения. Наследуются по цепочке бренд → регион → сайт.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1051,6 +1120,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'pages';
         value: number | Page;
+      } | null)
+    | ({
+        relationTo: 'sections';
+        value: number | Section;
+      } | null)
+    | ({
+        relationTo: 'navigations';
+        value: number | Navigation;
       } | null)
     | ({
         relationTo: 'global-areas';
@@ -1419,6 +1496,34 @@ export interface PagesSelect<T extends boolean = true> {
         changedAt?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sections_select".
+ */
+export interface SectionsSelect<T extends boolean = true> {
+  title?: T;
+  key?: T;
+  owner?: T;
+  locale?: T;
+  isActive?: T;
+  blocks?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "navigations_select".
+ */
+export interface NavigationsSelect<T extends boolean = true> {
+  title?: T;
+  placement?: T;
+  owner?: T;
+  locale?: T;
+  isActive?: T;
+  items?: T;
   updatedAt?: T;
   createdAt?: T;
 }

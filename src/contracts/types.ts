@@ -33,6 +33,43 @@ export interface SiteConfigResponse {
   }
 }
 
+export interface NavItemResponse {
+  readonly label: string
+  /** `null` — заголовок раздела: сам никуда не ведёт, но группирует вложенные. */
+  readonly url: string | null
+  readonly openInNewTab: boolean
+  readonly children: readonly NavItemResponse[]
+}
+
+export interface GlobalAreaResponse {
+  readonly blocks: readonly { readonly type: string }[]
+  readonly riskWarning: {
+    readonly text: string
+    readonly lossPercentage: number | null
+  } | null
+  readonly jurisdictions: readonly string[]
+}
+
+export interface BootstrapResponse {
+  readonly contract: typeof CONTRACT_VERSION
+  readonly site: { readonly slug: string }
+  readonly release: {
+    readonly number: number
+    readonly builtAt: string
+  }
+  readonly resolution: {
+    readonly locale: string
+    readonly jurisdiction: string
+    readonly variant: string
+  }
+  /** Тема → имя токена → значение. */
+  readonly theme: Readonly<Record<string, Readonly<Record<string, string>>>>
+  /** Размещение → дерево пунктов. */
+  readonly navigation: Readonly<Record<string, readonly NavItemResponse[]>>
+  /** Тип области → её содержимое. */
+  readonly globalAreas: Readonly<Record<string, GlobalAreaResponse>>
+}
+
 export interface FeedItemReference {
   readonly slug: string
   readonly title: string

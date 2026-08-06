@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cms.broker.platform/contracts/v1/bootstrap.json",
+  "title": "Стартовый набор сайта, версия 1",
+  "description": "Всё, что нужно потребителю до отрисовки первой страницы: токены темы, навигация, глобальные области. Один ответ вместо трёх запросов — иначе шапка приезжает отдельно от темы, и страница успевает мигнуть.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "site", "release", "resolution", "theme", "navigation", "globalAreas"],
+  "$defs": {
+    "navItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "url", "openInNewTab", "children"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1 },
+        "url": {
+          "description": "null — заголовок раздела: сам никуда не ведёт, но группирует вложенные пункты.",
+          "type": ["string", "null"]
+        },
+        "openInNewTab": { "type": "boolean" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/navItem" }
+        }
+      }
+    },
+    "block": {
+      "description": "Узел дерева блоков. Тип обязателен и проверяется реестром при сборке релиза; пропсы у каждого типа свои, поэтому здесь они не ограничены — перечислять их в контракте значило бы переиздавать его при добавлении поля любому блоку.",
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "properties": {
+    "contract": { "const": "v1" },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug"],
+      "properties": {
+        "slug": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "builtAt"],
+      "properties": {
+        "number": { "type": "integer", "minimum": 1 },
+        "builtAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locale", "jurisdiction", "variant"],
+      "properties": {
+        "locale": { "type": "string", "minLength": 2, "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+        "jurisdiction": { "type": "string", "minLength": 1 },
+        "variant": { "type": "string", "minLength": 1 }
+      }
+    },
+    "theme": {
+      "description": "Разрешённые токены по темам: имя токена → значение. Замороженные вместе с релизом — откат обязан вернуть и разметку, и цвета того же дня.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": { "type": "string" }
+      }
+    },
+    "navigation": {
+      "description": "Меню запрошенного языка по размещениям: primary, footer, utility. Пункты с недоступными страницами уже исключены — пустая ссылка в меню это тупик.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/navItem" }
+      }
+    },
+    "globalAreas": {
+      "description": "Области вне страницы запрошенного языка: шапка, подвал, полоса риск-предупреждения, cookie-баннер.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["blocks", "riskWarning", "jurisdictions"],
+        "properties": {
+          "blocks": { "type": "array", "items": { "$ref": "#/$defs/block" } },
+          "riskWarning": {
+            "description": "Заполнено только у полосы риск-предупреждения. Отдаётся отдельным полем, а не блоком: потребитель обязан уметь показать её даже там, где остального оформления нет.",
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["text", "lossPercentage"],
+            "properties": {
+              "text": { "type": "string", "minLength": 1 },
+              "lossPercentage": { "type": ["number", "null"], "minimum": 0, "maximum": 100 }
+            }
+          },
+          "jurisdictions": {
+            "description": "Пусто — область показывается во всех юрисдикциях сайта.",
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  }
+}

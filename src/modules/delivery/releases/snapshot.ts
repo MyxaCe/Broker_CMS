@@ -1,4 +1,6 @@
-import type { ColorPair, TextItem } from '@/modules/design'
+import { EMPTY_STRUCTURE } from '@/modules/design'
+
+import type { ColorPair, StructureSnapshot, TextItem } from '@/modules/design'
 import type { TenantNode, TenantSettings } from '@/platform'
 
 /**
@@ -65,6 +67,12 @@ export interface ReleaseSnapshot {
     readonly message: string
     readonly location: string
   }[]
+  /**
+   * Навигация и глобальные области, разрешённые по цепочке наследования и
+   * замороженные вместе с релизом (ТЗ 2.2). Отдаются потребителю ручкой
+   * `bootstrap` — одним ответом на страницу, а не тремя запросами.
+   */
+  readonly structure: StructureSnapshot
 }
 
 /**
@@ -87,6 +95,7 @@ export function composeSnapshot(
       readonly message: string
       readonly location: string
     }[]
+    structure?: StructureSnapshot
   } = {},
 ): ReleaseSnapshot {
   return {
@@ -110,5 +119,6 @@ export function composeSnapshot(
     tokenIssues: content.tokenIssues ?? [],
     tokens: content.tokens ?? {},
     complianceFindings: content.complianceFindings ?? [],
+    structure: content.structure ?? EMPTY_STRUCTURE,
   }
 }

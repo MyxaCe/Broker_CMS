@@ -3,6 +3,7 @@ import { DEFAULT_FORBIDDEN_PHRASES, findForbiddenPhrases } from './forbidden-cla
 
 import type { ContrastUsage } from './contrast'
 import type { TextItem } from './forbidden-claims'
+import type { StructureFinding } from './structure/types'
 import type { Validator } from '@/platform'
 
 /**
@@ -99,6 +100,35 @@ export const complianceValidator: Validator<ComplianceValidatorInput> = {
     return input.complianceFindings.map((finding) => ({
       validator: 'compliance',
       severity: 'blocking' as const,
+      code: finding.code,
+      message: finding.message,
+      location: finding.location,
+    }))
+  },
+}
+
+export interface StructureValidatorInput {
+  readonly structureFindings: readonly StructureFinding[]
+}
+
+/**
+ * Целостность структуры сайта (ТЗ 2.2).
+ *
+ * Единственная проверка, где уровень находки приходит **из самой находки**, а
+ * не назначается здесь. Причина в том, что расхождения структуры неоднородны:
+ * ненайденная секция — это дыра в странице, а битый пункт меню — это пункт,
+ * который просто не показан. Первое публиковать нельзя, второе — можно, и
+ * приравнивать их значило бы, что снятие страницы с публикации останавливает
+ * выкатку всего сайта.
+ */
+export const structureValidator: Validator<StructureValidatorInput> = {
+  name: 'structure',
+  description: 'Ссылки навигации ведут на существующие страницы, секции раскрываются (ТЗ 2.2).',
+
+  run(input) {
+    return input.structureFindings.map((finding) => ({
+      validator: 'structure',
+      severity: finding.severity,
       code: finding.code,
       message: finding.message,
       location: finding.location,

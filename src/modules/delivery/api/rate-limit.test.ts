@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { EMPTY_STRUCTURE } from '@/modules/design'
+
 import { handleSiteConfig } from './handler'
 import { stubDeliverySource } from './source.fixture'
 import {
@@ -111,6 +113,7 @@ const SNAPSHOT: ReleaseSnapshot = {
   tokenIssues: [],
   tokens: {},
   complianceFindings: [],
+  structure: EMPTY_STRUCTURE,
 }
 
 function source(limiter: RateLimiter, allow = true): DeliverySource {

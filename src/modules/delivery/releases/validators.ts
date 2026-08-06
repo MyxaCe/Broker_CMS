@@ -2,6 +2,7 @@ import {
   complianceValidator,
   contrastValidator,
   forbiddenClaimsValidator,
+  structureValidator,
   tokenGraphValidator,
 } from '@/modules/design'
 import { adaptValidator } from '@/platform'
@@ -103,6 +104,14 @@ export const RELEASE_VALIDATORS: readonly Validator<ReleaseSnapshot>[] = [
   adaptValidator(tokenGraphValidator, (snapshot) => ({ tokenIssues: snapshot.tokenIssues })),
   adaptValidator(contrastValidator, (snapshot) => ({ colorPairs: snapshot.colorPairs })),
   adaptValidator(forbiddenClaimsValidator, (snapshot) => ({ texts: snapshot.texts })),
+  /**
+   * Структура — после токенов и до комплаенса: её находки говорят о том, чего
+   * на витрине не окажется, и читать их проще рядом с остальными техническими
+   * расхождениями, а не после комплаенс-нарушений.
+   */
+  adaptValidator(structureValidator, (snapshot) => ({
+    structureFindings: snapshot.structure.findings,
+  })),
   /**
    * Комплаенс — последним: его находки самые дорогие для чтения, и показывать
    * их поверх списка технических расхождений значило бы утопить главное.

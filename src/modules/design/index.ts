@@ -30,6 +30,7 @@ export {
   complianceValidator,
   contrastValidator,
   forbiddenClaimsValidator,
+  structureValidator,
   tokenGraphValidator,
 } from './validators'
 export type {
@@ -37,8 +38,22 @@ export type {
   ComplianceValidatorInput,
   ContrastInput,
   ForbiddenClaimsInput,
+  StructureValidatorInput,
   TokenGraphInput,
 } from './validators'
+
+export { composeStructure } from './structure/compose'
+export type { ComposeStructureArgs, GlobalAreaRecord, NavigationRecord } from './structure/compose'
+export { pickNearest } from './structure/inherit'
+export type { NearestArgs, NearestPick } from './structure/inherit'
+export { loadStructure } from './structure/load'
+export { EMPTY_STRUCTURE } from './structure/types'
+export type {
+  SnapshotGlobalArea,
+  SnapshotNavigation,
+  StructureFinding,
+  StructureSnapshot,
+} from './structure/types'
 
 export { isKnownJurisdiction, JURISDICTIONS, requirementsFor } from './compliance/jurisdictions'
 export type { JurisdictionRequirements } from './compliance/jurisdictions'
@@ -140,6 +155,35 @@ export {
 export type { RedirectIssue, RedirectRule } from './pages/path'
 
 export { Pages } from './pages/pages.collection'
+
+export {
+  expandSections,
+  MAX_SECTION_DEPTH,
+  resolveSections,
+  SECTION_KEY_PATTERN,
+} from './sections/resolve'
+export type {
+  ExpansionResult,
+  ResolvedSection,
+  SectionIssue,
+  SectionRecord,
+} from './sections/resolve'
+export { Sections } from './sections/sections.collection'
+
+export {
+  MAX_NAV_DEPTH,
+  NAV_TARGET_LABELS,
+  NAV_TARGETS,
+  resolveNavTree,
+  validateNavTree,
+} from './navigation/tree'
+export type { NavContext, NavIssue, NavNode, NavTarget, ResolvedNavItem } from './navigation/tree'
+export {
+  NAV_PLACEMENT_LABELS,
+  NAV_PLACEMENTS,
+  Navigations,
+} from './navigation/navigation.collection'
+export type { NavPlacement } from './navigation/navigation.collection'
 
 export { loadTokenSet } from './tokens/load'
 export { DesignComponentTokens, DesignPrimitives, DesignRoles } from './tokens/collections'

@@ -62,6 +62,8 @@ type WipeableCollection =
   | 'design-roles'
   | 'design-component-tokens'
   | 'pages'
+  | 'sections'
+  | 'navigations'
   | 'global-areas'
 
 async function wipeCollection(collection: WipeableCollection): Promise<void> {
@@ -87,6 +89,8 @@ async function wipeCollection(collection: WipeableCollection): Promise<void> {
  */
 async function wipe(): Promise<void> {
   await wipeCollection('pages')
+  await wipeCollection('sections')
+  await wipeCollection('navigations')
   await wipeCollection('global-areas')
   await wipeCollection('articles')
   await wipeCollection('videos')

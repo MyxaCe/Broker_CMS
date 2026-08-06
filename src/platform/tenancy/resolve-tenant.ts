@@ -114,3 +114,22 @@ export async function resolveTenantById(
 
   return resolveTenant(payload, doc)
 }
+
+/**
+ * Идентификаторы цепочки от корня к листу: `[бренд, регион, сайт]`.
+ *
+ * Нужны везде, где что-то наследуется списком, а не полем: секции, меню,
+ * глобальные области, правовой каркас. Такие запросы выглядят одинаково —
+ * «всё, чем владеет любой из предков», — и цепочку для них лучше строить
+ * одним способом, чем четырьмя похожими.
+ */
+export async function loadTenantChainIds(payload: Payload, id: number | string): Promise<string[]> {
+  const doc = (await payload.findByID({
+    collection: 'tenants',
+    id,
+    depth: 0,
+    overrideAccess: true,
+  })) as unknown as Record<string, unknown>
+
+  return (await loadTenantLayers(payload, doc)).map((layer) => layer.node.id)
+}

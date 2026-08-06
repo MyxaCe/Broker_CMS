@@ -24,7 +24,12 @@ export {
   validateResolvedSettings,
 } from './layers'
 export type { TenantLayerSource, TenantSettings } from './layers'
-export { loadTenantLayers, resolveTenant, resolveTenantById } from './resolve-tenant'
+export {
+  loadTenantChainIds,
+  loadTenantLayers,
+  resolveTenant,
+  resolveTenantById,
+} from './resolve-tenant'
 export {
   createTenantAccess,
   crossTenantOnly,

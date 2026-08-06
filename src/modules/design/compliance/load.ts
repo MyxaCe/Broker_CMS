@@ -1,9 +1,8 @@
-import { buildChain } from '@/platform'
+import { loadTenantChainIds } from '@/platform'
 
 import { collectMediaReferences } from './rules'
 
 import type { ComplianceInput, CompliancePageInput, RiskWarningArea } from './rules'
-import type { TenantNode } from '@/platform'
 import type { Payload } from 'payload'
 
 /**
@@ -21,7 +20,7 @@ export async function loadComplianceInput(args: {
   readonly jurisdiction: string | null
   readonly locales: readonly string[]
 }): Promise<ComplianceInput> {
-  const chainIds = await tenantChain(args.payload, args.siteId)
+  const chainIds = await loadTenantChainIds(args.payload, args.siteId)
 
   /**
    * Страницы берутся **только опубликованные**: черновик в релиз не попадает,
@@ -127,34 +126,4 @@ async function loadMediaAlt(
   }
 
   return result
-}
-
-async function tenantChain(payload: Payload, siteId: string | number): Promise<string[]> {
-  const result = await payload.find({ collection: 'tenants', ...READ })
-  const nodes = new Map<string, TenantNode>()
-
-  for (const doc of result.docs) {
-    const record = doc as unknown as Record<string, unknown>
-    const kind = record.kind
-
-    if (kind !== 'brand' && kind !== 'region' && kind !== 'site') {
-      continue
-    }
-
-    const parent = record.parent
-
-    nodes.set(String(record.id), {
-      id: String(record.id),
-      slug: typeof record.slug === 'string' ? record.slug : '',
-      kind,
-      parentId:
-        parent === null || parent === undefined
-          ? null
-          : typeof parent === 'object' && 'id' in parent
-            ? String((parent as { id: unknown }).id)
-            : String(parent),
-    })
-  }
-
-  return buildChain(nodes, String(siteId)).map((node) => node.id)
 }

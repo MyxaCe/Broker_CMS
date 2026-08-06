@@ -2,6 +2,7 @@ import Ajv2020 from 'ajv/dist/2020'
 import addFormats from 'ajv-formats'
 
 import articleFeedSchema from './schemas/article-feed.v1.json'
+import bootstrapSchema from './schemas/bootstrap.v1.json'
 import errorSchema from './schemas/error.v1.json'
 import promoBoardSchema from './schemas/promo-board.v1.json'
 import searchSchema from './schemas/search.v1.json'
@@ -25,6 +26,7 @@ import type { ValidateFunction } from 'ajv/dist/2020'
 
 export const SCHEMA_IDS = {
   siteConfig: 'site-config.v1',
+  bootstrap: 'bootstrap.v1',
   articleFeed: 'article-feed.v1',
   videoFeed: 'video-feed.v1',
   promoBoard: 'promo-board.v1',
@@ -47,6 +49,7 @@ addFormats(ajv)
 
 const validators: Record<SchemaId, ValidateFunction> = {
   [SCHEMA_IDS.siteConfig]: ajv.compile(siteConfigSchema),
+  [SCHEMA_IDS.bootstrap]: ajv.compile(bootstrapSchema),
   [SCHEMA_IDS.articleFeed]: ajv.compile(articleFeedSchema),
   [SCHEMA_IDS.videoFeed]: ajv.compile(videoFeedSchema),
   [SCHEMA_IDS.promoBoard]: ajv.compile(promoBoardSchema),

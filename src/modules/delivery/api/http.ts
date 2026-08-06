@@ -9,7 +9,7 @@ import {
 } from './feed-handler'
 
 import type { SyndicationFormat } from './syndication'
-import { handleSiteConfig } from './handler'
+import { handleBootstrap, handleSiteConfig } from './handler'
 
 import type { FeedDeliveryRequest } from './feed-handler'
 import type { DeliveryRequest, DeliveryResponse, DeliverySource } from './handler'
@@ -146,6 +146,16 @@ export async function respondSiteConfig(
   const parsed = readDeliveryRequest(request, siteSlug)
 
   return finish(parsed.requestId, await handleSiteConfig(parsed, source))
+}
+
+export async function respondBootstrap(
+  request: Request,
+  siteSlug: string,
+  source: DeliverySource,
+): Promise<Response> {
+  const parsed = readDeliveryRequest(request, siteSlug)
+
+  return finish(parsed.requestId, await handleBootstrap(parsed, source))
 }
 
 /**

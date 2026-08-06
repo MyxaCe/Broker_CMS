@@ -1,6 +1,7 @@
 import {
   collectContrastPairs,
   loadComplianceInput,
+  loadStructure,
   loadTokenSet,
   runComplianceRules,
 } from '@/modules/design'
@@ -106,12 +107,21 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
    * файлы читаются здесь, а не при выдаче. Иначе релиз, собранный вчера, мог
    * бы стать нарушением сегодня — от правки, которой никто не публиковал.
    */
+  const locales = settings.availableLocales.entries.map((entry) => entry.value)
+
   const complianceInput = await loadComplianceInput({
     payload,
     siteId: args.siteId,
     jurisdiction: settings.jurisdiction.value ?? null,
-    locales: settings.availableLocales.entries.map((entry) => entry.value),
+    locales,
   })
+
+  /**
+   * Навигация и глобальные области разрешаются здесь же и замораживаются в
+   * снапшоте. Дотягивать их при выдаче значило бы, что вчерашний релиз меняется
+   * от сегодняшней правки меню — то есть перестаёт что-либо обещать.
+   */
+  const structure = await loadStructure({ payload, siteId: args.siteId, locales })
 
   const snapshot = composeSnapshot(
     {
@@ -132,6 +142,7 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
       })),
       tokens: resolved.byTheme,
       complianceFindings: runComplianceRules(complianceInput),
+      structure,
     },
   )
 

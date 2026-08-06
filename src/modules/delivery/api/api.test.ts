@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { checkAgainstSchema, SCHEMA_IDS } from '@/contracts'
+import { EMPTY_STRUCTURE } from '@/modules/design'
 
 import { handleSiteConfig } from './handler'
 import { readDeliveryRequest } from './http'
@@ -24,6 +25,7 @@ const SNAPSHOT: ReleaseSnapshot = {
   tokenIssues: [],
   tokens: {},
   complianceFindings: [],
+  structure: EMPTY_STRUCTURE,
 }
 
 const RELEASE: ResolvedRelease = {
