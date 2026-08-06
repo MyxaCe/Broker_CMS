@@ -14,6 +14,8 @@ import * as migration_20260805_151838_add_stream_locale from './20260805_151838_
 import * as migration_20260805_165949_add_search_text from './20260805_165949_add_search_text'
 import * as migration_20260806_102334_add_design_tokens from './20260806_102334_add_design_tokens'
 import * as migration_20260806_103000_design_token_unique from './20260806_103000_design_token_unique'
+import * as migration_20260806_113842_add_pages from './20260806_113842_add_pages'
+import * as migration_20260806_114500_page_path_unique from './20260806_114500_page_path_unique'
 
 export const migrations = [
   {
@@ -95,5 +97,15 @@ export const migrations = [
     up: migration_20260806_103000_design_token_unique.up,
     down: migration_20260806_103000_design_token_unique.down,
     name: '20260806_103000_design_token_unique',
+  },
+  {
+    up: migration_20260806_113842_add_pages.up,
+    down: migration_20260806_113842_add_pages.down,
+    name: '20260806_113842_add_pages',
+  },
+  {
+    up: migration_20260806_114500_page_path_unique.up,
+    down: migration_20260806_114500_page_path_unique.down,
+    name: '20260806_114500_page_path_unique',
   },
 ]

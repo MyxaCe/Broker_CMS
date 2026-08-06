@@ -79,6 +79,7 @@ export interface Config {
     'design-primitives': DesignPrimitive;
     'design-roles': DesignRole;
     'design-component-tokens': DesignComponentToken;
+    pages: Page;
     releases: Release;
     channels: Channel;
     outbox: Outbox;
@@ -103,6 +104,7 @@ export interface Config {
     'design-primitives': DesignPrimitivesSelect<false> | DesignPrimitivesSelect<true>;
     'design-roles': DesignRolesSelect<false> | DesignRolesSelect<true>;
     'design-component-tokens': DesignComponentTokensSelect<false> | DesignComponentTokensSelect<true>;
+    pages: PagesSelect<false> | PagesSelect<true>;
     releases: ReleasesSelect<false> | ReleasesSelect<true>;
     channels: ChannelsSelect<false> | ChannelsSelect<true>;
     outbox: OutboxSelect<false> | OutboxSelect<true>;
@@ -663,6 +665,78 @@ export interface DesignComponentToken {
   createdAt: string;
 }
 /**
+ * Путь уникален в пределах сайта и языка. Смена пути сохраняет старый в истории — из неё собирается 301.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages".
+ */
+export interface Page {
+  id: number;
+  title: string;
+  /**
+   * Начинается с косой черты. После публикации меняется вместе с записью в историю — старый адрес продолжит работать через 301.
+   */
+  path: string;
+  /**
+   * Путь уникален в пределах пары «сайт + язык».
+   */
+  locale: string;
+  site: number | Tenant;
+  /**
+   * Страница попадает в релиз только опубликованной. Черновик не собирается и не отдаётся.
+   */
+  status: 'draft' | 'published' | 'archived';
+  /**
+   * Дерево блоков. Типы и варианты — из реестра; стиль берёт значения только из токенов.
+   */
+  blocks?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  defaults?: {
+    theme?: ('inherit' | 'light' | 'dark') | null;
+    width?: ('narrow' | 'content' | 'wide' | 'full') | null;
+    paddingY?: ('none' | 'xs' | 's' | 'm' | 'l' | 'xl') | null;
+    align?: ('start' | 'center' | 'end') | null;
+  };
+  seo?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Заполняется, только когда страница дублирует другую. Иначе оставить пустым.
+     */
+    canonical?: string | null;
+    ogImage?: (number | null) | Media;
+    noindex?: boolean | null;
+  };
+  /**
+   * Пусто — страница доступна во всех юрисдикциях сайта. Продукт, запрещённый в юрисдикции, ограничивается здесь.
+   */
+  jurisdictions?:
+    | {
+        code: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Заполняется автоматически при смене пути. Из неё собираются редиректы 301.
+   */
+  pathHistory?:
+    | {
+        path: string;
+        changedAt?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Собранный релиз неизменяем: правки после сборки невозможны ни через интерфейс, ни напрямую в базе. Откат выполняется переключением канала.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -918,6 +992,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'design-component-tokens';
         value: number | DesignComponentToken;
+      } | null)
+    | ({
+        relationTo: 'pages';
+        value: number | Page;
       } | null)
     | ({
         relationTo: 'releases';
@@ -1238,6 +1316,50 @@ export interface DesignComponentTokensSelect<T extends boolean = true> {
   source?: T;
   reference?: T;
   owner?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages_select".
+ */
+export interface PagesSelect<T extends boolean = true> {
+  title?: T;
+  path?: T;
+  locale?: T;
+  site?: T;
+  status?: T;
+  blocks?: T;
+  defaults?:
+    | T
+    | {
+        theme?: T;
+        width?: T;
+        paddingY?: T;
+        align?: T;
+      };
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        canonical?: T;
+        ogImage?: T;
+        noindex?: T;
+      };
+  jurisdictions?:
+    | T
+    | {
+        code?: T;
+        id?: T;
+      };
+  pathHistory?:
+    | T
+    | {
+        path?: T;
+        changedAt?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

@@ -61,6 +61,7 @@ type WipeableCollection =
   | 'design-primitives'
   | 'design-roles'
   | 'design-component-tokens'
+  | 'pages'
 
 async function wipeCollection(collection: WipeableCollection): Promise<void> {
   const existing = await payload.find({
@@ -84,6 +85,7 @@ async function wipeCollection(collection: WipeableCollection): Promise<void> {
  * в правильном порядке.
  */
 async function wipe(): Promise<void> {
+  await wipeCollection('pages')
   await wipeCollection('articles')
   await wipeCollection('videos')
   await wipeCollection('promos')

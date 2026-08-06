@@ -55,6 +55,53 @@ export type { ResolvedTokens, TokenIssue } from './tokens/resolve'
 export { collectContrastPairs, REQUIRED_CONTRAST_PAIRS } from './tokens/contrast-pairs'
 export type { ContrastRequirement } from './tokens/contrast-pairs'
 
+export {
+  BLOCK_ALIGNMENTS,
+  BLOCK_THEMES,
+  BLOCK_WIDTHS,
+  BREAKPOINTS,
+  DEFAULT_BLOCK_STYLE,
+  DEFAULT_BLOCK_VISIBILITY,
+  PADDING_STEPS,
+  validateBlockStyle,
+} from './blocks/style'
+export type {
+  BlockAlignment,
+  BlockStyle,
+  BlockTheme,
+  BlockVisibility,
+  BlockWidth,
+  Breakpoint,
+  PaddingStep,
+  StyleIssue,
+} from './blocks/style'
+
+export {
+  BLOCK_GROUP_LABELS,
+  BLOCK_GROUPS,
+  BLOCK_REGISTRY,
+  BOUND_COLLECTIONS,
+  findBlock,
+  isAllowedSlot,
+  isAllowedVariant,
+  isKnownBlock,
+} from './blocks/registry'
+export type { BlockDefinition, BlockGroup, BoundCollection } from './blocks/registry'
+
+export { MAX_BLOCK_DEPTH, validateBlockTree } from './blocks/validate-tree'
+export type { BlockNode, TreeContext, TreeIssue } from './blocks/validate-tree'
+
+export {
+  findRedirectIssues,
+  isValidPath,
+  normalizePath,
+  PATH_PATTERN,
+  ROOT_PATH,
+} from './pages/path'
+export type { RedirectIssue, RedirectRule } from './pages/path'
+
+export { Pages } from './pages/pages.collection'
+
 export { loadTokenSet } from './tokens/load'
 export { DesignComponentTokens, DesignPrimitives, DesignRoles } from './tokens/collections'
 
