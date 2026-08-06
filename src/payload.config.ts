@@ -15,6 +15,11 @@ import { Outbox } from './modules/delivery/events/outbox.collection'
 import { DeliveryKeys } from './modules/delivery/keys/keys.collection'
 import { Channels } from './modules/delivery/releases/channels.collection'
 import { Releases } from './modules/delivery/releases/releases.collection'
+import {
+  DesignComponentTokens,
+  DesignPrimitives,
+  DesignRoles,
+} from './modules/design/tokens/collections'
 import { Articles } from './modules/stream/articles/articles.collection'
 import { Promos } from './modules/stream/promo/promos.collection'
 import { Authors } from './modules/stream/taxonomy/authors.collection'
@@ -51,6 +56,9 @@ export default buildConfig({
     Articles,
     Videos,
     Promos,
+    DesignPrimitives,
+    DesignRoles,
+    DesignComponentTokens,
     Releases,
     Channels,
     Outbox,

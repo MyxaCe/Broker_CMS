@@ -37,12 +37,24 @@ export interface ReleaseSnapshot {
     readonly availableLocales: readonly string[]
   }
   /**
-   * Пары цветовых ролей и тексты появятся вместе с токенами и страницами (M3).
-   * Поля объявлены сейчас, чтобы форма снапшота и набор валидаторов не менялись
-   * при их появлении — добавится содержимое, а не структура.
+   * Пары цветовых ролей для проверки контраста — собираются из разрешённого
+   * набора токенов сайта (ТЗ 2.1).
    */
   readonly colorPairs: readonly ColorPair[]
+  /** Тексты для проверки стоп-словаря. Наполняются вместе со страницами (M3). */
   readonly texts: readonly TextItem[]
+  /**
+   * Расхождения графа токенов: битые ссылки, незаполненные темы, повторы имён.
+   * Непустой список блокирует сборку — токен без значения превращается на
+   * витрине в пустую строку, то есть в невидимый текст или отсутствующий фон.
+   */
+  readonly tokenIssues: readonly { readonly code: string; readonly message: string }[]
+  /**
+   * Разрешённые токены по темам. Замораживаются вместе с релизом: тема сайта
+   * обязана быть той же, что была на момент публикации, иначе откат вернул бы
+   * старую разметку с новыми цветами.
+   */
+  readonly tokens: Readonly<Record<string, Readonly<Record<string, string>>>>
 }
 
 /**
@@ -55,7 +67,12 @@ export interface ReleaseSnapshot {
 export function composeSnapshot(
   site: TenantNode,
   settings: TenantSettings,
-  content: { colorPairs?: readonly ColorPair[]; texts?: readonly TextItem[] } = {},
+  content: {
+    colorPairs?: readonly ColorPair[]
+    texts?: readonly TextItem[]
+    tokenIssues?: readonly { readonly code: string; readonly message: string }[]
+    tokens?: Readonly<Record<string, Readonly<Record<string, string>>>>
+  } = {},
 ): ReleaseSnapshot {
   return {
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
@@ -75,5 +92,7 @@ export function composeSnapshot(
     },
     colorPairs: content.colorPairs ?? [],
     texts: content.texts ?? [],
+    tokenIssues: content.tokenIssues ?? [],
+    tokens: content.tokens ?? {},
   }
 }

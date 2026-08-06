@@ -108,6 +108,8 @@ const SNAPSHOT: ReleaseSnapshot = {
   },
   colorPairs: [],
   texts: [],
+  tokenIssues: [],
+  tokens: {},
 }
 
 function source(limiter: RateLimiter, allow = true): DeliverySource {

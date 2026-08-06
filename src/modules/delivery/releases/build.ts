@@ -1,3 +1,4 @@
+import { collectContrastPairs, loadTokenSet } from '@/modules/design'
 import { resolveTenantById, runValidation, summarizeReport } from '@/platform'
 
 import { contentHash } from '../cache-key'
@@ -87,6 +88,14 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
   })
 
   const settings = await resolveTenantById(payload, args.siteId)
+
+  /**
+   * Токены разрешаются на момент сборки и **замораживаются** в снапшоте.
+   * Читать их при выдаче значило бы, что откат вернёт старую разметку с
+   * новыми цветами — то есть состояние, которого никогда не публиковали.
+   */
+  const { resolved } = await loadTokenSet({ payload, siteId: args.siteId })
+
   const snapshot = composeSnapshot(
     {
       id: siteId,
@@ -98,6 +107,14 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
       parentId: null,
     },
     settings,
+    {
+      colorPairs: collectContrastPairs(resolved),
+      tokenIssues: resolved.issues.map((issue) => ({
+        code: issue.code,
+        message: issue.message,
+      })),
+      tokens: resolved.byTheme,
+    },
   )
 
   const report = runValidation(RELEASE_VALIDATORS, snapshot)

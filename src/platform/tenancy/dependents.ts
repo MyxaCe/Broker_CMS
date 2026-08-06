@@ -22,6 +22,9 @@ const DEPENDENT_COLLECTIONS = [
   { collection: 'categories', field: 'owner', label: 'категории' },
   { collection: 'tags', field: 'owner', label: 'теги' },
   { collection: 'authors', field: 'owner', label: 'авторы' },
+  { collection: 'design-primitives', field: 'owner', label: 'примитивы дизайна' },
+  { collection: 'design-roles', field: 'owner', label: 'семантические роли' },
+  { collection: 'design-component-tokens', field: 'owner', label: 'токены компонентов' },
 ] as const
 
 export interface DependentCount {

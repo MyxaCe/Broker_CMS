@@ -76,6 +76,9 @@ export interface Config {
     articles: Article;
     videos: Video;
     promos: Promo;
+    'design-primitives': DesignPrimitive;
+    'design-roles': DesignRole;
+    'design-component-tokens': DesignComponentToken;
     releases: Release;
     channels: Channel;
     outbox: Outbox;
@@ -97,6 +100,9 @@ export interface Config {
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
     videos: VideosSelect<false> | VideosSelect<true>;
     promos: PromosSelect<false> | PromosSelect<true>;
+    'design-primitives': DesignPrimitivesSelect<false> | DesignPrimitivesSelect<true>;
+    'design-roles': DesignRolesSelect<false> | DesignRolesSelect<true>;
+    'design-component-tokens': DesignComponentTokensSelect<false> | DesignComponentTokensSelect<true>;
     releases: ReleasesSelect<false> | ReleasesSelect<true>;
     channels: ChannelsSelect<false> | ChannelsSelect<true>;
     outbox: OutboxSelect<false> | OutboxSelect<true>;
@@ -574,6 +580,89 @@ export interface Promo {
   createdAt: string;
 }
 /**
+ * Сырые значения: цвета, отступы, размеры. Применение задаётся семантическими ролями, а не здесь.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "design-primitives".
+ */
+export interface DesignPrimitive {
+  id: number;
+  /**
+   * Точки разделяют уровни. Имя — часть контракта: по нему токен ищут в коде.
+   */
+  name: string;
+  category: 'color' | 'space' | 'fontSize' | 'fontWeight' | 'lineHeight' | 'radius' | 'shadow' | 'duration';
+  /**
+   * Цвет в #RRGGBB, размер с единицами: 16px, 1.125rem, 200ms.
+   */
+  value: string;
+  /**
+   * Бренд, регион или сайт. Набор сайта складывается из наборов предков: ближний перекрывает дальний по имени токена.
+   */
+  owner: number | Tenant;
+  /**
+   * Например: основной жёлтый бренда. Видно дизайнеру при выборе.
+   */
+  description?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Смысловой слой: surface, text, border, accent, state, market. Обе темы обязательны — тёмная не «когда-нибудь потом».
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "design-roles".
+ */
+export interface DesignRole {
+  id: number;
+  /**
+   * Точки разделяют уровни. Имя — часть контракта: по нему токен ищут в коде.
+   */
+  name: string;
+  group: 'surface' | 'text' | 'border' | 'accent' | 'state' | 'market';
+  /**
+   * Имя примитива, например color.gray.900.
+   */
+  light: string;
+  /**
+   * Обязательна. Тёмная тема, собранная наспех, — это непройденный контраст, заметный не всем.
+   */
+  dark: string;
+  /**
+   * Бренд, регион или сайт. Набор сайта складывается из наборов предков: ближний перекрывает дальний по имени токена.
+   */
+  owner: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * button.primary.bg, card.radius, chart.candleUp. Цвета берутся из ролей, размеры — прямо из примитивов.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "design-component-tokens".
+ */
+export interface DesignComponentToken {
+  id: number;
+  /**
+   * Точки разделяют уровни. Имя — часть контракта: по нему токен ищут в коде.
+   */
+  name: string;
+  /**
+   * Цвет всегда через роль: тогда смена акцента меняет все кнопки разом, а не по одной.
+   */
+  source: 'role' | 'primitive';
+  /**
+   * Имя роли либо примитива — в зависимости от источника.
+   */
+  reference: string;
+  /**
+   * Бренд, регион или сайт. Набор сайта складывается из наборов предков: ближний перекрывает дальний по имени токена.
+   */
+  owner: number | Tenant;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Собранный релиз неизменяем: правки после сборки невозможны ни через интерфейс, ни напрямую в базе. Откат выполняется переключением канала.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -817,6 +906,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'promos';
         value: number | Promo;
+      } | null)
+    | ({
+        relationTo: 'design-primitives';
+        value: number | DesignPrimitive;
+      } | null)
+    | ({
+        relationTo: 'design-roles';
+        value: number | DesignRole;
+      } | null)
+    | ({
+        relationTo: 'design-component-tokens';
+        value: number | DesignComponentToken;
       } | null)
     | ({
         relationTo: 'releases';
@@ -1099,6 +1200,44 @@ export interface PromosSelect<T extends boolean = true> {
   status?: T;
   publishAt?: T;
   unpublishAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "design-primitives_select".
+ */
+export interface DesignPrimitivesSelect<T extends boolean = true> {
+  name?: T;
+  category?: T;
+  value?: T;
+  owner?: T;
+  description?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "design-roles_select".
+ */
+export interface DesignRolesSelect<T extends boolean = true> {
+  name?: T;
+  group?: T;
+  light?: T;
+  dark?: T;
+  owner?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "design-component-tokens_select".
+ */
+export interface DesignComponentTokensSelect<T extends boolean = true> {
+  name?: T;
+  source?: T;
+  reference?: T;
+  owner?: T;
   updatedAt?: T;
   createdAt?: T;
 }

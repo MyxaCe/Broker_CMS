@@ -49,6 +49,33 @@ export const contrastValidator: Validator<ContrastInput> = {
   },
 }
 
+export interface TokenGraphInput {
+  readonly tokenIssues: readonly { readonly code: string; readonly message: string }[]
+}
+
+/**
+ * Целостность графа токенов (ТЗ 2.1).
+ *
+ * Битая ссылка не роняет разрешение — она возвращается расхождением, потому
+ * что в черновике это нормальное состояние. Но релиз с ней собраться не
+ * должен: токен без значения превращается на витрине в пустую строку, то есть
+ * в невидимый текст или отсутствующий фон.
+ */
+export const tokenGraphValidator: Validator<TokenGraphInput> = {
+  name: 'token-graph',
+  description: 'Ссылки между уровнями токенов разрешаются, обе темы заполнены (ТЗ 2.1).',
+
+  run(input) {
+    return input.tokenIssues.map((issue) => ({
+      validator: 'token-graph',
+      severity: 'blocking' as const,
+      code: issue.code,
+      message: issue.message,
+      location: 'дизайн-токены',
+    }))
+  },
+}
+
 export interface ForbiddenClaimsInput {
   readonly texts: readonly TextItem[]
   /** Дополнительные формулировки бренда или юрисдикции — не замена основного словаря. */

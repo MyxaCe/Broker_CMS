@@ -1,4 +1,4 @@
-import { contrastValidator, forbiddenClaimsValidator } from '@/modules/design'
+import { contrastValidator, forbiddenClaimsValidator, tokenGraphValidator } from '@/modules/design'
 import { adaptValidator } from '@/platform'
 
 import type { ReleaseSnapshot } from './snapshot'
@@ -90,6 +90,12 @@ export const siteReadinessValidator: Validator<ReleaseSnapshot> = {
  */
 export const RELEASE_VALIDATORS: readonly Validator<ReleaseSnapshot>[] = [
   siteReadinessValidator,
+  /**
+   * Целостность графа токенов — до контраста: у набора с битой ссылкой роль
+   * не имеет значения, и проверять её контраст не с чем. Сообщение «контраст
+   * не сошёлся» на отсутствующем цвете сбивало бы с толку.
+   */
+  adaptValidator(tokenGraphValidator, (snapshot) => ({ tokenIssues: snapshot.tokenIssues })),
   adaptValidator(contrastValidator, (snapshot) => ({ colorPairs: snapshot.colorPairs })),
   adaptValidator(forbiddenClaimsValidator, (snapshot) => ({ texts: snapshot.texts })),
 ]

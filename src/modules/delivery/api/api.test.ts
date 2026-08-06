@@ -21,6 +21,8 @@ const SNAPSHOT: ReleaseSnapshot = {
   },
   colorPairs: [],
   texts: [],
+  tokenIssues: [],
+  tokens: {},
 }
 
 const RELEASE: ResolvedRelease = {
