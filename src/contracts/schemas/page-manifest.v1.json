@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cms.broker.platform/contracts/v1/page-manifest.json",
+  "title": "Манифест путей сайта, версия 1",
+  "description": "Всё, что нужно для карты сайта, статической сборки и маршрутизации: пути с их SEO, ссылки hreflang, перенаправления, директивы robots. Редиректы и robots не зависят от языка и отдаются целиком: потребитель применяет их в middleware, где языка ещё нет.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract", "site", "release", "resolution", "pages", "redirects", "robots"],
+  "properties": {
+    "contract": { "const": "v1" },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slug"],
+      "properties": {
+        "slug": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" }
+      }
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["number", "builtAt"],
+      "properties": {
+        "number": { "type": "integer", "minimum": 1 },
+        "builtAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locale", "jurisdiction", "variant"],
+      "properties": {
+        "locale": { "type": "string", "minLength": 2, "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+        "jurisdiction": { "type": "string", "minLength": 1 },
+        "variant": { "type": "string", "minLength": 1 }
+      }
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "title", "updatedAt", "noindex", "alternates", "jsonLd"],
+        "properties": {
+          "path": { "type": "string", "pattern": "^/" },
+          "title": { "type": "string" },
+          "updatedAt": {
+            "description": "Дата последнего изменения — значение lastmod в карте сайта.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "noindex": { "type": "boolean" },
+          "canonical": { "type": ["string", "null"] },
+          "description": { "type": ["string", "null"] },
+          "ogImage": { "type": ["string", "null"] },
+          "twitterSite": { "type": ["string", "null"] },
+          "alternates": {
+            "description": "Граф hreflang: языковые версии этой же страницы, в том числе на других сайтах бренда. Версии без публичного адреса сайта в граф не попадают — относительная ссылка в hreflang не значит ничего.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["locale", "href"],
+              "properties": {
+                "locale": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+                "href": { "type": "string", "pattern": "^https://" }
+              }
+            }
+          },
+          "jsonLd": {
+            "description": "Готовые узлы разметки. Выводятся из содержимого страницы при сборке релиза, а не заполняются редактором: заполненное руками расходится со страницей при первой правке.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["@type"],
+              "properties": {
+                "@type": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "redirects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to", "status"],
+        "properties": {
+          "from": { "type": "string", "pattern": "^/" },
+          "to": {
+            "description": "Пусто у 410: «удалено навсегда» — это не переход.",
+            "type": "string"
+          },
+          "status": { "enum": [301, 302, 410] },
+          "locale": {
+            "description": "null — правило действует на всех языках сайта.",
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
+    "robots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowIndexing", "disallow"],
+      "properties": {
+        "allowIndexing": {
+          "description": "false — сайт закрыт от обхода целиком. Умолчание именно такое: открытый по ошибке сайт убирается из индекса месяцами.",
+          "type": "boolean"
+        },
+        "disallow": { "type": "array", "items": { "type": "string", "pattern": "^/" } }
+      }
+    }
+  }
+}

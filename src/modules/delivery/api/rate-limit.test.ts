@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { EMPTY_STRUCTURE } from '@/modules/design'
+import { EMPTY_ROUTING, EMPTY_STRUCTURE } from '@/modules/design'
 
 import { handleSiteConfig } from './handler'
 import { stubDeliverySource } from './source.fixture'
@@ -114,6 +114,7 @@ const SNAPSHOT: ReleaseSnapshot = {
   tokens: {},
   complianceFindings: [],
   structure: EMPTY_STRUCTURE,
+  routing: EMPTY_ROUTING,
 }
 
 function source(limiter: RateLimiter, allow = true): DeliverySource {

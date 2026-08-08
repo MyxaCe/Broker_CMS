@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { checkAgainstSchema, SCHEMA_IDS } from '@/contracts'
+import { EMPTY_ROUTING } from '@/modules/design'
 
 import { buildBootstrapResponse } from './bootstrap'
 import { handleBootstrap } from './handler'
@@ -72,6 +73,7 @@ const SNAPSHOT: ReleaseSnapshot = {
     ],
     findings: [],
   },
+  routing: EMPTY_ROUTING,
 }
 
 const RELEASE: ResolvedRelease = {

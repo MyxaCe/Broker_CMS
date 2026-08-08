@@ -30,6 +30,7 @@ export {
   complianceValidator,
   contrastValidator,
   forbiddenClaimsValidator,
+  routingValidator,
   structureValidator,
   tokenGraphValidator,
 } from './validators'
@@ -38,9 +39,29 @@ export type {
   ComplianceValidatorInput,
   ContrastInput,
   ForbiddenClaimsInput,
+  RoutingValidatorInput,
   StructureValidatorInput,
   TokenGraphInput,
 } from './validators'
+
+export { buildJsonLd, JSON_LD_KIND_LABELS, JSON_LD_KINDS } from './seo/jsonld'
+export type { JsonLdInput, JsonLdKind } from './seo/jsonld'
+export { composeRouting } from './seo/manifest'
+export type { ComposeRoutingArgs, ManifestPageInput, ManifestSiteInput } from './seo/manifest'
+export { loadRouting } from './seo/load'
+export { Redirects } from './seo/redirects.collection'
+export { SeoProfiles } from './seo/seo-profiles.collection'
+export { EMPTY_ROUTING, REDIRECT_STATUS_LABELS, REDIRECT_STATUSES } from './seo/types'
+export type {
+  HreflangAlternate,
+  JsonLdNode,
+  ManifestPage,
+  RedirectRecord,
+  RedirectStatus,
+  RoutingFinding,
+  RoutingSnapshot,
+  SeoProfileRecord,
+} from './seo/types'
 
 export { composeStructure } from './structure/compose'
 export type { ComposeStructureArgs, GlobalAreaRecord, NavigationRecord } from './structure/compose'

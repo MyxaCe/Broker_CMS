@@ -1,6 +1,7 @@
 import {
   collectContrastPairs,
   loadComplianceInput,
+  loadRouting,
   loadStructure,
   loadTokenSet,
   runComplianceRules,
@@ -123,6 +124,13 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
    */
   const structure = await loadStructure({ payload, siteId: args.siteId, locales })
 
+  /**
+   * Слой В читается здесь же — и это единственное чтение сборки, выходящее за
+   * пределы своего сайта: граф hreflang по определению связывает языковые
+   * версии, живущие на разных сайтах бренда (ТЗ 2.3).
+   */
+  const routing = await loadRouting({ payload, siteId: args.siteId, locales })
+
   const snapshot = composeSnapshot(
     {
       id: siteId,
@@ -143,6 +151,7 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
       tokens: resolved.byTheme,
       complianceFindings: runComplianceRules(complianceInput),
       structure,
+      routing,
     },
   )
 

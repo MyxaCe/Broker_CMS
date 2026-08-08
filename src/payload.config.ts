@@ -19,6 +19,8 @@ import { GlobalAreas } from './modules/design/compliance/global-areas.collection
 import { Navigations } from './modules/design/navigation/navigation.collection'
 import { Pages } from './modules/design/pages/pages.collection'
 import { Sections } from './modules/design/sections/sections.collection'
+import { Redirects } from './modules/design/seo/redirects.collection'
+import { SeoProfiles } from './modules/design/seo/seo-profiles.collection'
 import {
   DesignComponentTokens,
   DesignPrimitives,
@@ -67,6 +69,8 @@ export default buildConfig({
     Sections,
     Navigations,
     GlobalAreas,
+    SeoProfiles,
+    Redirects,
     Releases,
     Channels,
     Outbox,

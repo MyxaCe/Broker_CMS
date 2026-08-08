@@ -2,6 +2,7 @@ import {
   complianceValidator,
   contrastValidator,
   forbiddenClaimsValidator,
+  routingValidator,
   structureValidator,
   tokenGraphValidator,
 } from '@/modules/design'
@@ -111,6 +112,9 @@ export const RELEASE_VALIDATORS: readonly Validator<ReleaseSnapshot>[] = [
    */
   adaptValidator(structureValidator, (snapshot) => ({
     structureFindings: snapshot.structure.findings,
+  })),
+  adaptValidator(routingValidator, (snapshot) => ({
+    routingFindings: snapshot.routing.findings,
   })),
   /**
    * Комплаенс — последним: его находки самые дорогие для чтения, и показывать

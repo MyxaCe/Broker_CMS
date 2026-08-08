@@ -197,10 +197,17 @@ export function runComplianceRules(input: ComplianceInput): ComplianceFinding[] 
   ]
 }
 
-interface FlatBlock {
+export interface FlatBlock {
   readonly type: string
   readonly path: string
   readonly jurisdictions: readonly string[]
+  /**
+   * Пропсы блока как есть. Нужны тем, кто читает содержимое, а не только
+   * состав дерева: разметке JSON-LD, извлечению текстов для стоп-словаря.
+   * Обход дерева должен быть один — второй разошёлся бы с этим в обработке
+   * вложенности, и разошёлся бы незаметно.
+   */
+  readonly props: unknown
 }
 
 /**
@@ -231,7 +238,7 @@ export function collectBlocks(blocks: unknown, prefix = 'blocks'): FlatBlock[] {
         ? toCodes((visibility as Record<string, unknown>).jurisdictions)
         : []
 
-    found.push({ type, path, jurisdictions })
+    found.push({ type, path, jurisdictions, props: record.props })
 
     const slots = record.slots
 

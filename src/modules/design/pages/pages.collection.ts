@@ -1,6 +1,7 @@
 import { auditHooks, createTenantAccess, crossTenantOnly, isCrossTenantActor } from '@/platform'
 
 import { BLOCK_ALIGNMENTS, BLOCK_THEMES, BLOCK_WIDTHS, PADDING_STEPS } from '../blocks/style'
+import { JSON_LD_KIND_LABELS, JSON_LD_KINDS } from '../seo/jsonld'
 
 import { normalizePath, PATH_PATTERN } from './path'
 
@@ -175,7 +176,47 @@ export const Pages: CollectionConfig = {
           defaultValue: false,
           label: 'Закрыть от индексации',
         },
+        {
+          name: 'jsonLd',
+          type: 'select',
+          defaultValue: 'auto',
+          label: 'Разметка для поисковика',
+          options: JSON_LD_KINDS.map((value) => ({ value, label: JSON_LD_KIND_LABELS[value] })),
+          admin: {
+            description:
+              'Автоматически: крошки из пути, FAQ из блоков аккордеона, реквизиты организации на главной. Руками заполнять нечего — заполненное руками расходится с содержимым при первой правке.',
+          },
+        },
       ],
+    },
+
+    /**
+     * Ключ перевода — связь между версиями одной страницы на разных языках и
+     * **разных сайтах** (ТЗ 2.3: «одна страница в de/fr/ru связывается явно»).
+     *
+     * Именно явно: совпадение путей для этого не годится — у немецкой и
+     * французской версии пути разные, ради того они и разные.
+     */
+    {
+      name: 'translationKey',
+      type: 'text',
+      index: true,
+      label: 'Ключ перевода',
+      admin: {
+        description:
+          'Одинаковый у всех языковых версий одной страницы: about-us. Из него собираются ссылки hreflang, в том числе на сайты-побратимы бренда.',
+      },
+      validate: (value: unknown) => {
+        if (value === null || value === undefined || value === '') {
+          return true
+        }
+
+        if (typeof value !== 'string' || !/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/.test(value)) {
+          return 'Ключ строчными латинскими через дефис: about-us.'
+        }
+
+        return true
+      },
     },
 
     {

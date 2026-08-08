@@ -3,6 +3,7 @@ import { DEFAULT_FORBIDDEN_PHRASES, findForbiddenPhrases } from './forbidden-cla
 
 import type { ContrastUsage } from './contrast'
 import type { TextItem } from './forbidden-claims'
+import type { RoutingFinding } from './seo/types'
 import type { StructureFinding } from './structure/types'
 import type { Validator } from '@/platform'
 
@@ -128,6 +129,32 @@ export const structureValidator: Validator<StructureValidatorInput> = {
   run(input) {
     return input.structureFindings.map((finding) => ({
       validator: 'structure',
+      severity: finding.severity,
+      code: finding.code,
+      message: finding.message,
+      location: finding.location,
+    }))
+  },
+}
+
+export interface RoutingValidatorInput {
+  readonly routingFindings: readonly RoutingFinding[]
+}
+
+/**
+ * Маршрутизация и SEO (ТЗ 2.3).
+ *
+ * Уровень находки, как и у структуры, приходит из неё самой: цикл редиректов
+ * не даёт открыть страницу вовсе, а отсутствующий публичный адрес соседнего
+ * сайта всего лишь укорачивает граф hreflang.
+ */
+export const routingValidator: Validator<RoutingValidatorInput> = {
+  name: 'routing',
+  description: 'Редиректы без циклов, канонические адреса абсолютны, hreflang однозначен (ТЗ 2.3).',
+
+  run(input) {
+    return input.routingFindings.map((finding) => ({
+      validator: 'routing',
       severity: finding.severity,
       code: finding.code,
       message: finding.message,

@@ -1,6 +1,6 @@
-import { EMPTY_STRUCTURE } from '@/modules/design'
+import { EMPTY_ROUTING, EMPTY_STRUCTURE } from '@/modules/design'
 
-import type { ColorPair, StructureSnapshot, TextItem } from '@/modules/design'
+import type { ColorPair, RoutingSnapshot, StructureSnapshot, TextItem } from '@/modules/design'
 import type { TenantNode, TenantSettings } from '@/platform'
 
 /**
@@ -73,6 +73,13 @@ export interface ReleaseSnapshot {
    * `bootstrap` — одним ответом на страницу, а не тремя запросами.
    */
   readonly structure: StructureSnapshot
+  /**
+   * Маршрутизация и SEO (ТЗ 2.3): манифест путей, hreflang, редиректы,
+   * директивы robots. Замораживается по той же причине, что и структура:
+   * карта сайта, отданная вчера, обязана совпадать с тем, что вчера было
+   * опубликовано.
+   */
+  readonly routing: RoutingSnapshot
 }
 
 /**
@@ -96,6 +103,7 @@ export function composeSnapshot(
       readonly location: string
     }[]
     structure?: StructureSnapshot
+    routing?: RoutingSnapshot
   } = {},
 ): ReleaseSnapshot {
   return {
@@ -120,5 +128,6 @@ export function composeSnapshot(
     tokens: content.tokens ?? {},
     complianceFindings: content.complianceFindings ?? [],
     structure: content.structure ?? EMPTY_STRUCTURE,
+    routing: content.routing ?? EMPTY_ROUTING,
   }
 }

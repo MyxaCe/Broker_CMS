@@ -133,6 +133,7 @@ export {
   readFeedRequest,
   respondArticleFeed,
   respondBootstrap,
+  respondPageManifest,
   respondPromoBoard,
   respondSearch,
   respondSiteConfig,

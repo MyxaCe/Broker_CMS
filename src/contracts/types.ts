@@ -70,6 +70,49 @@ export interface BootstrapResponse {
   readonly globalAreas: Readonly<Record<string, GlobalAreaResponse>>
 }
 
+export interface HreflangAlternateResponse {
+  readonly locale: string
+  readonly href: string
+}
+
+export interface ManifestPageResponse {
+  readonly path: string
+  readonly title: string
+  readonly updatedAt: string
+  readonly noindex: boolean
+  readonly canonical: string | null
+  readonly description: string | null
+  readonly ogImage: string | null
+  readonly twitterSite: string | null
+  readonly alternates: readonly HreflangAlternateResponse[]
+  readonly jsonLd: readonly Readonly<Record<string, unknown>>[]
+}
+
+export interface PageManifestResponse {
+  readonly contract: typeof CONTRACT_VERSION
+  readonly site: { readonly slug: string }
+  readonly release: {
+    readonly number: number
+    readonly builtAt: string
+  }
+  readonly resolution: {
+    readonly locale: string
+    readonly jurisdiction: string
+    readonly variant: string
+  }
+  readonly pages: readonly ManifestPageResponse[]
+  readonly redirects: readonly {
+    readonly from: string
+    readonly to: string
+    readonly status: 301 | 302 | 410
+    readonly locale?: string | null
+  }[]
+  readonly robots: {
+    readonly allowIndexing: boolean
+    readonly disallow: readonly string[]
+  }
+}
+
 export interface FeedItemReference {
   readonly slug: string
   readonly title: string

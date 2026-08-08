@@ -2,9 +2,10 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import { findDependentCollections } from './dependents'
 import { resolveTenantById } from './resolve-tenant'
 
-import type { Payload, TypedUser } from 'payload'
+import type { CollectionConfig, CollectionSlug, Payload, TypedUser } from 'payload'
 
 /**
  * Доказательство пункта приёмки (ТЗ разд. 11):
@@ -48,25 +49,7 @@ const users: Record<string, TypedUser> = {}
  * drizzle. Поштучное удаление медленнее, но на объёме фикстуры это доли
  * секунды, а поведение предсказуемо.
  */
-type WipeableCollection =
-  | 'users'
-  | 'tenants'
-  | 'articles'
-  | 'videos'
-  | 'promos'
-  | 'media'
-  | 'categories'
-  | 'tags'
-  | 'authors'
-  | 'design-primitives'
-  | 'design-roles'
-  | 'design-component-tokens'
-  | 'pages'
-  | 'sections'
-  | 'navigations'
-  | 'global-areas'
-
-async function wipeCollection(collection: WipeableCollection): Promise<void> {
+async function wipeCollection(collection: CollectionSlug): Promise<void> {
   const existing = await payload.find({
     collection,
     pagination: false,
@@ -86,22 +69,25 @@ async function wipeCollection(collection: WipeableCollection): Promise<void> {
  * тесту: обязательная связь не обнуляется, поэтому удаление сайта с новостями
  * невозможно by design. Здесь фикстура сносится целиком, значит сносить надо
  * в правильном порядке.
+ *
+ * Перечень выводится из конфигурации той же функцией, что и защита тенанта от
+ * удаления. Ручной список здесь отставал трижды — и каждый раз падал не тот
+ * тест, который сломали. То же лекарство, что и у [[DEBT-010]]: правило
+ * «не забудь дописать» заменено устройством.
+ *
+ * Обратный порядок объявления коллекций не случаен: зависимая коллекция
+ * объявляется после той, на которую ссылается, поэтому обход с конца сносит
+ * материалы раньше их авторов и категорий.
  */
 async function wipe(): Promise<void> {
-  await wipeCollection('pages')
-  await wipeCollection('sections')
-  await wipeCollection('navigations')
-  await wipeCollection('global-areas')
-  await wipeCollection('articles')
-  await wipeCollection('videos')
-  await wipeCollection('promos')
-  await wipeCollection('media')
-  await wipeCollection('categories')
-  await wipeCollection('tags')
-  await wipeCollection('authors')
-  await wipeCollection('design-component-tokens')
-  await wipeCollection('design-roles')
-  await wipeCollection('design-primitives')
+  const dependents = findDependentCollections(
+    payload.config.collections as unknown as CollectionConfig[],
+  ).map((entry) => entry.collection as CollectionSlug)
+
+  for (const collection of [...new Set(dependents)].reverse()) {
+    await wipeCollection(collection)
+  }
+
   await wipeCollection('users')
   await wipeCollection('tenants')
 }

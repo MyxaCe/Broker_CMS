@@ -83,6 +83,8 @@ export interface Config {
     sections: Section;
     navigations: Navigation;
     'global-areas': GlobalArea;
+    'seo-profiles': SeoProfile;
+    redirects: Redirect;
     releases: Release;
     channels: Channel;
     outbox: Outbox;
@@ -111,6 +113,8 @@ export interface Config {
     sections: SectionsSelect<false> | SectionsSelect<true>;
     navigations: NavigationsSelect<false> | NavigationsSelect<true>;
     'global-areas': GlobalAreasSelect<false> | GlobalAreasSelect<true>;
+    'seo-profiles': SeoProfilesSelect<false> | SeoProfilesSelect<true>;
+    redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     releases: ReleasesSelect<false> | ReleasesSelect<true>;
     channels: ChannelsSelect<false> | ChannelsSelect<true>;
     outbox: OutboxSelect<false> | OutboxSelect<true>;
@@ -719,7 +723,15 @@ export interface Page {
     canonical?: string | null;
     ogImage?: (number | null) | Media;
     noindex?: boolean | null;
+    /**
+     * Автоматически: крошки из пути, FAQ из блоков аккордеона, реквизиты организации на главной. Руками заполнять нечего — заполненное руками расходится с содержимым при первой правке.
+     */
+    jsonLd?: ('auto' | 'article' | 'none') | null;
   };
+  /**
+   * Одинаковый у всех языковых версий одной страницы: about-us. Из него собираются ссылки hreflang, в том числе на сайты-побратимы бренда.
+   */
+  translationKey?: string | null;
   /**
    * Пусто — страница доступна во всех юрисдикциях сайта. Продукт, запрещённый в юрисдикции, ограничивается здесь.
    */
@@ -857,6 +869,91 @@ export interface GlobalArea {
         id?: string | null;
       }[]
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Умолчания для всех страниц: шаблон заголовка, описание, картинка для соцсетей, реквизиты организации. Наследуются бренд → регион → сайт.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "seo-profiles".
+ */
+export interface SeoProfile {
+  id: number;
+  title: string;
+  owner: number | Tenant;
+  locale: string;
+  isActive: boolean;
+  /**
+   * Например «%s — Apex Broker». %s заменяется заголовком страницы.
+   */
+  titleTemplate?: string | null;
+  /**
+   * Используется, когда у страницы своего описания нет.
+   */
+  defaultDescription?: string | null;
+  defaultOgImage?: (number | null) | Media;
+  /**
+   * В виде @apexbroker.
+   */
+  twitterSite?: string | null;
+  organization?: {
+    name?: string | null;
+    /**
+     * Как в реестре регулятора, если отличается от бренда.
+     */
+    legalName?: string | null;
+    logo?: (number | null) | Media;
+    /**
+     * Соцсети, реестр регулятора. Полные адреса по https.
+     */
+    sameAs?:
+      | {
+          url: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Снято по умолчанию. Сайт на стенде, случайно открытый поисковикам, убирается из индекса месяцами — а закрытый открывается одной галочкой.
+   */
+  allowIndexing: boolean;
+  /**
+   * Пути, которые не должны обходиться: /preview, /internal.
+   */
+  disallowPaths?:
+    | {
+        path: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Куда вести старые адреса. 410 — для удалённого навсегда: он говорит поисковику убрать страницу, а 404 оставляет её в индексе месяцами.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects".
+ */
+export interface Redirect {
+  id: number;
+  from: string;
+  to?: string | null;
+  /**
+   * 301 — переехало навсегда, вес страницы передаётся. 302 — временно, вес остаётся у старого адреса.
+   */
+  status: '301' | '302' | '410';
+  site: number | Tenant;
+  /**
+   * Пусто — правило действует на всех языках сайта.
+   */
+  locale?: string | null;
+  isActive: boolean;
+  /**
+   * Зачем заведено. Через год без этой строки правило невозможно ни подтвердить, ни снять.
+   */
+  note?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1132,6 +1229,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'global-areas';
         value: number | GlobalArea;
+      } | null)
+    | ({
+        relationTo: 'seo-profiles';
+        value: number | SeoProfile;
+      } | null)
+    | ({
+        relationTo: 'redirects';
+        value: number | Redirect;
       } | null)
     | ({
         relationTo: 'releases';
@@ -1482,7 +1587,9 @@ export interface PagesSelect<T extends boolean = true> {
         canonical?: T;
         ogImage?: T;
         noindex?: T;
+        jsonLd?: T;
       };
+  translationKey?: T;
   jurisdictions?:
     | T
     | {
@@ -1550,6 +1657,57 @@ export interface GlobalAreasSelect<T extends boolean = true> {
         code?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "seo-profiles_select".
+ */
+export interface SeoProfilesSelect<T extends boolean = true> {
+  title?: T;
+  owner?: T;
+  locale?: T;
+  isActive?: T;
+  titleTemplate?: T;
+  defaultDescription?: T;
+  defaultOgImage?: T;
+  twitterSite?: T;
+  organization?:
+    | T
+    | {
+        name?: T;
+        legalName?: T;
+        logo?: T;
+        sameAs?:
+          | T
+          | {
+              url?: T;
+              id?: T;
+            };
+      };
+  allowIndexing?: T;
+  disallowPaths?:
+    | T
+    | {
+        path?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects_select".
+ */
+export interface RedirectsSelect<T extends boolean = true> {
+  from?: T;
+  to?: T;
+  status?: T;
+  site?: T;
+  locale?: T;
+  isActive?: T;
+  note?: T;
   updatedAt?: T;
   createdAt?: T;
 }
