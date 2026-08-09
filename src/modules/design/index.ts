@@ -182,6 +182,12 @@ export type { RedirectIssue, RedirectRule } from './pages/path'
 
 export { Pages } from './pages/pages.collection'
 
+export { BlockView } from './render/BlockView'
+export { PageView } from './render/PageView'
+export type { PageViewProps, PreviewPage } from './render/PageView'
+export { loadPreview, PreviewError } from './render/load-preview'
+export type { PreviewResult } from './render/load-preview'
+
 export {
   expandSections,
   MAX_SECTION_DEPTH,

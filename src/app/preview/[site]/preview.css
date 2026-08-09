@@ -1,0 +1,283 @@
+/*
+ * Оформление предпросмотра.
+ *
+ * Скупое намеренно. Цвета берутся из токенов сайта — переменные проставляются
+ * на корне страницы; всё остальное сведено к минимуму, за которым виден смысл
+ * блока. Красивая вёрстка здесь обещала бы то, чего CMS не поставляет: рисует
+ * страницы витрина, а не мы.
+ */
+
+.pv-root {
+  min-height: 100vh;
+  background: var(--bkc-surface-base, #fff);
+  color: var(--bkc-text-primary, #111);
+  font:
+    16px/1.5 system-ui,
+    sans-serif;
+}
+
+.pv-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: #16181d;
+  color: #e8e8ea;
+  font-size: 0.85rem;
+}
+
+.pv-bar__title {
+  font-weight: 600;
+}
+
+.pv-bar__status {
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.75rem;
+  background: #4a3b12;
+  color: #f5c451;
+}
+
+.pv-bar__status--published {
+  background: #12351f;
+  color: #6fd08c;
+}
+
+.pv-bar__group {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.pv-bar__link {
+  color: #9aa0ab;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.pv-bar__link--on {
+  color: #fff;
+  border-bottom-color: #fff;
+}
+
+.pv-bar__select {
+  margin-left: auto;
+  max-width: 22rem;
+  background: #24272e;
+  color: #e8e8ea;
+  border: 1px solid #343841;
+  border-radius: 3px;
+  padding: 0.2rem 0.4rem;
+}
+
+.pv-risk {
+  padding: 0.6rem 1rem;
+  background: var(--bkc-surface-raised, #f3f3f5);
+  border-bottom: 1px solid rgb(0 0 0 / 12%);
+  font-size: 0.8rem;
+}
+
+.pv-header,
+.pv-footer {
+  padding: 1rem;
+  border-bottom: 1px solid rgb(0 0 0 / 10%);
+}
+
+.pv-footer {
+  border-bottom: none;
+  border-top: 1px solid rgb(0 0 0 / 10%);
+}
+
+.pv-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pv-nav ul ul {
+  gap: 0.6rem;
+  margin-left: 0.6rem;
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+.pv-main {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.pv-block {
+  padding: 1.25rem 0;
+}
+
+.pv-block + .pv-block {
+  border-top: 1px dashed rgb(0 0 0 / 8%);
+}
+
+.pv-lead {
+  font-size: 1.1rem;
+  opacity: 0.8;
+}
+
+.pv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pv-grid li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid rgb(0 0 0 / 10%);
+  border-radius: 4px;
+}
+
+.pv-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pv-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.pv-metric {
+  font-size: 1.6rem;
+}
+
+.pv-note {
+  opacity: 0.7;
+  font-size: 0.75rem;
+}
+
+.pv-quote {
+  margin: 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--bkc-accent-default, #888);
+}
+
+.pv-faq dt {
+  font-weight: 600;
+  margin-top: 0.75rem;
+}
+
+.pv-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pv-table th,
+.pv-table td {
+  border: 1px solid rgb(0 0 0 / 12%);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+
+.pv-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pv-button {
+  display: inline-block;
+  padding: 0.4rem 0.9rem;
+  border-radius: 3px;
+  background: var(--bkc-accent-default, #2b6cb0);
+  color: var(--bkc-text-on-accent, #fff);
+}
+
+.pv-button--ghost {
+  background: transparent;
+  color: inherit;
+  border: 1px solid currentcolor;
+}
+
+.pv-media,
+.pv-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  border: 1px dashed rgb(0 0 0 / 25%);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.pv-raw {
+  overflow-x: auto;
+  padding: 0.75rem;
+  background: rgb(0 0 0 / 6%);
+  font-size: 0.8rem;
+}
+
+.pv-unknown {
+  padding: 0.75rem;
+  border: 1px solid #c0392b;
+  border-radius: 4px;
+  color: #c0392b;
+}
+
+.pv-divider {
+  border: none;
+  border-top: 1px solid rgb(0 0 0 / 15%);
+}
+
+.pv-spacer[data-size='s'] {
+  height: 1rem;
+}
+
+.pv-spacer[data-size='m'] {
+  height: 2rem;
+}
+
+.pv-spacer[data-size='l'] {
+  height: 4rem;
+}
+
+.pv-empty,
+.pv-refusal {
+  padding: 2rem;
+  opacity: 0.75;
+}
+
+.pv-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.pv-split--right > :first-child {
+  order: 2;
+}
+
+.pv-figure {
+  margin: 0;
+}
+
+.pv-cookie {
+  position: sticky;
+  bottom: 0;
+  padding: 0.75rem 1rem;
+  background: var(--bkc-surface-raised, #f3f3f5);
+  border-top: 1px solid rgb(0 0 0 / 12%);
+}

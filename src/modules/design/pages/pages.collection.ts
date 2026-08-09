@@ -39,6 +39,30 @@ export const Pages: CollectionConfig = {
     group: 'Страницы',
     description:
       'Путь уникален в пределах сайта и языка. Смена пути сохраняет старый в истории — из неё собирается 301.',
+
+    /**
+     * Кнопка «Просмотр» ведёт на предпросмотр чернового пространства (ТЗ 5.4),
+     * а не на витрину: витрина отдаёт только опубликованное, и открывать её из
+     * карточки черновика значило бы показывать редактору не его правку.
+     */
+    preview: (doc) => {
+      const site = doc?.site
+      const slug =
+        site !== null && typeof site === 'object' && 'slug' in site
+          ? String((site as { slug: unknown }).slug)
+          : null
+
+      if (slug === null || typeof doc?.path !== 'string') {
+        return null
+      }
+
+      const search = new URLSearchParams({
+        path: doc.path,
+        ...(typeof doc.locale === 'string' ? { locale: doc.locale } : {}),
+      })
+
+      return `/preview/${slug}?${search.toString()}`
+    },
   },
 
   fields: [
