@@ -213,7 +213,7 @@ describe('расхождения структуры блокируют сбор�
         owner: brandId,
         locale: 'en',
         isActive: false,
-        blocks: [{ type: 'promo-banner' }],
+        blocks: [{ type: 'divider' }],
       } as never,
     })
 

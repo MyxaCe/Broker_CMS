@@ -160,10 +160,15 @@ export {
   isAllowedSlot,
   isAllowedVariant,
   isKnownBlock,
+  propsOf,
 } from './blocks/registry'
 export type { BlockDefinition, BlockGroup, BoundCollection } from './blocks/registry'
 
 export { MAX_BLOCK_DEPTH, validateBlockTree } from './blocks/validate-tree'
+
+export { emptyProps, emptyValue, PROP_KINDS, validateProps } from './blocks/props'
+export type { PropField, PropIssue, PropKind, PropOption } from './blocks/props'
+export { BLOCK_PROPS } from './blocks/registry-props'
 export type { BlockNode, TreeContext, TreeIssue } from './blocks/validate-tree'
 
 export {

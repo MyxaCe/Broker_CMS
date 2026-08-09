@@ -191,7 +191,7 @@ describe('изображение без alt блокирует релиз', () =
         locale: 'en',
         site: site.id,
         status: 'published',
-        blocks: [{ type: 'hero', props: { image: 999_999 } }],
+        blocks: [{ type: 'hero', props: { title: 'С картинкой', image: '999999' } }],
       } as never,
     })
 

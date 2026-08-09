@@ -6,8 +6,19 @@ import { MAX_BLOCK_DEPTH, validateBlockTree } from './validate-tree'
 
 const ROLES = new Set(['surface.base', 'surface.raised', 'accent.default'])
 
+/**
+ * Заготовка блока с **заполненными** обязательными пропсами.
+ *
+ * Пустой блок больше не проходит проверку — и это работа гейта, а не помеха
+ * тесту: незаполненный обязательный заголовок раньше обнаруживался на витрине.
+ */
 function block(overrides: Record<string, unknown> = {}) {
-  return { type: 'heading-text', style: { ...DEFAULT_BLOCK_STYLE }, ...overrides }
+  return {
+    type: 'heading-text',
+    props: { title: 'Заголовок' },
+    style: { ...DEFAULT_BLOCK_STYLE },
+    ...overrides,
+  }
 }
 
 describe('реестр блоков', () => {
@@ -96,7 +107,9 @@ describe('дерево блоков', () => {
   const context = { roles: ROLES }
 
   it('здоровое дерево не даёт расхождений', () => {
-    expect(validateBlockTree([block(), block({ type: 'quote' })], context)).toEqual([])
+    expect(
+      validateBlockTree([block(), block({ type: 'quote', props: { text: 'Цитата' } })], context),
+    ).toEqual([])
   })
 
   it('неизвестный тип отвергается', () => {
@@ -124,7 +137,7 @@ describe('дерево блоков', () => {
   })
 
   it('вложенность в неразрешённый слот отвергается', () => {
-    const tree = [{ type: 'quote', slots: { columns: [block()] } }]
+    const tree = [{ type: 'quote', props: { text: 'Цитата' }, slots: { columns: [block()] } }]
     const issues = validateBlockTree(tree, context)
 
     expect(issues[0]?.code).toBe('unknown-slot')
@@ -166,7 +179,9 @@ describe('дерево блоков', () => {
     })
 
     it('привязанный блок с источником проходит', () => {
-      const tree = [{ type: 'news-feed', dataSource: { collection: 'articles', limit: 6 } }]
+      const tree = [
+        { type: 'news-feed', props: {}, dataSource: { collection: 'articles', limit: 6 } },
+      ]
 
       expect(validateBlockTree(tree, context)).toEqual([])
     })
@@ -194,7 +209,7 @@ describe('дерево блоков', () => {
     })
 
     it('с полномочиями проходит', () => {
-      const issues = validateBlockTree([{ type: 'raw-embed' }], {
+      const issues = validateBlockTree([{ type: 'raw-embed', props: { html: '<div />' } }], {
         ...context,
         allowRestricted: true,
       })

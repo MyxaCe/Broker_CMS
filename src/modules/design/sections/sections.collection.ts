@@ -1,4 +1,6 @@
-import { auditHooks, createTenantAccess, crossTenantOnly, isCrossTenantActor } from '@/platform'
+import { auditHooks, createTenantAccess, crossTenantOnly } from '@/platform'
+
+import { assertBlockTree } from '../blocks/guard'
 
 import { SECTION_KEY_PATTERN } from './resolve'
 
@@ -91,7 +93,12 @@ export const Sections: CollectionConfig = {
       name: 'blocks',
       type: 'json',
       label: 'Блоки',
-      admin: { description: 'Дерево блоков — то же, что и на странице.' },
+      admin: {
+        description: 'Дерево блоков — то же, что и на странице.',
+        components: {
+          Field: '@/modules/design/blocks/ui/BlockTreeField#BlockTreeField',
+        },
+      },
     },
   ],
 
@@ -100,12 +107,8 @@ export const Sections: CollectionConfig = {
       ({ data, req }) => {
         if (!data) return data
 
-        /** То же правило, что и на странице: произвольная разметка — не редактору. */
-        if (!isCrossTenantActor(req.user) && containsRestricted(data.blocks)) {
-          throw new Error(
-            'Блок «Произвольный код» доступен только разработчику: произвольная разметка на витрине требует отдельных полномочий.',
-          )
-        }
+        /** То же правило, что и на странице: дерево проверяется одинаково. */
+        assertBlockTree(data.blocks, req, 'Блоки секции')
 
         return data
       },
@@ -114,34 +117,6 @@ export const Sections: CollectionConfig = {
     afterChange: [auditHooks({ tenantOf: ownerOf }).afterChange],
     afterDelete: [auditHooks({ tenantOf: ownerOf }).afterDelete],
   },
-}
-
-function containsRestricted(blocks: unknown): boolean {
-  if (!Array.isArray(blocks)) {
-    return false
-  }
-
-  return blocks.some((node) => {
-    if (node === null || typeof node !== 'object') {
-      return false
-    }
-
-    const record = node as Record<string, unknown>
-
-    if (record.type === 'raw-embed') {
-      return true
-    }
-
-    const slots = record.slots
-
-    if (slots === null || typeof slots !== 'object') {
-      return false
-    }
-
-    return Object.values(slots as Record<string, unknown>).some((children) =>
-      containsRestricted(children),
-    )
-  })
 }
 
 function ownerOf(doc: Record<string, unknown>): { id: string | null; slug: string | null } {

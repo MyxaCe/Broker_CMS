@@ -1,5 +1,7 @@
 import { auditHooks, createTenantAccess, crossTenantOnly } from '@/platform'
 
+import { assertBlockTree } from '../blocks/guard'
+
 import type { CollectionConfig } from 'payload'
 
 /**
@@ -103,7 +105,12 @@ export const GlobalAreas: CollectionConfig = {
       name: 'blocks',
       type: 'json',
       label: 'Блоки',
-      admin: { description: 'Дерево блоков — то же, что и на странице.' },
+      admin: {
+        description: 'Дерево блоков — то же, что и на странице.',
+        components: {
+          Field: '@/modules/design/blocks/ui/BlockTreeField#BlockTreeField',
+        },
+      },
     },
 
     /**
@@ -153,6 +160,17 @@ export const GlobalAreas: CollectionConfig = {
   ],
 
   hooks: {
+    beforeValidate: [
+      ({ data, req }) => {
+        if (!data) return data
+
+        /** Дерево области проверяется тем же правилом, что и дерево страницы. */
+        assertBlockTree(data.blocks, req, 'Блоки области')
+
+        return data
+      },
+    ],
+
     afterChange: [auditHooks({ tenantOf: ownerOf }).afterChange],
     afterDelete: [auditHooks({ tenantOf: ownerOf }).afterDelete],
   },

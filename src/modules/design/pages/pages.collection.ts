@@ -1,5 +1,6 @@
-import { auditHooks, createTenantAccess, crossTenantOnly, isCrossTenantActor } from '@/platform'
+import { auditHooks, createTenantAccess, crossTenantOnly } from '@/platform'
 
+import { assertBlockTree } from '../blocks/guard'
 import { BLOCK_ALIGNMENTS, BLOCK_THEMES, BLOCK_WIDTHS, PADDING_STEPS } from '../blocks/style'
 import { JSON_LD_KIND_LABELS, JSON_LD_KINDS } from '../seo/jsonld'
 
@@ -109,6 +110,9 @@ export const Pages: CollectionConfig = {
       admin: {
         description:
           'Дерево блоков. Типы и варианты — из реестра; стиль берёт значения только из токенов.',
+        components: {
+          Field: '@/modules/design/blocks/ui/BlockTreeField#BlockTreeField',
+        },
       },
     },
 
@@ -290,16 +294,7 @@ export const Pages: CollectionConfig = {
           data.pathHistory = history
         }
 
-        /**
-         * Блок с произвольной разметкой доступен только кросс-тенантной роли.
-         * Проверка стоит на сохранении, а не только на сборке: иначе редактор
-         * узнал бы об отказе через день, при публикации.
-         */
-        if (!isCrossTenantActor(req.user) && containsRestricted(data.blocks)) {
-          throw new Error(
-            'Блок «Произвольный код» доступен только разработчику: произвольная разметка на витрине требует отдельных полномочий.',
-          )
-        }
+        assertBlockTree(data.blocks, req, 'Блоки страницы')
 
         return data
       },
@@ -308,40 +303,6 @@ export const Pages: CollectionConfig = {
     afterChange: [auditHooks({ tenantOf: siteOf }).afterChange],
     afterDelete: [auditHooks({ tenantOf: siteOf }).afterDelete],
   },
-}
-
-/**
- * Ищет блоки с ограниченным доступом по всему дереву.
- *
- * Обход, а не проверка верхнего уровня: вложенный блок — такой же блок, и
- * спрятать его в колонке было бы простейшим обходом правила.
- */
-function containsRestricted(blocks: unknown): boolean {
-  if (!Array.isArray(blocks)) {
-    return false
-  }
-
-  return blocks.some((node) => {
-    if (node === null || typeof node !== 'object') {
-      return false
-    }
-
-    const record = node as Record<string, unknown>
-
-    if (record.type === 'raw-embed') {
-      return true
-    }
-
-    const slots = record.slots
-
-    if (slots === null || typeof slots !== 'object') {
-      return false
-    }
-
-    return Object.values(slots as Record<string, unknown>).some((children) =>
-      containsRestricted(children),
-    )
-  })
 }
 
 function siteOf(doc: Record<string, unknown>): { id: string | null; slug: string | null } {

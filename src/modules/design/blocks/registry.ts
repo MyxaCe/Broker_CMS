@@ -1,3 +1,7 @@
+import { BLOCK_PROPS } from './registry-props'
+
+import type { PropField } from './props'
+
 /**
  * Реестр блоков (ТЗ 2.2).
  *
@@ -256,6 +260,17 @@ export const BLOCK_REGISTRY: readonly BlockDefinition[] = [
 ]
 
 const BY_TYPE = new Map(BLOCK_REGISTRY.map((block) => [block.type, block]))
+
+/**
+ * Описание пропсов типа.
+ *
+ * Пустой список для типа без пропсов (разделитель) и **тоже** пустой для типа,
+ * которого нет в реестре: неизвестный тип отвергается раньше, отдельной
+ * проверкой с внятным сообщением, и дублировать её здесь незачем.
+ */
+export function propsOf(type: string): readonly PropField[] {
+  return BLOCK_PROPS[type] ?? []
+}
 
 export function findBlock(type: string): BlockDefinition | undefined {
   return BY_TYPE.get(type)

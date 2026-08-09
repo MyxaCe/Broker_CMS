@@ -1,4 +1,5 @@
-import { findBlock, isAllowedSlot, isAllowedVariant } from './registry'
+import { validateProps } from './props'
+import { findBlock, isAllowedSlot, isAllowedVariant, propsOf } from './registry'
 import { validateBlockStyle } from './style'
 
 import type { BlockStyle, BlockVisibility } from './style'
@@ -36,6 +37,13 @@ export interface TreeIssue {
     | 'restricted-block'
     | 'too-deep'
     | 'malformed'
+    | 'unknown-prop'
+    | 'missing-prop'
+    | 'wrong-kind'
+    | 'invalid-option'
+    | 'too-long'
+    | 'too-many'
+    | 'out-of-range'
   readonly path: string
   readonly message: string
 }
@@ -146,6 +154,15 @@ function checkNode(
       path,
       message: `Вариант «${variant}» не объявлен у типа «${type}». Доступны: ${definition.variants.join(', ') || '—'}.`,
     })
+  }
+
+  /**
+   * Пропсы проверяются описанием типа. До появления описания блок мог нести
+   * что угодно: тип и вариант сверялись с реестром, а содержимое — ни с чем,
+   * и незаполненный обязательный заголовок обнаруживался на витрине.
+   */
+  for (const issue of validateProps(propsOf(type), block.props, `${path}.props`)) {
+    issues.push({ code: issue.code, path: issue.path, message: issue.message })
   }
 
   for (const issue of validateBlockStyle(block.style ?? {}, context.roles)) {
