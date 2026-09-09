@@ -1,2 +1,2 @@
 export { adaptValidator, runValidation, summarizeReport, ValidatorFailure } from './validation'
-export type { Finding, FindingSeverity, ValidationReport, Validator } from './validation'
+export type { Coverage, Finding, FindingSeverity, ValidationReport, Validator } from './validation'

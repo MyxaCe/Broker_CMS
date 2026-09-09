@@ -22,6 +22,23 @@ export interface ColorPair {
   readonly usage: ContrastUsage
 }
 
+/**
+ * Сколько материала досталось проверке-ретранслятору.
+ *
+ * Валидаторы токенов, структуры, маршрутизации и комплаенса получают не сам
+ * материал, а уже готовые находки: считает их тот, кто читает базу. Поэтому по
+ * входу такого валидатора невозможно отличить «осмотрели двести страниц, всё
+ * чисто» от «никто ничего не осматривал» — в обоих случаях приходит пустой
+ * список.
+ *
+ * `examined` — это число, которое обязан назвать вызывающий: сколько единиц
+ * он осмотрел. `null` означает, что сбор не выполнялся, и тогда сборка
+ * отклоняется с кодом `check-not-executed`, а не проходит.
+ */
+export interface RelayedCoverage {
+  readonly examined: number | null
+}
+
 export interface ContrastInput {
   readonly colorPairs: readonly ColorPair[]
 }
@@ -49,9 +66,20 @@ export const contrastValidator: Validator<ContrastInput> = {
       ]
     })
   },
+
+  /**
+   * Пар нет — значит у сайта не разрешён ни один цветовой токен. Это «нечего
+   * проверять», а не «проверка не выполнялась»: о пустом наборе токенов
+   * сообщит `token-graph`, и дублировать его отказом здесь незачем.
+   */
+  coverage(input) {
+    return input.colorPairs.length === 0
+      ? { kind: 'empty', reason: 'у сайта не разрешено ни одной цветовой роли' }
+      : { kind: 'checked', examined: input.colorPairs.length }
+  },
 }
 
-export interface TokenGraphInput {
+export interface TokenGraphInput extends RelayedCoverage {
   readonly tokenIssues: readonly { readonly code: string; readonly message: string }[]
 }
 
@@ -76,9 +104,23 @@ export const tokenGraphValidator: Validator<TokenGraphInput> = {
       location: 'дизайн-токены',
     }))
   },
+
+  /**
+   * Ретранслятор: токены разрешает и считает загрузчик графа. Пустой список находок ничего не
+   * говорит сам по себе, поэтому `examined` приходит извне.
+   */
+  coverage(input) {
+    if (input.examined === null) {
+      return { kind: 'missing', reason: 'граф токенов не разрешался — расхождения собраны не были' }
+    }
+
+    return input.examined === 0
+      ? { kind: 'empty', reason: 'у сайта не заведено ни одного токена' }
+      : { kind: 'checked', examined: input.examined }
+  },
 }
 
-export interface ComplianceValidatorInput {
+export interface ComplianceValidatorInput extends RelayedCoverage {
   readonly complianceFindings: readonly {
     readonly code: string
     readonly message: string
@@ -106,9 +148,23 @@ export const complianceValidator: Validator<ComplianceValidatorInput> = {
       location: finding.location,
     }))
   },
+
+  /**
+   * Ретранслятор: страницы обходят и нарушения считает правила комплаенса. Пустой список находок ничего не
+   * говорит сам по себе, поэтому `examined` приходит извне.
+   */
+  coverage(input) {
+    if (input.examined === null) {
+      return { kind: 'missing', reason: 'правила комплаенса не запускались' }
+    }
+
+    return input.examined === 0
+      ? { kind: 'empty', reason: 'у сайта нет ни одной страницы и ни одной глобальной области' }
+      : { kind: 'checked', examined: input.examined }
+  },
 }
 
-export interface StructureValidatorInput {
+export interface StructureValidatorInput extends RelayedCoverage {
   readonly structureFindings: readonly StructureFinding[]
 }
 
@@ -135,9 +191,23 @@ export const structureValidator: Validator<StructureValidatorInput> = {
       location: finding.location,
     }))
   },
+
+  /**
+   * Ретранслятор: меню и области собирает загрузчик структуры. Пустой список находок ничего не говорит сам по
+   * себе, поэтому `examined` приходит извне.
+   */
+  coverage(input) {
+    if (input.examined === null) {
+      return { kind: 'missing', reason: 'структура сайта не собиралась' }
+    }
+
+    return input.examined === 0
+      ? { kind: 'empty', reason: 'у сайта нет ни одного меню и ни одной глобальной области' }
+      : { kind: 'checked', examined: input.examined }
+  },
 }
 
-export interface RoutingValidatorInput {
+export interface RoutingValidatorInput extends RelayedCoverage {
   readonly routingFindings: readonly RoutingFinding[]
 }
 
@@ -161,10 +231,33 @@ export const routingValidator: Validator<RoutingValidatorInput> = {
       location: finding.location,
     }))
   },
+
+  /**
+   * Ретранслятор: страницы и редиректы собирает загрузчик слоя В. Пустой
+   * список находок ничего не говорит сам по себе, поэтому `examined` приходит
+   * извне.
+   */
+  coverage(input) {
+    if (input.examined === null) {
+      return { kind: 'missing', reason: 'слой маршрутизации не собирался' }
+    }
+
+    return input.examined === 0
+      ? { kind: 'empty', reason: 'у сайта нет ни одной страницы' }
+      : { kind: 'checked', examined: input.examined }
+  },
 }
 
 export interface ForbiddenClaimsInput {
-  readonly texts: readonly TextItem[]
+  /**
+   * Тексты страниц, секций и глобальных областей.
+   *
+   * `null` — тексты **не собирались**. Отдельное значение нужно потому, что
+   * пустой массив здесь означал бы «на сайте нет ни строки текста», и месяц
+   * означал именно это по недоразумению: сборка релиза не заполняла поле, а
+   * проверка исправно отвечала «нарушений нет» (DEBT-013).
+   */
+  readonly texts: readonly TextItem[] | null
   /** Дополнительные формулировки бренда или юрисдикции — не замена основного словаря. */
   readonly extraPhrases?: readonly string[]
 }
@@ -176,7 +269,7 @@ export const forbiddenClaimsValidator: Validator<ForbiddenClaimsInput> = {
   run(input) {
     const phrases = [...DEFAULT_FORBIDDEN_PHRASES, ...(input.extraPhrases ?? [])]
 
-    return input.texts.flatMap((item) =>
+    return (input.texts ?? []).flatMap((item) =>
       findForbiddenPhrases(item.text, phrases).map((match) => ({
         validator: 'forbidden-claims',
         severity: 'blocking' as const,
@@ -185,5 +278,24 @@ export const forbiddenClaimsValidator: Validator<ForbiddenClaimsInput> = {
         location: `${item.contentClass}: ${item.location}`,
       })),
     )
+  },
+
+  /**
+   * Единственная проверка, которая получает сам материал, а не готовые
+   * находки, — и всё равно нуждается в охвате: отличить «текстов нет» от
+   * «текстов не дали» по массиву невозможно, а разница между ними здесь
+   * регуляторная.
+   */
+  coverage(input) {
+    if (input.texts === null) {
+      return {
+        kind: 'missing',
+        reason: 'тексты страниц не собраны — сборке нечего было проверять стоп-словарём',
+      }
+    }
+
+    return input.texts.length === 0
+      ? { kind: 'empty', reason: 'на сайте нет ни одного текстового блока' }
+      : { kind: 'checked', examined: input.texts.length }
   },
 }

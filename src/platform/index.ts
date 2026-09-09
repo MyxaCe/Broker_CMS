@@ -55,7 +55,7 @@ export type {
 } from './audit'
 
 export { adaptValidator, runValidation, summarizeReport, ValidatorFailure } from './validation'
-export type { Finding, FindingSeverity, ValidationReport, Validator } from './validation'
+export type { Coverage, Finding, FindingSeverity, ValidationReport, Validator } from './validation'
 
 export { toActor } from './auth/actor'
 export { validateUserDraft } from './auth/user-rules'

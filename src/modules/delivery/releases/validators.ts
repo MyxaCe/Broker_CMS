@@ -89,6 +89,14 @@ export const siteReadinessValidator: Validator<ReleaseSnapshot> = {
 
     return findings
   },
+
+  /**
+   * Единственная проверка, которой всегда есть что смотреть: снапшот сайта
+   * существует всегда, иначе сборка не началась бы.
+   */
+  coverage() {
+    return { kind: 'checked', examined: 1 }
+  },
 }
 
 /**
@@ -102,7 +110,10 @@ export const RELEASE_VALIDATORS: readonly Validator<ReleaseSnapshot>[] = [
    * не имеет значения, и проверять её контраст не с чем. Сообщение «контраст
    * не сошёлся» на отсутствующем цвете сбивало бы с толку.
    */
-  adaptValidator(tokenGraphValidator, (snapshot) => ({ tokenIssues: snapshot.tokenIssues })),
+  adaptValidator(tokenGraphValidator, (snapshot) => ({
+    tokenIssues: snapshot.tokenIssues,
+    examined: snapshot.examined.tokens,
+  })),
   adaptValidator(contrastValidator, (snapshot) => ({ colorPairs: snapshot.colorPairs })),
   adaptValidator(forbiddenClaimsValidator, (snapshot) => ({ texts: snapshot.texts })),
   /**
@@ -112,9 +123,11 @@ export const RELEASE_VALIDATORS: readonly Validator<ReleaseSnapshot>[] = [
    */
   adaptValidator(structureValidator, (snapshot) => ({
     structureFindings: snapshot.structure.findings,
+    examined: snapshot.examined.structureNodes,
   })),
   adaptValidator(routingValidator, (snapshot) => ({
     routingFindings: snapshot.routing.findings,
+    examined: snapshot.examined.routedPages,
   })),
   /**
    * Комплаенс — последним: его находки самые дорогие для чтения, и показывать
@@ -122,5 +135,6 @@ export const RELEASE_VALIDATORS: readonly Validator<ReleaseSnapshot>[] = [
    */
   adaptValidator(complianceValidator, (snapshot) => ({
     complianceFindings: snapshot.complianceFindings,
+    examined: snapshot.examined.compliancePages,
   })),
 ]

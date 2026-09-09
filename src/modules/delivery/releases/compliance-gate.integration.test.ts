@@ -252,3 +252,126 @@ describe('юрисдикционная видимость блокирует р�
     expect(result.status).toBe('ready')
   })
 })
+
+/**
+ * Стоп-словарь обещаний доходности (ТЗ 2.4).
+ *
+ * Проверок на него здесь не было ни одной — и это ровно та причина, по которой
+ * DEBT-013 прожил месяц незамеченным: валидатор был покрыт своими тестами, а
+ * связку «страница в базе → текст в снапшоте → отказ сборки» не проверял никто.
+ */
+describe('стоп-словарь блокирует релиз', () => {
+  it('обещание доходности на опубликованной странице не даёт собрать релиз', async () => {
+    const site = await makeSite(coveredBrandId, `cmp-claim-${stamp}`)
+
+    await payload.create({
+      collection: 'pages',
+      overrideAccess: true,
+      data: {
+        title: 'Условия',
+        path: `/claim-${stamp}`,
+        locale: 'en',
+        site: site.id,
+        status: 'published',
+        blocks: [
+          {
+            type: 'hero',
+            props: { title: 'Условия', subtitle: 'Гарантированная доходность 30% годовых' },
+          },
+        ],
+      } as never,
+    })
+
+    const result = await buildRelease({ payload, siteId: site.id })
+
+    expect(result.status).toBe('failed')
+    expect(result.report.findings.some((finding) => finding.code === 'forbidden-claim')).toBe(true)
+  })
+
+  /**
+   * Адрес находки обязан вести к конкретному пропсу конкретного блока:
+   * «где-то на сайте есть обещание доходности» — не то сообщение, по которому
+   * редактор что-то исправит.
+   */
+  it('находка указывает на страницу и блок', async () => {
+    const site = await makeSite(coveredBrandId, `cmp-claim-where-${stamp}`)
+    const path = `/claim-where-${stamp}`
+
+    await payload.create({
+      collection: 'pages',
+      overrideAccess: true,
+      data: {
+        title: 'Условия',
+        path,
+        locale: 'en',
+        site: site.id,
+        status: 'published',
+        blocks: [{ type: 'quote', props: { text: 'Прибыль гарантирована' } }],
+      } as never,
+    })
+
+    const result = await buildRelease({ payload, siteId: site.id })
+    const finding = result.report.findings.find((item) => item.code === 'forbidden-claim')
+
+    expect(finding?.location).toContain(path)
+    expect(finding?.location).toContain('blocks[0]')
+  })
+
+  /** Черновик в релиз не попадает — стоп-словарь обязан вести себя так же. */
+  it('черновик с обещанием доходности сборку не ломает', async () => {
+    const site = await makeSite(coveredBrandId, `cmp-claim-draft-${stamp}`)
+
+    await payload.create({
+      collection: 'pages',
+      overrideAccess: true,
+      data: {
+        title: 'Черновик',
+        path: `/claim-draft-${stamp}`,
+        locale: 'en',
+        site: site.id,
+        status: 'draft',
+        blocks: [{ type: 'hero', props: { title: 'Гарантированная доходность' } }],
+      } as never,
+    })
+
+    const result = await buildRelease({ payload, siteId: site.id })
+
+    expect(result.status).toBe('ready')
+  })
+
+  /**
+   * Главное свойство, ради которого переделан каркас: сборка обязана
+   * докладывать, что тексты действительно осматривались. Отчёт, в котором
+   * стоп-словарь «не выполнялся», — не чистый отчёт.
+   */
+  it('отчёт показывает, что тексты осмотрены, а не пропущены', async () => {
+    const site = await makeSite(coveredBrandId, `cmp-claim-coverage-${stamp}`)
+
+    await payload.create({
+      collection: 'pages',
+      overrideAccess: true,
+      data: {
+        title: 'Чистая страница',
+        path: `/claim-clean-${stamp}`,
+        locale: 'en',
+        site: site.id,
+        status: 'published',
+        blocks: [{ type: 'hero', props: { title: 'Торговые условия' } }],
+      } as never,
+    })
+
+    const result = await buildRelease({ payload, siteId: site.id })
+
+    expect(result.status).toBe('ready')
+
+    /**
+     * Осмотрены и заголовок страницы, и текст унаследованной полосы
+     * риск-предупреждения: она приходит от бренда и живёт отдельным полем,
+     * а не блоком.
+     */
+    const coverage = result.report.coverage['forbidden-claims']
+
+    expect(coverage?.kind).toBe('checked')
+    expect(coverage?.kind === 'checked' && coverage.examined).toBeGreaterThanOrEqual(2)
+  })
+})
