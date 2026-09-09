@@ -23,6 +23,8 @@ export {
 } from './contrast'
 export type { ContrastUsage } from './contrast'
 
+export { collectTexts } from './blocks/collect-text'
+export type { CollectTextsArgs } from './blocks/collect-text'
 export { DEFAULT_FORBIDDEN_PHRASES, findForbiddenPhrases } from './forbidden-claims'
 export type { ContentClass, ForbiddenMatch, TextItem } from './forbidden-claims'
 

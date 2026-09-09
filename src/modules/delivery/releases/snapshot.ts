@@ -43,8 +43,29 @@ export interface ReleaseSnapshot {
    * набора токенов сайта (ТЗ 2.1).
    */
   readonly colorPairs: readonly ColorPair[]
-  /** Тексты для проверки стоп-словаря. Наполняются вместе со страницами (M3). */
-  readonly texts: readonly TextItem[]
+  /**
+   * Тексты для проверки стоп-словаря.
+   *
+   * `null` означает, что сбор текстов не выполнялся, и это **не то же самое**,
+   * что пустой массив. Поле месяц заполнялось умолчанием `[]`, сборка его не
+   * передавала, и стоп-словарь исправно докладывал «нарушений нет», не увидев
+   * ни строки (DEBT-013).
+   */
+  readonly texts: readonly TextItem[] | null
+  /**
+   * Сколько единиц материала осмотрено при сборке — по одному числу на
+   * проверку-ретранслятор.
+   *
+   * Существует ровно затем, чтобы отчёт различал «нарушений нет» и «проверять
+   * было нечего»: сами валидаторы получают готовые находки и по ним отличить
+   * одно от другого не могут. `null` — сбор не выполнялся, сборка отклоняется.
+   */
+  readonly examined: {
+    readonly tokens: number | null
+    readonly structureNodes: number | null
+    readonly routedPages: number | null
+    readonly compliancePages: number | null
+  }
   /**
    * Расхождения графа токенов: битые ссылки, незаполненные темы, повторы имён.
    * Непустой список блокирует сборку — токен без значения превращается на
@@ -94,7 +115,13 @@ export function composeSnapshot(
   settings: TenantSettings,
   content: {
     colorPairs?: readonly ColorPair[]
-    texts?: readonly TextItem[]
+    /**
+     * Обязательное поле без умолчания: пропустить его — значит собрать релиз,
+     * не проверив тексты, и раньше это делалось молча. Теперь `null` пишется
+     * руками и означает ровно то, что означает.
+     */
+    texts: readonly TextItem[] | null
+    examined?: Partial<ReleaseSnapshot['examined']>
     tokenIssues?: readonly { readonly code: string; readonly message: string }[]
     tokens?: Readonly<Record<string, Readonly<Record<string, string>>>>
     complianceFindings?: readonly {
@@ -104,7 +131,7 @@ export function composeSnapshot(
     }[]
     structure?: StructureSnapshot
     routing?: RoutingSnapshot
-  } = {},
+  },
 ): ReleaseSnapshot {
   return {
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
@@ -123,7 +150,13 @@ export function composeSnapshot(
       availableLocales: settings.availableLocales.entries.map((entry) => entry.value).sort(),
     },
     colorPairs: content.colorPairs ?? [],
-    texts: content.texts ?? [],
+    texts: content.texts,
+    examined: {
+      tokens: content.examined?.tokens ?? null,
+      structureNodes: content.examined?.structureNodes ?? null,
+      routedPages: content.examined?.routedPages ?? null,
+      compliancePages: content.examined?.compliancePages ?? null,
+    },
     tokenIssues: content.tokenIssues ?? [],
     tokens: content.tokens ?? {},
     complianceFindings: content.complianceFindings ?? [],

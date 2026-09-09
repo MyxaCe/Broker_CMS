@@ -1,5 +1,6 @@
 import {
   collectContrastPairs,
+  collectTexts,
   loadComplianceInput,
   loadRouting,
   loadStructure,
@@ -131,6 +132,53 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
    */
   const routing = await loadRouting({ payload, siteId: args.siteId, locales })
 
+  /**
+   * Тексты для стоп-словаря (ТЗ 2.4).
+   *
+   * Собираются из того же набора страниц, что проверяет комплаенс, — из
+   * `complianceInput`, а не отдельным чтением базы. Второй обход разошёлся бы
+   * с первым в отборе черновиков, и разошёлся бы незаметно: стоп-словарь ходил
+   * бы по одному набору страниц, а гейт риск-предупреждения — по другому.
+   *
+   * Полоса риск-предупреждения и cookie-баннер относятся к классу
+   * `compliance`: их формулировки согласованы, и обещание доходности там —
+   * не редакторская вольность, а правка согласованного текста.
+   */
+  const texts = [
+    ...complianceInput.pages.flatMap((page) =>
+      collectTexts(page.blocks, {
+        location: `страница ${page.path} (${page.locale})`,
+        contentClass: 'marketing',
+      }),
+    ),
+    ...structure.globalAreas.flatMap((area) =>
+      collectTexts(area.blocks, {
+        location: `область «${area.kind}» (${area.locale})`,
+        contentClass:
+          area.kind === 'risk-warning' || area.kind === 'cookie-banner'
+            ? 'compliance'
+            : 'marketing',
+      }),
+    ),
+    /**
+     * Текст самой полосы риск-предупреждения живёт отдельным полем, а не
+     * блоком, и через обход дерева не проходит. Пропустить его было бы
+     * особенно неудачно: это единственный текст на сайте, который читает
+     * регулятор.
+     */
+    ...structure.globalAreas.flatMap((area) =>
+      area.riskWarning === null || area.riskWarning.text.trim() === ''
+        ? []
+        : [
+            {
+              location: `полоса риск-предупреждения (${area.locale})`,
+              contentClass: 'compliance' as const,
+              text: area.riskWarning.text,
+            },
+          ],
+    ),
+  ]
+
   const snapshot = composeSnapshot(
     {
       id: siteId,
@@ -152,6 +200,22 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
       complianceFindings: runComplianceRules(complianceInput),
       structure,
       routing,
+      texts,
+      /**
+       * Сколько материала осмотрено. Числа передаются явно, чтобы отчёт
+       * различал «нарушений нет» и «проверять было нечего»: по пустому списку
+       * находок валидатор-ретранслятор отличить одно от другого не может, и
+       * именно на этом стоп-словарь месяц выглядел пройденным (DEBT-013).
+       */
+      examined: {
+        tokens: Object.values(resolved.byTheme).reduce(
+          (total, theme) => total + Object.keys(theme).length,
+          0,
+        ),
+        structureNodes: structure.navigation.length + structure.globalAreas.length,
+        routedPages: routing.pages.length,
+        compliancePages: complianceInput.pages.length,
+      },
     },
   )
 

@@ -21,6 +21,7 @@ const SNAPSHOT: ReleaseSnapshot = {
   },
   colorPairs: [],
   texts: [],
+  examined: { tokens: 0, structureNodes: 0, routedPages: 0, compliancePages: 0 },
   tokenIssues: [],
   tokens: {
     light: { 'color.surface': '#ffffff' },

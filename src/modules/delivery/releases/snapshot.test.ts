@@ -36,9 +36,21 @@ function settings(overrides: Partial<TenantSettings> = {}): TenantSettings {
   }
 }
 
+/**
+ * Содержимое снапшота, собранное честно: тексты собраны и их нет.
+ *
+ * Отдельный хелпер нужен потому, что `texts` больше не имеет умолчания —
+ * пропустить поле нельзя, и это ровно то, ради чего оно сделано обязательным.
+ */
+function content(
+  overrides: Partial<Parameters<typeof composeSnapshot>[2]> = {},
+): Parameters<typeof composeSnapshot>[2] {
+  return { texts: [], ...overrides }
+}
+
 describe('composeSnapshot', () => {
   it('переносит разрешённые значения вместе с источником', () => {
-    const snapshot = composeSnapshot(SITE, settings())
+    const snapshot = composeSnapshot(SITE, settings(), content())
 
     expect(snapshot.schemaVersion).toBe(SNAPSHOT_SCHEMA_VERSION)
     expect(snapshot.site).toEqual({ id: 'de', slug: 'apex-de', kind: 'site' })
@@ -46,13 +58,13 @@ describe('composeSnapshot', () => {
   })
 
   it('локали отсортированы — порядок накопления по цепочке не влияет на отпечаток', () => {
-    const snapshot = composeSnapshot(SITE, settings())
+    const snapshot = composeSnapshot(SITE, settings(), content())
     expect(snapshot.settings.availableLocales).toEqual(['de', 'en'])
   })
 
   it('детерминирована: одинаковый вход даёт одинаковый отпечаток', () => {
-    expect(contentHash(composeSnapshot(SITE, settings()))).toBe(
-      contentHash(composeSnapshot(SITE, settings())),
+    expect(contentHash(composeSnapshot(SITE, settings(), content()))).toBe(
+      contentHash(composeSnapshot(SITE, settings(), content())),
     )
   })
 
@@ -68,6 +80,7 @@ describe('composeSnapshot', () => {
           inheritedFromTenantId: null,
         },
       }),
+      content(),
     )
 
     expect(snapshot.settings.jurisdiction).toEqual({ value: null, source: null })
@@ -76,12 +89,12 @@ describe('composeSnapshot', () => {
 
 describe('siteReadinessValidator', () => {
   it('готовый сайт не даёт находок', () => {
-    expect(siteReadinessValidator.run(composeSnapshot(SITE, settings()))).toEqual([])
+    expect(siteReadinessValidator.run(composeSnapshot(SITE, settings(), content()))).toEqual([])
   })
 
   it('релиз собирается только для сайта', () => {
     const brand: TenantNode = { id: 'apex', slug: 'apex', kind: 'brand', parentId: null }
-    const findings = siteReadinessValidator.run(composeSnapshot(brand, settings()))
+    const findings = siteReadinessValidator.run(composeSnapshot(brand, settings(), content()))
 
     expect(findings.map((finding) => finding.code)).toEqual(['not-a-site'])
   })
@@ -98,6 +111,7 @@ describe('siteReadinessValidator', () => {
           inheritedFromTenantId: null,
         },
       }),
+      content(),
     )
 
     expect(siteReadinessValidator.run(snapshot).map((finding) => finding.code)).toContain(
@@ -117,6 +131,7 @@ describe('siteReadinessValidator', () => {
           inheritedFromTenantId: null,
         },
       }),
+      content(),
     )
 
     const findings = siteReadinessValidator.run(snapshot)
@@ -144,6 +159,6 @@ describe('siteReadinessValidator', () => {
       availableLocales: { entries: [], forkedAtTenantId: null },
     }
 
-    expect(siteReadinessValidator.run(composeSnapshot(SITE, empty))).toHaveLength(3)
+    expect(siteReadinessValidator.run(composeSnapshot(SITE, empty, content()))).toHaveLength(3)
   })
 })
