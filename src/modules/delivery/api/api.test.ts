@@ -21,6 +21,7 @@ const SNAPSHOT: ReleaseSnapshot = {
     availableLocales: ['de', 'en'],
   },
   colorPairs: [],
+  instruments: { symbols: ['BTCUSD'], configured: true, confirmedUnquoted: [] },
   texts: [],
   examined: { tokens: 0, structureNodes: 0, routedPages: 0, compliancePages: 0 },
   tokenIssues: [],

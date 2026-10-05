@@ -1,0 +1,130 @@
+/*
+ * Оформление выбора инструментов.
+ *
+ * Цвета — переменные админки Payload, а не свои: иначе блок выпадает из темы
+ * при её смене, а тёмная тема у редактора включена чаще светлой.
+ */
+
+.universe-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  padding: 0.9rem;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: 8px;
+}
+
+.universe-picker__title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.universe-picker__note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--theme-elevation-600);
+}
+
+/*
+ * Состояние «мы не знаем» обязано выглядеть иначе, чем состояние «знаем, и
+ * там пусто». Одинаковое оформление и есть тот механизм, которым отказ
+ * выглядит данными.
+ */
+.universe-picker__note--alarm {
+  color: var(--theme-error-500);
+}
+
+.universe-picker__search {
+  width: 100%;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: 4px;
+  background: var(--theme-input-bg, var(--theme-elevation-0));
+  color: var(--theme-elevation-800);
+  font-size: 0.9rem;
+}
+
+.universe-picker__list {
+  margin: 0;
+  padding: 0;
+  max-height: 18rem;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--theme-elevation-100);
+  border-radius: 6px;
+}
+
+.universe-picker__row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--theme-elevation-50);
+}
+
+.universe-picker__symbol {
+  min-width: 8rem;
+  font-weight: 600;
+}
+
+.universe-picker__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--theme-elevation-600);
+}
+
+.universe-picker__badge {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  border: 1px solid currentColor;
+}
+
+.universe-picker__badge--quoted {
+  color: var(--theme-success-500);
+}
+
+.universe-picker__badge--unquoted {
+  color: var(--theme-warning-500);
+}
+
+.universe-picker__added {
+  font-size: 0.78rem;
+  color: var(--theme-elevation-500);
+}
+
+.universe-picker__add,
+.universe-picker__cancel {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.universe-picker__add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.universe-picker__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border: 1px solid var(--theme-warning-500);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.universe-picker__actions {
+  display: flex;
+  gap: 0.5rem;
+}

@@ -49,6 +49,7 @@ function settings(): TenantSettings {
 function cleanContent() {
   return {
     texts: [],
+    instruments: { symbols: [], configured: false, confirmedUnquoted: [] },
     examined: { tokens: 12, structureNodes: 2, routedPages: 1, compliancePages: 1 },
   }
 }
@@ -103,6 +104,7 @@ describe('RELEASE_VALIDATORS — гейт не отдаёт чистый отч�
   it('сайт без страниц и текстов собирается', () => {
     const snapshot = composeSnapshot(SITE, settings(), {
       texts: [],
+      instruments: { symbols: [], configured: false, confirmedUnquoted: [] },
       examined: { tokens: 12, structureNodes: 0, routedPages: 0, compliancePages: 0 },
     })
 

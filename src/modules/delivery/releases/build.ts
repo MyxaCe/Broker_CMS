@@ -7,6 +7,7 @@ import {
   loadTokenSet,
   runComplianceRules,
 } from '@/modules/design'
+import { resolveAllowList } from '@/modules/trading'
 import { resolveTenantById, runValidation, summarizeReport } from '@/platform'
 
 import { contentHash } from '../cache-key'
@@ -133,6 +134,14 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
   const routing = await loadRouting({ payload, siteId: args.siteId, locales })
 
   /**
+   * Разрешённые инструменты (Р-026) читаются здесь и замораживаются вместе с
+   * релизом. Обращения к MDS на этом шаге нет и быть не может: сборка читает
+   * нашу карточку доступа, а котируемость проверена заранее — при её
+   * сохранении, против локального снимка вселенной (ТЗ 4.2).
+   */
+  const instruments = await resolveAllowList(payload, args.siteId)
+
+  /**
    * Тексты для стоп-словаря (ТЗ 2.4).
    *
    * Собираются из того же набора страниц, что проверяет комплаенс, — из
@@ -201,6 +210,14 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
       structure,
       routing,
       texts,
+      instruments: {
+        symbols: instruments.symbols,
+        configured: instruments.configured,
+        confirmedUnquoted: instruments.confirmedUnquoted.map((entry) => ({
+          symbol: entry.symbol,
+          standing: entry.standing,
+        })),
+      },
       /**
        * Сколько материала осмотрено. Числа передаются явно, чтобы отчёт
        * различал «нарушений нет» и «проверять было нечего»: по пустому списку

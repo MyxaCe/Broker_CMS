@@ -45,7 +45,11 @@ function settings(overrides: Partial<TenantSettings> = {}): TenantSettings {
 function content(
   overrides: Partial<Parameters<typeof composeSnapshot>[2]> = {},
 ): Parameters<typeof composeSnapshot>[2] {
-  return { texts: [], ...overrides }
+  return {
+    texts: [],
+    instruments: { symbols: [], configured: false, confirmedUnquoted: [] },
+    ...overrides,
+  }
 }
 
 describe('composeSnapshot', () => {

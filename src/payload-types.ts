@@ -85,6 +85,9 @@ export interface Config {
     'global-areas': GlobalArea;
     'seo-profiles': SeoProfile;
     redirects: Redirect;
+    'instrument-access': InstrumentAccess;
+    'mds-instruments': MdsInstrument;
+    'mds-universe-syncs': MdsUniverseSync;
     releases: Release;
     channels: Channel;
     outbox: Outbox;
@@ -115,6 +118,9 @@ export interface Config {
     'global-areas': GlobalAreasSelect<false> | GlobalAreasSelect<true>;
     'seo-profiles': SeoProfilesSelect<false> | SeoProfilesSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
+    'instrument-access': InstrumentAccessSelect<false> | InstrumentAccessSelect<true>;
+    'mds-instruments': MdsInstrumentsSelect<false> | MdsInstrumentsSelect<true>;
+    'mds-universe-syncs': MdsUniverseSyncsSelect<false> | MdsUniverseSyncsSelect<true>;
     releases: ReleasesSelect<false> | ReleasesSelect<true>;
     channels: ChannelsSelect<false> | ChannelsSelect<true>;
     outbox: OutboxSelect<false> | OutboxSelect<true>;
@@ -958,6 +964,99 @@ export interface Redirect {
   createdAt: string;
 }
 /**
+ * Что сайту разрешено котировать и торговать. Пустой список означает «ничего не разрешено», а не «разрешено всё»: граница fail-closed у всех потребителей (Р-025).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "instrument-access".
+ */
+export interface InstrumentAccess {
+  id: number;
+  /**
+   * Один список на сайт. Наследования по цепочке тенантов нет.
+   */
+  site: number | Tenant;
+  siteSlug?: string | null;
+  /**
+   * Символы, а не числовые id (Р-024): числовая нумерация — внутренняя деталь терминала, и сопоставление делает он у себя.
+   */
+  instruments?:
+    | {
+        /**
+         * Например BTCUSD. Приводится к верхнему регистру при сохранении.
+         */
+        symbol: string;
+        /**
+         * Нужна, когда символа нет в снимке вселенной MDS, у него не было цены или снимка нет вовсе. Без неё такой символ не сохранится.
+         */
+        confirmedUnquoted?: boolean | null;
+        /**
+         * Через полгода это единственное, по чему решение можно подтвердить или снять.
+         */
+        confirmedReason?: string | null;
+        /**
+         * Пометка, поставленная системой. Она про момент сохранения, а не про сейчас: вселенная меняется, запись — нет.
+         */
+        standingAtSave?: ('quoted' | 'listed-unquoted' | 'absent' | 'unknown') | null;
+        checkedAt?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Ноль — не ошибка заполнения, а «ничего не разрешено».
+   */
+  instrumentCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Копия вселенной MDS, снятая фоновым воркером. Только чтение: это не наши данные. Пустая коллекция НЕ означает «ничего не котируется» — проверьте журнал снимков рядом.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mds-instruments".
+ */
+export interface MdsInstrument {
+  id: number;
+  symbol: string;
+  name?: string | null;
+  group?: string | null;
+  category?: string | null;
+  provider?: string | null;
+  /**
+   * Утверждение имеет силу, только если у снимка опрашивались котировки. Когда не опрашивались, в журнале снимков стоит «котируемость не определена», и этот флаг не значит ничего.
+   */
+  quoted: boolean;
+  syncedAt: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Чем кончилась каждая попытка снять вселенную MDS. Последняя запись — то, на что опирается выбор инструментов в карточке доступа.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mds-universe-syncs".
+ */
+export interface MdsUniverseSync {
+  id: number;
+  startedAt: string;
+  finishedAt: string;
+  outcome: 'fetched' | 'unreachable' | 'malformed';
+  /**
+   * Пусто — снимок не состоялся. Ноль — состоялся, и вселенная действительно пуста.
+   */
+  instruments?: number | null;
+  /**
+   * Пусто — котировки не опрашивались или ответ не разобрался: котируемость неизвестна, а не равна нулю.
+   */
+  quoted?: number | null;
+  reason?: string | null;
+  /**
+   * Адрес MDS.
+   */
+  source?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Собранный релиз неизменяем: правки после сборки невозможны ни через интерфейс, ни напрямую в базе. Откат выполняется переключением канала.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1237,6 +1336,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'redirects';
         value: number | Redirect;
+      } | null)
+    | ({
+        relationTo: 'instrument-access';
+        value: number | InstrumentAccess;
+      } | null)
+    | ({
+        relationTo: 'mds-instruments';
+        value: number | MdsInstrument;
+      } | null)
+    | ({
+        relationTo: 'mds-universe-syncs';
+        value: number | MdsUniverseSync;
       } | null)
     | ({
         relationTo: 'releases';
@@ -1708,6 +1819,57 @@ export interface RedirectsSelect<T extends boolean = true> {
   locale?: T;
   isActive?: T;
   note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "instrument-access_select".
+ */
+export interface InstrumentAccessSelect<T extends boolean = true> {
+  site?: T;
+  siteSlug?: T;
+  instruments?:
+    | T
+    | {
+        symbol?: T;
+        confirmedUnquoted?: T;
+        confirmedReason?: T;
+        standingAtSave?: T;
+        checkedAt?: T;
+        id?: T;
+      };
+  instrumentCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mds-instruments_select".
+ */
+export interface MdsInstrumentsSelect<T extends boolean = true> {
+  symbol?: T;
+  name?: T;
+  group?: T;
+  category?: T;
+  provider?: T;
+  quoted?: T;
+  syncedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "mds-universe-syncs_select".
+ */
+export interface MdsUniverseSyncsSelect<T extends boolean = true> {
+  startedAt?: T;
+  finishedAt?: T;
+  outcome?: T;
+  instruments?: T;
+  quoted?: T;
+  reason?: T;
+  source?: T;
   updatedAt?: T;
   createdAt?: T;
 }

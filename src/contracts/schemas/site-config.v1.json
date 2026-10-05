@@ -55,7 +55,7 @@
     "settings": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["defaultLocale", "availableLocales", "jurisdiction"],
+      "required": ["defaultLocale", "availableLocales", "jurisdiction", "instruments"],
       "properties": {
         "defaultLocale": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
         "availableLocales": {
@@ -65,7 +65,13 @@
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" }
         },
-        "jurisdiction": { "type": "string", "minLength": 1 }
+        "jurisdiction": { "type": "string", "minLength": 1 },
+        "instruments": {
+          "description": "Разрешённые инструменты сайта — каноническими символами, не числовыми id (Р-024). Поле обязательное: пустой массив означает «ничего не разрешено» и обязан быть отличим от недоступной CMS, когда ответа нет вовсе (Р-025). Отсортирован и без повторов — порядок не должен влиять на отпечаток содержимого.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[^\\s,]+$" }
+        }
       }
     }
   }

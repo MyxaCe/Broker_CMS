@@ -39,6 +39,23 @@ export interface ReleaseSnapshot {
     readonly availableLocales: readonly string[]
   }
   /**
+   * Разрешённые инструменты сайта на момент сборки (Р-026).
+   *
+   * Замораживаются вместе с релизом по той же причине, что токены и
+   * структура, и по одной дополнительной: список — регуляторная граница, и
+   * «что было разрешено в момент публикации» обязано быть восстановимо.
+   *
+   * Пустой массив означает «ничего не разрешено» (Р-025) и отличается от
+   * `configured: false` — «карточку доступа не заводили». Для потребителя это
+   * одно и то же; разница нужна отчёту сборки, потому что чинится разными
+   * действиями.
+   */
+  readonly instruments: {
+    readonly symbols: readonly string[]
+    readonly configured: boolean
+    readonly confirmedUnquoted: readonly { readonly symbol: string; readonly standing: string }[]
+  }
+  /**
    * Пары цветовых ролей для проверки контраста — собираются из разрешённого
    * набора токенов сайта (ТЗ 2.1).
    */
@@ -121,6 +138,13 @@ export function composeSnapshot(
      * руками и означает ровно то, что означает.
      */
     texts: readonly TextItem[] | null
+    /**
+     * Обязательное поле без умолчания — по тому же уроку, что и `texts`.
+     * Умолчание `[]` здесь означало бы «ничего не разрешено» там, где на деле
+     * список просто не передали: молчаливое `[]` однажды уже дало гейту
+     * комплаенса чистый отчёт на непроверенном материале.
+     */
+    instruments: ReleaseSnapshot['instruments']
     examined?: Partial<ReleaseSnapshot['examined']>
     tokenIssues?: readonly { readonly code: string; readonly message: string }[]
     tokens?: Readonly<Record<string, Readonly<Record<string, string>>>>
@@ -149,6 +173,7 @@ export function composeSnapshot(
       // на отпечаток содержимого.
       availableLocales: settings.availableLocales.entries.map((entry) => entry.value).sort(),
     },
+    instruments: content.instruments,
     colorPairs: content.colorPairs ?? [],
     texts: content.texts,
     examined: {

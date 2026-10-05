@@ -2,6 +2,8 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import { buildSiteConfigResponse } from '../api/site-config'
+
 import { buildRelease } from './build'
 
 import type { Payload } from 'payload'
@@ -103,6 +105,82 @@ describe('успешная сборка', () => {
     expect(result.snapshot.settings.jurisdiction.value).toBe('eu-mifid')
     expect(result.snapshot.settings.availableLocales).toEqual(['de', 'en'])
     expect(result.snapshot.settings.defaultLocale.value).toBe('de')
+  })
+
+  /**
+   * Цепочка «карточка доступа → снапшот релиза → ответ выдачи» (Р-024, Р-026).
+   *
+   * Покрытие единицы не является покрытием пути: правило включения проверено
+   * своими тестами, но между ним и витриной три перехода, и дефект живёт
+   * именно в них.
+   */
+  it('разрешённые инструменты доезжают из карточки до ответа выдачи символами', async () => {
+    const syncedAt = new Date().toISOString()
+
+    await payload.create({
+      collection: 'mds-instruments',
+      overrideAccess: true,
+      data: { symbol: `BUILDUSD`, name: 'Фикстура', quoted: true, syncedAt } as never,
+    })
+
+    await payload.create({
+      collection: 'mds-universe-syncs',
+      overrideAccess: true,
+      data: {
+        startedAt: syncedAt,
+        finishedAt: syncedAt,
+        outcome: 'fetched',
+        instruments: 1,
+        quoted: 1,
+      } as never,
+    })
+
+    await payload.create({
+      collection: 'instrument-access',
+      overrideAccess: true,
+      data: { site: readySiteId, instruments: [{ symbol: 'BUILDUSD' }] } as never,
+    })
+
+    const result = await buildRelease({ payload, siteId: readySiteId })
+
+    expect(result.snapshot.instruments).toEqual({
+      symbols: ['BUILDUSD'],
+      configured: true,
+      confirmedUnquoted: [],
+    })
+
+    const response = buildSiteConfigResponse({
+      snapshot: result.snapshot,
+      release: { number: result.number, builtAt: new Date().toISOString() },
+    })
+
+    // Символ, а не числовой id: нумерация — внутренняя деталь терминала (Р-024).
+    expect(response.settings.instruments).toEqual(['BUILDUSD'])
+  })
+
+  /**
+   * Регресс пишется на состоянии, в котором дефект жил. Релиз, собранный до
+   * появления поля, снапшота с инструментами не имеет — и выдача обязана
+   * отдать пустой список, то есть «ничего не разрешено», а не уронить ответ и
+   * не отдать поле отсутствующим.
+   */
+  it('снапшот без поля инструментов даёт пустой список, а не отсутствие поля', () => {
+    const legacySnapshot = {
+      schemaVersion: 'snapshot-v1',
+      site: { id: '1', slug: 'legacy-site', kind: 'site' as const },
+      settings: {
+        jurisdiction: { value: 'eu-mifid', source: '1' },
+        defaultLocale: { value: 'de', source: '1' },
+        availableLocales: ['de'],
+      },
+    } as never
+
+    const response = buildSiteConfigResponse({
+      snapshot: legacySnapshot,
+      release: { number: 1, builtAt: new Date().toISOString() },
+    })
+
+    expect(response.settings.instruments).toEqual([])
   })
 
   it('снапшот и отпечаток сохранены в записи релиза', async () => {

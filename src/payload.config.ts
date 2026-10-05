@@ -32,6 +32,7 @@ import { Authors } from './modules/stream/taxonomy/authors.collection'
 import { Categories } from './modules/stream/taxonomy/categories.collection'
 import { Tags } from './modules/stream/taxonomy/tags.collection'
 import { Videos } from './modules/stream/video/videos.collection'
+import { InstrumentAccess, MdsInstruments, MdsUniverseSyncs } from './modules/trading'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -71,6 +72,9 @@ export default buildConfig({
     GlobalAreas,
     SeoProfiles,
     Redirects,
+    InstrumentAccess,
+    MdsInstruments,
+    MdsUniverseSyncs,
     Releases,
     Channels,
     Outbox,
