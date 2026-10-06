@@ -78,6 +78,33 @@ describe('границы модулей', () => {
     expect(found).toEqual([])
   })
 
+  /**
+   * Заведено по живому отказу, а не по соображению: импорт `@/platform` из
+   * клиентского компонента уронил всю админку в 500 (ADR-0034). Бочка тянет
+   * `node:fs`, и клиентский чанк перестаёт собираться. Модульные тесты идут
+   * в node и этого не видят, интеграционные админку не открывают.
+   */
+  it('запрещает клиентскому компоненту импортировать бочку platform', async () => {
+    const found = await violations(
+      `import { ensureEnv } from '@/platform'
+export const use = ensureEnv
+`,
+      'src/modules/design/blocks/ui/Example.tsx',
+    )
+    expect(found.join(' ')).toMatch(/no-restricted-imports/)
+    expect(found.join(' ')).toMatch(/node:fs/)
+  })
+
+  it('разрешает тот же импорт серверному коду модуля', async () => {
+    const found = await violations(
+      `import { ensureEnv } from '@/platform'
+export const use = ensureEnv
+`,
+      'src/modules/design/blocks/load.ts',
+    )
+    expect(found).toEqual([])
+  })
+
   it('запрещает platform зависеть от модулей', async () => {
     const found = await violations(
       `import { MODULE_NAME } from '@/modules/stream'\nexport const use = MODULE_NAME\n`,

@@ -42,6 +42,23 @@ const noImplementationFromContracts = {
     'contracts не зависит от реализации. Канон, знающий о коде, перестаёт быть каноном: его начнут править под удобство кода, а не наоборот. ТЗ разд. 3 и 9.',
 }
 
+/**
+ * Клиентские компоненты не импортируют бочку `@/platform`.
+ *
+ * Стоило 500 на **всей админке** `2026-10-06` (ADR-0034). `@/platform`
+ * тянет `declared-routes.ts`, тот — `node:fs`, и сборщик не может собрать
+ * клиентский чанк. Ни типы, ни тесты этого не видят: модульные тесты идут в
+ * node, где `node:fs` есть, а интеграционные админку не открывают.
+ *
+ * Нужное клиенту либо лежит в своём модуле, либо импортируется узким путём
+ * `@/platform/<область>`, который обязан быть пригоден для браузера.
+ */
+const noPlatformBarrelInClient = {
+  group: ['@/platform'],
+  message:
+    'Клиентский компонент не импортирует "@/platform": бочка тянет node:fs и роняет сборку клиентского чанка — вся админка отдаёт 500. Держите правило в своём модуле или импортируйте "@/platform/<область>".',
+}
+
 /** process.env читается ровно в одном месте (ТЗ разд. 6, TASK-005). */
 const noProcessEnv = {
   selector: "MemberExpression[object.name='process'][property.name='env']",
@@ -96,6 +113,23 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         { patterns: [...publicInterfaceOnly, noDeliveryFromDomain] },
+      ],
+    },
+  },
+
+  /**
+   * Папки клиентских компонентов админки. Перечислены явно: признак
+   * «клиентский» — это директива `'use client'` в первой строке, и линтер её
+   * не видит, а соглашение о каталоге видит.
+   */
+  {
+    files: ['src/modules/*/ui/**', 'src/modules/*/*/ui/**', 'src/modules/*/admin/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [...publicInterfaceOnly, noDeliveryFromDomain, noPlatformBarrelInClient],
+        },
       ],
     },
   },

@@ -1,4 +1,6 @@
-import { BRAND_ASSET_LABELS, BRAND_ASSET_SLOTS, describeMediaUsability } from '@/platform'
+import { BRAND_ASSET_LABELS, BRAND_ASSET_SLOTS } from '@/platform'
+
+import { describeMediaUsability } from '../media/usability'
 
 import type { BrandFinding, BrandImage, BrandSnapshot, BrandSocial } from './types'
 import type { BrandAssetSlot } from '@/platform'

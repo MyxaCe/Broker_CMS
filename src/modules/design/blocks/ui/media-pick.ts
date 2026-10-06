@@ -1,4 +1,4 @@
-import { describeMediaUsability } from '@/platform'
+import { describeMediaUsability } from '../../media/usability'
 
 /**
  * Выбор файла из медиатеки в форме пропсов блока ([[DEBT-011]], ADR-0034).
