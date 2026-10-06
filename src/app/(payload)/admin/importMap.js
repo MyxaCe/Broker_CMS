@@ -25,6 +25,7 @@ import { PrimitivePalettePreview as PrimitivePalettePreview_4038af5bf7bfbfee11c6
 import { RolePalettePreview as RolePalettePreview_4038af5bf7bfbfee11c6fad80dab5123 } from '@/modules/design/tokens/ui/PalettePreview'
 import { ComponentPalettePreview as ComponentPalettePreview_4038af5bf7bfbfee11c6fad80dab5123 } from '@/modules/design/tokens/ui/PalettePreview'
 import { BlockTreeField as BlockTreeField_3ea94a6c558a56ef43d0126c5d5d70fc } from '@/modules/design/blocks/ui/BlockTreeField'
+import { NavTreeField as NavTreeField_3eb7b64ca9c175518d825c5c71ded528 } from '@/modules/design/navigation/ui/NavTreeField'
 import { UniversePicker as UniversePicker_94b45ab8554cfc3bd752435efe26d656 } from '@/modules/trading/admin/UniversePicker'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
@@ -58,6 +59,7 @@ export const importMap = {
   "@/modules/design/tokens/ui/PalettePreview#RolePalettePreview": RolePalettePreview_4038af5bf7bfbfee11c6fad80dab5123,
   "@/modules/design/tokens/ui/PalettePreview#ComponentPalettePreview": ComponentPalettePreview_4038af5bf7bfbfee11c6fad80dab5123,
   "@/modules/design/blocks/ui/BlockTreeField#BlockTreeField": BlockTreeField_3ea94a6c558a56ef43d0126c5d5d70fc,
+  "@/modules/design/navigation/ui/NavTreeField#NavTreeField": NavTreeField_3eb7b64ca9c175518d825c5c71ded528,
   "@/modules/trading/admin/UniversePicker#UniversePicker": UniversePicker_94b45ab8554cfc3bd752435efe26d656,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1

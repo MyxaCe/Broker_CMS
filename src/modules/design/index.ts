@@ -247,18 +247,52 @@ export type {
 export { Sections } from './sections/sections.collection'
 
 export {
+  isNavLayout,
   MAX_NAV_DEPTH,
+  NAV_LAYOUT_LABELS,
+  NAV_LAYOUTS,
   NAV_TARGET_LABELS,
   NAV_TARGETS,
   resolveNavTree,
   validateNavTree,
 } from './navigation/tree'
-export type { NavContext, NavIssue, NavNode, NavTarget, ResolvedNavItem } from './navigation/tree'
+export type {
+  NavContext,
+  NavIssue,
+  NavLayout,
+  NavNode,
+  NavTarget,
+  ResolvedNavItem,
+} from './navigation/tree'
 export {
   NAV_PLACEMENT_LABELS,
   NAV_PLACEMENTS,
   Navigations,
 } from './navigation/navigation.collection'
+
+export {
+  canDropNav,
+  createNavItem,
+  getNavItem,
+  insertNavItem,
+  moveNavItem,
+  moveNavItemTo,
+  navHeight,
+  removeNavItem,
+  setNavField,
+  toNavList as buildNavEditorTree,
+} from './navigation/ui/nav-ops'
+export type { EditorNavItem, NavDropVerdict, NavPath } from './navigation/ui/nav-ops'
+
+export {
+  describeOption,
+  describePageChoice,
+  pageOptions,
+  siteIdsUnder,
+  tenantRows,
+  warnAboutForeignPages,
+} from './navigation/ui/page-options'
+export type { PageChoice, PageOption, TenantRow } from './navigation/ui/page-options'
 export type { NavPlacement } from './navigation/navigation.collection'
 
 export { loadTokenSet } from './tokens/load'

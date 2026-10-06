@@ -7,6 +7,7 @@ import {
   DesignPrimitives,
   DesignRoles,
   GlobalAreas,
+  Navigations,
   Pages,
   Sections,
 } from '@/modules/design'
@@ -50,6 +51,11 @@ const WIRED: readonly Wiring[] = [
     collection: GlobalAreas,
     field: 'blocks',
     component: '@/modules/design/blocks/ui/BlockTreeField#BlockTreeField',
+  },
+  {
+    collection: Navigations,
+    field: 'items',
+    component: '@/modules/design/navigation/ui/NavTreeField#NavTreeField',
   },
   {
     collection: DesignPrimitives,
