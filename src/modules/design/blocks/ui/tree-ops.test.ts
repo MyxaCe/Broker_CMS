@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  canDropInto,
   createBlock,
   describeBlock,
   duplicateBlock,
   getNode,
   insertBlock,
+  listDepth,
   moveBlock,
+  moveBlockTo,
   removeBlock,
   setProp,
+  subtreeHeight,
   toBlockList,
   updateNode,
 } from './tree-ops'
@@ -211,5 +215,132 @@ describe('подпись узла', () => {
 
   it('неизвестный тип показывает себя, а не пустоту', () => {
     expect(describeBlock({ type: 'выдумка' })).toBe('выдумка')
+  })
+})
+
+/**
+ * Перенос мышью ([[DEBT-011]], ADR-0034).
+ *
+ * Разметка перетаскивания — три обработчика; вся цена операции здесь, и ни
+ * одна из этих ошибок на экране не выглядит ошибкой: блок просто оказывается
+ * не там или исчезает.
+ */
+describe('перенос блока мышью', () => {
+  it('переносит блок с верхнего уровня в слот', () => {
+    const next = moveBlockTo(TREE, [0], [1, 'columns'], 0)
+
+    expect(next).toHaveLength(1)
+    expect(next[0]?.slots?.columns?.map((node) => node.props?.text)).toEqual([
+      'раз',
+      'вложенный',
+      'второй',
+    ])
+  })
+
+  it('переносит блок из слота на верхний уровень', () => {
+    const next = moveBlockTo(TREE, [1, 'columns', 0], [], 0)
+
+    expect(next.map((node) => node.type)).toEqual(['quote', 'quote', 'columns'])
+    expect(next[0]?.props?.text).toBe('вложенный')
+    expect(next[2]?.slots?.columns).toHaveLength(1)
+  })
+
+  it('перенос вниз внутри своего списка не съезжает на единицу', () => {
+    /**
+     * Самая дорогая ошибка этой операции. Узел вынимается первым, и всё
+     * после него съезжает влево; позиция же отмерена до изъятия. Без поправки
+     * блок встаёт перед целью, а не после — и выглядит это как «не работает».
+     */
+    const list: EditorBlock[] = [quote('а'), quote('б'), quote('в')]
+
+    expect(moveBlockTo(list, [0], [], 2).map((node) => node.props?.text)).toEqual(['б', 'а', 'в'])
+    expect(moveBlockTo(list, [0], [], 3).map((node) => node.props?.text)).toEqual(['б', 'в', 'а'])
+  })
+
+  it('перенос вверх внутри своего списка встаёт ровно на указанное место', () => {
+    const list: EditorBlock[] = [quote('а'), quote('б'), quote('в')]
+
+    expect(moveBlockTo(list, [2], [], 0).map((node) => node.props?.text)).toEqual(['в', 'а', 'б'])
+  })
+
+  it('перенос на собственное место ничего не меняет', () => {
+    const list: EditorBlock[] = [quote('а'), quote('б'), quote('в')]
+
+    expect(moveBlockTo(list, [1], [], 1)).toEqual(list)
+  })
+
+  it('перенос снизу вверх в слок перед собой адреса не сдвигает', () => {
+    /**
+     * Зеркало предыдущего случая, и оно обязано быть: поправка адреса,
+     * применённая без условия, испортила бы ровно этот перенос — блок ушёл бы
+     * в слот соседа. Односторонняя проверка пропустила бы такую «починку».
+     */
+    const tree: EditorBlock[] = [columns([]), quote('хвост')]
+    const next = moveBlockTo(tree, [1], [0, 'columns'], 0)
+
+    expect(next).toHaveLength(1)
+    expect(next[0]?.slots?.columns?.map((node) => node.props?.text)).toEqual(['хвост'])
+  })
+
+  it('исходное дерево не меняется', () => {
+    moveBlockTo(TREE, [0], [1, 'columns'], 0)
+
+    expect(TREE).toHaveLength(2)
+    expect(TREE[1]?.slots?.columns).toHaveLength(2)
+  })
+})
+
+describe('запреты переноса', () => {
+  it('блок нельзя положить в собственный слот — ветка была бы потеряна', () => {
+    const verdict = canDropInto(TREE, [1], [1, 'columns'])
+
+    expect(verdict.kind).toBe('refuse')
+    expect(verdict.kind === 'refuse' ? verdict.reason : '').toContain('в самого себя')
+    expect(moveBlockTo(TREE, [1], [1, 'columns'], 0)).toEqual(TREE)
+  })
+
+  it('и в слот своего потомка — тоже', () => {
+    const deep: EditorBlock[] = [columns([columns([quote('глубокий')])])]
+
+    expect(canDropInto(deep, [0], [0, 'columns', 0, 'columns']).kind).toBe('refuse')
+  })
+
+  it('слот, которого у типа нет, не принимает ничего', () => {
+    const verdict = canDropInto(TREE, [0], [1, 'подвал'])
+
+    expect(verdict.kind).toBe('refuse')
+    expect(verdict.kind === 'refuse' ? verdict.reason : '').toContain('не принимает')
+  })
+
+  it('блок без слотов не принимает содержимое', () => {
+    expect(canDropInto(TREE, [1], [0, 'columns']).kind).toBe('refuse')
+  })
+
+  it('перенос, делающий дерево глубже предела, отклоняется до отпускания', () => {
+    /**
+     * Проверяется высота **переносимой ветки**, а не одного узла: узел с
+     * потомками занимает больше одного уровня, и запрет по самому узлу
+     * пропустил бы ровно тот случай, ради которого предел существует.
+     */
+    const branch = columns([quote('внутри')])
+    const tree: EditorBlock[] = [branch, columns([columns([])])]
+
+    expect(canDropInto(tree, [0], [1, 'columns', 0, 'columns']).kind).toBe('refuse')
+  })
+
+  it('несуществующий узел не переносится и дерева не портит', () => {
+    expect(moveBlockTo(TREE, [9], [], 0)).toEqual(TREE)
+  })
+
+  it('высота ветки считается по самому глубокому потомку', () => {
+    expect(subtreeHeight(quote('один'))).toBe(1)
+    expect(subtreeHeight(columns([quote('а')]))).toBe(2)
+    expect(subtreeHeight(columns([columns([quote('а')])]))).toBe(3)
+  })
+
+  it('глубина списка совпадает с тем, как её считает проверка дерева', () => {
+    expect(listDepth([])).toBe(1)
+    expect(listDepth([0, 'columns'])).toBe(2)
+    expect(listDepth([0, 'columns', 1, 'columns'])).toBe(3)
   })
 })

@@ -1,0 +1,163 @@
+/* Редактор меню деревом (ТЗ 2.2, DEBT-011, ADR-0034). */
+
+.nav-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.nav-tree__head {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.nav-tree__count {
+  font-size: 0.8rem;
+  color: var(--theme-elevation-600);
+}
+
+.nav-tree__count--bad,
+.nav-tree__issue {
+  color: var(--theme-error-500, #a33);
+}
+
+.nav-tree__issue,
+.nav-tree__note {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.nav-tree__note {
+  color: var(--theme-elevation-500);
+}
+
+.nav-tree__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.nav-tree > .nav-tree__list {
+  padding-left: 0;
+}
+
+.nav-tree__item {
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: 3px;
+  padding: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: var(--theme-elevation-0);
+}
+
+.nav-tree__row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.nav-tree__row--second {
+  padding-left: 1.4rem;
+}
+
+.nav-tree__grip {
+  cursor: grab;
+  user-select: none;
+  color: var(--theme-elevation-400);
+  padding: 0 0.2rem;
+}
+
+.nav-tree__grip:active {
+  cursor: grabbing;
+}
+
+.nav-tree__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.35rem;
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: 3px;
+  background: var(--theme-input-bg, var(--theme-elevation-0));
+  color: var(--theme-elevation-900);
+}
+
+.nav-tree__input--narrow {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.nav-tree__label {
+  font-size: 0.78rem;
+  color: var(--theme-elevation-600);
+}
+
+.nav-tree__checkbox {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--theme-elevation-600);
+  white-space: nowrap;
+}
+
+.nav-tree__controls {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.nav-tree__button {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--theme-elevation-200);
+  border-radius: 3px;
+  background: var(--theme-elevation-50);
+  color: var(--theme-elevation-800);
+  cursor: pointer;
+}
+
+.nav-tree__button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.nav-tree__button--primary {
+  align-self: flex-start;
+  background: var(--theme-elevation-100);
+}
+
+.nav-tree__button--danger {
+  color: var(--theme-error-500, #a33);
+}
+
+.nav-tree__drop {
+  list-style: none;
+  min-height: 8px;
+  border: 1px dashed var(--theme-elevation-200);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+}
+
+.nav-tree__drop--over {
+  border-color: var(--theme-success-500, #2a7);
+  background: var(--theme-elevation-100);
+  min-height: 20px;
+}
+
+.nav-tree__drop--refused {
+  border-color: var(--theme-error-500, #a33);
+  border-style: solid;
+  opacity: 0.6;
+}
+
+.nav-tree__drop-reason {
+  font-size: 0.7rem;
+  color: var(--theme-error-500, #a33);
+  padding: 0 0.4rem;
+}

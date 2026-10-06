@@ -2,6 +2,8 @@
 
 import { emptyProps } from '../props'
 
+import { MediaPicker } from './MediaPicker'
+
 import type { PropField } from '../props'
 
 /**
@@ -137,20 +139,12 @@ function Control(props: {
 
     case 'media':
       /**
-       * Пока идентификатор файла вводится строкой: выбор из медиатеки — это
-       * отдельный виджет Payload, и подключать его вместе со всем остальным
-       * значило бы задержать форму целиком ради одного поля.
+       * Выбор из медиатеки ([[DEBT-011]], ADR-0034). Своя панель, а не виджет
+       * Payload: встроенный `upload` живёт в поле документа, а здесь поле —
+       * это одна ветка дерева внутри `json`, и формы, в которую его можно
+       * повесить, не существует.
        */
-      return (
-        <input
-          id={props.id}
-          className="block-form__input"
-          type="text"
-          value={typeof value === 'string' ? value : ''}
-          placeholder="Идентификатор файла из медиатеки"
-          onChange={(event) => props.onChange(event.target.value)}
-        />
-      )
+      return <MediaPicker id={props.id} value={value} onChange={props.onChange} />
 
     case 'items':
       return <ItemsControl {...props} />

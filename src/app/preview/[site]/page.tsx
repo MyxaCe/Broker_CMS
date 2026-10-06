@@ -37,11 +37,12 @@ export default async function PreviewPage({
   const path = single(query.path)
   const locale = single(query.locale)
   const theme = single(query.theme) === 'dark' ? 'dark' : 'light'
+  const jurisdiction = single(query.jurisdiction)
 
   let result
 
   try {
-    result = await loadPreview({ payload, siteSlug: site, path, locale, theme })
+    result = await loadPreview({ payload, siteSlug: site, path, locale, jurisdiction, theme })
   } catch (error) {
     if (error instanceof PreviewError) {
       return <Refusal title="Предпросмотр недоступен" text={error.message} />
@@ -78,6 +79,26 @@ export default async function PreviewPage({
   return (
     <div className="pv-root" data-theme={theme}>
       <PreviewBar result={result} theme={theme} />
+
+      {/*
+       * Страница, закрытая юрисдикцией, не прячется, а объясняется. Редактор
+       * пришёл по прямой ссылке; «страница не найдена» отправило бы его
+       * искать несуществующую опечатку в пути.
+       */}
+      {result.pageHiddenReason === null ? null : (
+        <p className="pv-hidden">
+          В юрисдикции «{result.jurisdiction ?? 'не задана'}» этой страницы посетитель не увидит.{' '}
+          {result.pageHiddenReason}
+        </p>
+      )}
+
+      {result.hiddenByJurisdiction === 0 ? null : (
+        <p className="pv-hidden pv-hidden--soft">
+          Юрисдикция «{result.jurisdiction ?? 'не задана'}» скрыла блоков:{' '}
+          {result.hiddenByJurisdiction}.
+        </p>
+      )}
+
       <PageView
         page={result.page}
         navigation={result.navigation}
@@ -212,6 +233,7 @@ function PreviewBar({
       path: result.page?.path ?? '/',
       locale: result.locale,
       theme,
+      ...(result.jurisdiction === null ? {} : { jurisdiction: result.jurisdiction }),
       ...params,
     })
 
@@ -242,6 +264,29 @@ function PreviewBar({
             key={code}
             className={`pv-bar__link${code === result.locale ? ' pv-bar__link--on' : ''}`}
             href={link({ locale: code })}
+          >
+            {code}
+          </a>
+        ))}
+      </span>
+
+      {/*
+       * Выбор юрисдикции (ТЗ 5.4 требует его наравне с локалью). Одна
+       * карточка сайта обслуживает читателей из разных стран, а ограничения
+       * задаются на блоках, областях и страницах — увидеть их действие можно
+       * только отсюда.
+       */}
+      {/*
+       * Ссылками, а не выпадающим списком. Страница серверная, обработчика
+       * на списке нет — список выглядел бы управляющим элементом и ничего
+       * не делал. Это тот же класс, что индикатор, измеряющий соседнее.
+       */}
+      <span className="pv-bar__group" aria-label="Юрисдикция">
+        {result.availableJurisdictions.map((code) => (
+          <a
+            key={code}
+            className={`pv-bar__link${code === result.jurisdiction ? ' pv-bar__link--on' : ''}`}
+            href={link({ jurisdiction: code })}
           >
             {code}
           </a>

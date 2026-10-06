@@ -1,0 +1,144 @@
+/* Живой предпросмотр палитры (ТЗ 2.1, DEBT-011, ADR-0034). */
+
+.palette {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: 4px;
+  padding: 0.8rem;
+}
+
+.palette__note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--theme-elevation-600);
+}
+
+.palette__note--alarm,
+.palette__alarm {
+  color: var(--theme-error-500, #a33);
+}
+
+.palette__alarm {
+  border: 1px solid var(--theme-error-500, #a33);
+  border-radius: 3px;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.palette__alarm ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.palette__issues {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  color: var(--theme-error-500, #a33);
+}
+
+.palette__theme {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.palette__theme-title {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--theme-elevation-500);
+}
+
+.palette__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.3rem;
+}
+
+.palette__swatch {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.4rem;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 0.2rem;
+  font-size: 0.72rem;
+}
+
+/* Задетые правкой выделены: ради этого предпросмотр и существует. */
+.palette__swatch--changed {
+  border-color: var(--theme-elevation-400);
+  background: var(--theme-elevation-50);
+}
+
+.palette__swatch--edited {
+  border-color: var(--theme-success-500, #2a7);
+}
+
+.palette__chip {
+  grid-row: span 2;
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  border: 1px solid var(--theme-elevation-200);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: var(--theme-elevation-500);
+}
+
+.palette__name {
+  color: var(--theme-elevation-800);
+}
+
+.palette__value {
+  color: var(--theme-elevation-500);
+  font-variant-numeric: tabular-nums;
+}
+
+.palette__sampler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  border: 1px solid;
+  border-radius: 4px;
+  padding: 0.6rem;
+  font-size: 0.8rem;
+}
+
+.palette__sampler-button {
+  border-radius: 3px;
+  padding: 0.25rem 0.6rem;
+}
+
+.palette__sampler-market {
+  display: inline-flex;
+  gap: 0.6rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.palette__contrast {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+
+.palette__contrast td {
+  border-top: 1px solid var(--theme-elevation-100);
+  padding: 0.2rem 0.3rem;
+}
+
+.palette__contrast-row--bad td {
+  color: var(--theme-error-500, #a33);
+}

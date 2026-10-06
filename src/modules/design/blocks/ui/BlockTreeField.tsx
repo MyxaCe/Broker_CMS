@@ -1,17 +1,19 @@
 'use client'
 
 import { useField } from '@payloadcms/ui'
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 
 import { validateBlockTree } from '../validate-tree'
 
 import { BlockCard, pathKey } from './BlockCard'
 import { BlockPicker } from './BlockPicker'
+import { DropZone } from './DropZone'
 import {
   createBlock,
   insertBlock,
   duplicateBlock,
   moveBlock,
+  moveBlockTo,
   removeBlock,
   setProp,
   toBlockList,
@@ -37,6 +39,14 @@ export function BlockTreeField({ path }: { readonly path: string }): React.JSX.E
   const { value, setValue } = useField<unknown>({ path })
   const [adding, setAdding] = useState(false)
 
+  /**
+   * Что сейчас тащат. Состояние держится здесь, а не в карточке: зоны
+   * приёма принадлежат спискам на всех уровнях дерева, и каждая обязана
+   * знать, что именно к ней несут, — иначе она не может ответить «сюда
+   * нельзя» до отпускания кнопки.
+   */
+  const [dragging, setDragging] = useState<BlockPath | null>(null)
+
   const tree = useMemo(() => toBlockList(value), [value])
 
   /**
@@ -53,33 +63,59 @@ export function BlockTreeField({ path }: { readonly path: string }): React.JSX.E
 
   const apply = (next: EditorBlock[]) => setValue(next)
 
+  const drop = (listPath: BlockPath, index: number) => {
+    if (dragging !== null) {
+      apply(moveBlockTo(tree, dragging, listPath, index))
+    }
+
+    setDragging(null)
+  }
+
   const renderList = (listPath: BlockPath, list: readonly EditorBlock[]): React.JSX.Element => (
-    <ol className="block-tree__list">
+    <ol className={`block-tree__list${dragging === null ? '' : ' block-tree__list--dragging'}`}>
+      <DropZone tree={tree} dragging={dragging} listPath={listPath} index={0} onDrop={drop} />
       {list.map((node, index) => (
-        <BlockCard
-          key={`${pathKey([...listPath, index])}-${node.type}`}
-          node={node}
-          path={[...listPath, index]}
-          issues={issues}
-          allowRestricted
-          first={index === 0}
-          last={index === list.length - 1}
-          onChange={(at, name, propValue) => apply(setProp(tree, at, name, propValue))}
-          onStyle={(at, name, styleValue) =>
-            apply(
-              updateNode(tree, at, (node) => ({
-                ...node,
-                style: { ...(node.style ?? {}), [name]: styleValue },
-              })),
-            )
-          }
-          onVariant={(at, variant) => apply(updateNode(tree, at, (node) => ({ ...node, variant })))}
-          onMove={(at, delta) => apply(moveBlock(tree, at, delta))}
-          onRemove={(at) => apply(removeBlock(tree, at))}
-          onDuplicate={(at) => apply(duplicateBlock(tree, at))}
-          onAdd={(into, at, type) => apply(insertBlock(tree, into, at, createBlock(type)))}
-          renderList={renderList}
-        />
+        <Fragment key={`${pathKey([...listPath, index])}-${node.type}`}>
+          <BlockCard
+            node={node}
+            path={[...listPath, index]}
+            issues={issues}
+            allowRestricted
+            first={index === 0}
+            last={index === list.length - 1}
+            dragging={dragging}
+            onDragStart={(at) => {
+              setDragging(at)
+            }}
+            onDragEnd={() => {
+              setDragging(null)
+            }}
+            onChange={(at, name, propValue) => apply(setProp(tree, at, name, propValue))}
+            onStyle={(at, name, styleValue) =>
+              apply(
+                updateNode(tree, at, (node) => ({
+                  ...node,
+                  style: { ...(node.style ?? {}), [name]: styleValue },
+                })),
+              )
+            }
+            onVariant={(at, variant) =>
+              apply(updateNode(tree, at, (node) => ({ ...node, variant })))
+            }
+            onMove={(at, delta) => apply(moveBlock(tree, at, delta))}
+            onRemove={(at) => apply(removeBlock(tree, at))}
+            onDuplicate={(at) => apply(duplicateBlock(tree, at))}
+            onAdd={(into, at, type) => apply(insertBlock(tree, into, at, createBlock(type)))}
+            renderList={renderList}
+          />
+          <DropZone
+            tree={tree}
+            dragging={dragging}
+            listPath={listPath}
+            index={index + 1}
+            onDrop={drop}
+          />
+        </Fragment>
       ))}
     </ol>
   )

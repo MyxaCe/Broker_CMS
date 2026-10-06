@@ -118,6 +118,9 @@ export type {
 export { isKnownJurisdiction, JURISDICTIONS, requirementsFor } from './compliance/jurisdictions'
 export type { JurisdictionRequirements } from './compliance/jurisdictions'
 
+export { blockVisibilityIn, filterByJurisdiction, visibilityIn } from './compliance/visibility'
+export type { FilterResult, VisibilityVerdict } from './compliance/visibility'
+
 export {
   BLOCK_DISCLAIMERS,
   checkImageAlt,
@@ -163,6 +166,12 @@ export type {
 } from './tokens/types'
 
 export { mergeTokenSets, resolveTokens, TokenResolutionError } from './tokens/resolve'
+
+export { chainFromTenantDoc, tokenSetFromDocs } from './tokens/from-docs'
+export type { TokenDocs } from './tokens/from-docs'
+
+export { applyDraft, buildPalettePreview, PREVIEW_THEMES } from './tokens/preview'
+export type { ContrastRow, PaletteSwatch, PalettePreview, TokenDraft } from './tokens/preview'
 export type { ResolvedTokens, TokenIssue } from './tokens/resolve'
 
 export { collectContrastPairs, REQUIRED_CONTRAST_PAIRS } from './tokens/contrast-pairs'
@@ -241,18 +250,52 @@ export type {
 export { Sections } from './sections/sections.collection'
 
 export {
+  isNavLayout,
   MAX_NAV_DEPTH,
+  NAV_LAYOUT_LABELS,
+  NAV_LAYOUTS,
   NAV_TARGET_LABELS,
   NAV_TARGETS,
   resolveNavTree,
   validateNavTree,
 } from './navigation/tree'
-export type { NavContext, NavIssue, NavNode, NavTarget, ResolvedNavItem } from './navigation/tree'
+export type {
+  NavContext,
+  NavIssue,
+  NavLayout,
+  NavNode,
+  NavTarget,
+  ResolvedNavItem,
+} from './navigation/tree'
 export {
   NAV_PLACEMENT_LABELS,
   NAV_PLACEMENTS,
   Navigations,
 } from './navigation/navigation.collection'
+
+export {
+  canDropNav,
+  createNavItem,
+  getNavItem,
+  insertNavItem,
+  moveNavItem,
+  moveNavItemTo,
+  navHeight,
+  removeNavItem,
+  setNavField,
+  toNavList as buildNavEditorTree,
+} from './navigation/ui/nav-ops'
+export type { EditorNavItem, NavDropVerdict, NavPath } from './navigation/ui/nav-ops'
+
+export {
+  describeOption,
+  describePageChoice,
+  pageOptions,
+  siteIdsUnder,
+  tenantRows,
+  warnAboutForeignPages,
+} from './navigation/ui/page-options'
+export type { PageChoice, PageOption, TenantRow } from './navigation/ui/page-options'
 export type { NavPlacement } from './navigation/navigation.collection'
 
 export { loadTokenSet } from './tokens/load'

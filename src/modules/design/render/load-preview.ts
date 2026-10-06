@@ -1,5 +1,7 @@
 import { loadTenantChainIds, resolveTenantById } from '@/platform'
 
+import { JURISDICTIONS } from '../compliance/jurisdictions'
+import { filterByJurisdiction, visibilityIn } from '../compliance/visibility'
 import { expandSections, resolveSections } from '../sections/resolve'
 import { loadStructure } from '../structure/load'
 import { loadTokenSet } from '../tokens/load'
@@ -24,6 +26,19 @@ export interface PreviewResult {
   readonly locale: string
   readonly availableLocales: readonly string[]
   readonly page: PreviewPage | null
+  /**
+   * Юрисдикция, в которой смотрят (ТЗ 5.4 требует её наравне с локалью).
+   *
+   * Собственная юрисдикция сайта — умолчание; остальные нужны затем, что
+   * одна карточка тенанта обслуживает читателей из разных стран, а
+   * ограничения задаются на блоках и страницах.
+   */
+  readonly jurisdiction: string | null
+  readonly availableJurisdictions: readonly string[]
+  /** Страница существует, но в этой юрисдикции не показывается. */
+  readonly pageHiddenReason: string | null
+  /** Сколько блоков скрыла юрисдикция — на странице и в областях. */
+  readonly hiddenByJurisdiction: number
   readonly navigation: readonly SnapshotNavigation[]
   readonly areas: readonly SnapshotGlobalArea[]
   readonly tokens: Readonly<Record<string, string>>
@@ -46,6 +61,7 @@ export async function loadPreview(args: {
   readonly siteSlug: string
   readonly path: string | null
   readonly locale: string | null
+  readonly jurisdiction?: string | null
   readonly theme?: 'light' | 'dark'
 }): Promise<PreviewResult> {
   const { payload } = args
@@ -84,6 +100,30 @@ export async function loadPreview(args: {
     throw new PreviewError(`Локаль «${locale}» у этого сайта не объявлена.`, 400)
   }
 
+  const own: string | null = settings.jurisdiction.value ?? null
+
+  /**
+   * Перечень для выбора: своя юрисдикция плюс все известные движку. Свою
+   * видно первой и она же умолчание — предпросмотр без выбора обязан
+   * показывать то, что увидит обычный посетитель этого сайта.
+   */
+  const availableJurisdictions: string[] = [
+    ...new Set<string>([...(own === null ? [] : [own]), ...JURISDICTIONS.map((item) => item.code)]),
+  ]
+
+  const requested = args.jurisdiction ?? null
+
+  /**
+   * Неизвестная юрисдикция — отказ, а не молчаливый откат к своей. То же
+   * правило, что и для локали: подмена приводит к тому, что редактор
+   * смотрит на британскую страницу, считая её немецкой.
+   */
+  if (requested !== null && !availableJurisdictions.includes(requested)) {
+    throw new PreviewError(`Юрисдикция «${requested}» движку неизвестна.`, 400)
+  }
+
+  const jurisdiction: string | null = requested ?? own
+
   const chainIds = await loadTenantChainIds(payload, siteId)
 
   const [{ resolved }, structure, pagesResult, sectionsResult] = await Promise.all([
@@ -115,6 +155,45 @@ export async function loadPreview(args: {
 
   const theme = args.theme ?? 'light'
 
+  const page =
+    found === undefined ? null : toPreviewPage(found, sectionsResult.docs, locale, chainIds)
+
+  /**
+   * Сама страница может быть ограничена юрисдикцией. Тогда она не прячется
+   * из предпросмотра, а показывается с объяснением: редактор пришёл по
+   * прямой ссылке и должен понять, почему посетитель её не увидит, а не
+   * получить «страница не найдена».
+   */
+  const pageVisibility =
+    found === undefined ? null : visibilityIn(found.jurisdictions, jurisdiction)
+
+  const pageBlocks =
+    page === null
+      ? { blocks: [] as unknown[], hidden: 0 }
+      : filterByJurisdiction(page.blocks, jurisdiction)
+
+  let hiddenByJurisdiction = pageBlocks.hidden
+
+  /**
+   * Области фильтруются и целиком, и по блокам внутри. Целиком — потому что
+   * ограничение области живёт у неё самой; по блокам — потому что внутри
+   * области такие же блоки, и правило обязано действовать одинаково.
+   */
+  const areas = structure.globalAreas
+    .filter((area) => area.locale === locale)
+    .flatMap((area) => {
+      if (!visibilityIn(area.jurisdictions, jurisdiction).visible) {
+        hiddenByJurisdiction += 1
+
+        return []
+      }
+
+      const filtered = filterByJurisdiction(area.blocks, jurisdiction)
+      hiddenByJurisdiction += filtered.hidden
+
+      return [{ ...area, blocks: filtered.blocks }]
+    })
+
   return {
     site: {
       id: siteId,
@@ -123,9 +202,13 @@ export async function loadPreview(args: {
     },
     locale,
     availableLocales,
-    page: found === undefined ? null : toPreviewPage(found, sectionsResult.docs, locale, chainIds),
+    jurisdiction,
+    availableJurisdictions,
+    pageHiddenReason: pageVisibility === null ? null : pageVisibility.reason,
+    hiddenByJurisdiction,
+    page: page === null ? null : { ...page, blocks: pageBlocks.blocks },
     navigation: structure.navigation.filter((menu) => menu.locale === locale),
-    areas: structure.globalAreas.filter((area) => area.locale === locale),
+    areas,
     tokens: resolved.byTheme[theme] ?? {},
     paths: docs
       .map((doc) => ({

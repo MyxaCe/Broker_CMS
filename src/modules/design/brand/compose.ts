@@ -1,5 +1,7 @@
 import { BRAND_ASSET_LABELS, BRAND_ASSET_SLOTS } from '@/platform'
 
+import { describeMediaUsability } from '../media/usability'
+
 import type { BrandFinding, BrandImage, BrandSnapshot, BrandSocial } from './types'
 import type { BrandAssetSlot } from '@/platform'
 
@@ -35,20 +37,6 @@ export interface ComposeBrandInput {
   readonly publicUrl: (filename: string) => string
 }
 
-function positiveInteger(value: unknown): number | null {
-  const parsed = typeof value === 'number' ? value : Number(value)
-
-  if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
-    return null
-  }
-
-  return parsed
-}
-
-function nonEmptyString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() !== '' ? value.trim() : null
-}
-
 /**
  * Превращает карточку файла в картинку контракта — или объясняет, почему не
  * может.
@@ -57,28 +45,22 @@ function nonEmptyString(value: unknown): string | null {
  * нет», тогда как известно другое — «логотип выбран, а показать его нечем», и
  * чинятся эти два состояния разными действиями. Это тот же класс, что
  * `?? []` у стоп-словаря: умолчание — утверждение о том, чего мы не знаем.
+ *
+ * Сам критерий пригодности живёт в `@/platform` и общий с конструктором:
+ * редактор, выбирающий файл в форме пропсов, обязан видеть тот же вердикт,
+ * который вынесет сборка релиза (ADR-0034).
  */
 function toImage(
   record: MediaRecord,
   publicUrl: (filename: string) => string,
 ): { image: BrandImage } | { reason: string } {
-  const filename = nonEmptyString(record.filename)
-  const width = positiveInteger(record.width)
-  const height = positiveInteger(record.height)
-  const mimeType = nonEmptyString(record.mimeType)
-  const alt = nonEmptyString(record.alt)
+  const usability = describeMediaUsability(record)
 
-  const missing: string[] = []
-
-  if (filename === null) missing.push('имя файла')
-  if (width === null) missing.push('ширина')
-  if (height === null) missing.push('высота')
-  if (mimeType === null) missing.push('тип содержимого')
-  if (alt === null) missing.push('альтернативный текст')
-
-  if (filename === null || width === null || height === null || mimeType === null || alt === null) {
-    return { reason: `в карточке файла нет: ${missing.join(', ')}` }
+  if (usability.kind === 'unusable') {
+    return { reason: usability.reason }
   }
+
+  const { filename, width, height, alt, mimeType } = usability.facts
 
   return { image: { url: publicUrl(filename), width, height, alt, mimeType } }
 }
