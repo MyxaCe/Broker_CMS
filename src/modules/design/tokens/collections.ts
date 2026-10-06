@@ -61,6 +61,26 @@ const nameField: Field = {
 }
 
 /**
+ * Живой предпросмотр палитры (ТЗ 2.1, [[DEBT-011]]).
+ *
+ * Поле без данных: оно ничего не хранит и ничего не валидирует — только
+ * показывает, что произойдёт с палитрой от текущей правки. Ставится на всех
+ * трёх уровнях, потому что вопрос «что я этим сломаю» одинаков для примитива,
+ * роли и токена компонента, а ответ на него разный.
+ */
+function palettePreviewField(component: string): Field {
+  return {
+    name: 'palettePreview',
+    type: 'ui',
+    admin: {
+      components: {
+        Field: `@/modules/design/tokens/ui/PalettePreview#${component}`,
+      },
+    },
+  }
+}
+
+/**
  * Примитивы (ТЗ 2.1, слой А, верхний уровень).
  *
  * Сырые значения без смысла: `color.gold.500` — это просто цвет, и он ничего
@@ -133,6 +153,7 @@ export const DesignPrimitives: CollectionConfig = {
       label: 'Пояснение',
       admin: { description: 'Например: основной жёлтый бренда. Видно дизайнеру при выборе.' },
     },
+    palettePreviewField('PrimitivePalettePreview'),
   ],
 
   hooks: {
@@ -197,6 +218,7 @@ export const DesignRoles: CollectionConfig = {
       },
     },
     ownerField,
+    palettePreviewField('RolePalettePreview'),
   ],
 
   hooks: {
@@ -254,6 +276,7 @@ export const DesignComponentTokens: CollectionConfig = {
       admin: { description: 'Имя роли либо примитива — в зависимости от источника.' },
     },
     ownerField,
+    palettePreviewField('ComponentPalettePreview'),
   ],
 
   hooks: {

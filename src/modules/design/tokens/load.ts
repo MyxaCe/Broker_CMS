@@ -1,9 +1,10 @@
 import { buildChain } from '@/platform'
 
-import { mergeTokenSets, resolveTokens } from './resolve'
+import { tokenSetFromDocs } from './from-docs'
+import { resolveTokens } from './resolve'
 
 import type { ResolvedTokens } from './resolve'
-import type { ComponentToken, Primitive, SemanticRole, TokenSet } from './types'
+import type { TokenSet } from './types'
 import type { TenantNode } from '@/platform'
 import type { Payload } from 'payload'
 
@@ -53,66 +54,22 @@ export async function loadTokenSet(args: {
   ])
 
   /**
-   * Наборы раскладываются по узлам и сливаются в порядке цепочки. Сортировать
-   * плоский список нельзя: порядок выдачи базы не совпадает с порядком
-   * наследования, и перекрытие получилось бы случайным.
+   * Наборы раскладываются по узлам и сливаются в порядке цепочки. Разбор
+   * записей и порядок слияния живут в `from-docs.ts`: тем же разбором
+   * пользуется живой предпросмотр палитры в админке, и вторая реализация
+   * показывала бы редактору не тот набор, который соберётся.
    */
-  const sets = chainIds.map((id) => ({
-    primitives: pick<Primitive>(primitives.docs, id, toPrimitive),
-    roles: pick<SemanticRole>(roles.docs, id, toRole),
-    components: pick<ComponentToken>(components.docs, id, toComponent),
-  }))
+  const set = tokenSetFromDocs(chainIds, {
+    primitives: primitives.docs,
+    roles: roles.docs,
+    components: components.docs,
+  })
 
-  return { resolved: resolveTokens(mergeTokenSets(sets)), chain: chainIds }
+  return { resolved: resolveTokens(set), chain: chainIds }
 }
 
 function emptySet(): TokenSet {
   return { primitives: [], roles: [], components: [] }
-}
-
-function ownerIdOf(doc: Record<string, unknown>): string {
-  const owner = doc.owner
-
-  if (owner !== null && typeof owner === 'object' && 'id' in owner) {
-    return String((owner as { id: unknown }).id)
-  }
-
-  return owner === null || owner === undefined ? '' : String(owner)
-}
-
-function pick<T>(
-  docs: readonly unknown[],
-  ownerId: string,
-  map: (doc: Record<string, unknown>) => T,
-): T[] {
-  return (docs as Record<string, unknown>[])
-    .filter((doc) => ownerIdOf(doc) === ownerId)
-    .map((doc) => map(doc))
-}
-
-function toPrimitive(doc: Record<string, unknown>): Primitive {
-  return {
-    name: String(doc.name),
-    category: doc.category as Primitive['category'],
-    value: String(doc.value),
-  }
-}
-
-function toRole(doc: Record<string, unknown>): SemanticRole {
-  return {
-    name: String(doc.name),
-    group: doc.group as SemanticRole['group'],
-    light: String(doc.light),
-    dark: String(doc.dark),
-  }
-}
-
-function toComponent(doc: Record<string, unknown>): ComponentToken {
-  return {
-    name: String(doc.name),
-    source: doc.source as ComponentToken['source'],
-    reference: String(doc.reference),
-  }
 }
 
 async function loadTenantNodes(payload: Payload): Promise<ReadonlyMap<string, TenantNode>> {

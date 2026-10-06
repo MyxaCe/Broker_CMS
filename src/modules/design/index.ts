@@ -163,6 +163,12 @@ export type {
 } from './tokens/types'
 
 export { mergeTokenSets, resolveTokens, TokenResolutionError } from './tokens/resolve'
+
+export { chainFromTenantDoc, tokenSetFromDocs } from './tokens/from-docs'
+export type { TokenDocs } from './tokens/from-docs'
+
+export { applyDraft, buildPalettePreview, PREVIEW_THEMES } from './tokens/preview'
+export type { ContrastRow, PaletteSwatch, PalettePreview, TokenDraft } from './tokens/preview'
 export type { ResolvedTokens, TokenIssue } from './tokens/resolve'
 
 export { collectContrastPairs, REQUIRED_CONTRAST_PAIRS } from './tokens/contrast-pairs'

@@ -21,6 +21,9 @@ import { StrikethroughFeatureClient as StrikethroughFeatureClient_e70f5e05f09f93
 import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+import { PrimitivePalettePreview as PrimitivePalettePreview_4038af5bf7bfbfee11c6fad80dab5123 } from '@/modules/design/tokens/ui/PalettePreview'
+import { RolePalettePreview as RolePalettePreview_4038af5bf7bfbfee11c6fad80dab5123 } from '@/modules/design/tokens/ui/PalettePreview'
+import { ComponentPalettePreview as ComponentPalettePreview_4038af5bf7bfbfee11c6fad80dab5123 } from '@/modules/design/tokens/ui/PalettePreview'
 import { BlockTreeField as BlockTreeField_3ea94a6c558a56ef43d0126c5d5d70fc } from '@/modules/design/blocks/ui/BlockTreeField'
 import { UniversePicker as UniversePicker_94b45ab8554cfc3bd752435efe26d656 } from '@/modules/trading/admin/UniversePicker'
 import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
@@ -51,6 +54,9 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#UnderlineFeatureClient": UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+  "@/modules/design/tokens/ui/PalettePreview#PrimitivePalettePreview": PrimitivePalettePreview_4038af5bf7bfbfee11c6fad80dab5123,
+  "@/modules/design/tokens/ui/PalettePreview#RolePalettePreview": RolePalettePreview_4038af5bf7bfbfee11c6fad80dab5123,
+  "@/modules/design/tokens/ui/PalettePreview#ComponentPalettePreview": ComponentPalettePreview_4038af5bf7bfbfee11c6fad80dab5123,
   "@/modules/design/blocks/ui/BlockTreeField#BlockTreeField": BlockTreeField_3ea94a6c558a56ef43d0126c5d5d70fc,
   "@/modules/trading/admin/UniversePicker#UniversePicker": UniversePicker_94b45ab8554cfc3bd752435efe26d656,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24,
