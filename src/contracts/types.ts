@@ -84,6 +84,20 @@ export interface BrandResponse {
   readonly socials: readonly { readonly name: string; readonly url: string }[]
 }
 
+/**
+ * Публичный бренд (Р-039, [[ADR-0035]]).
+ *
+ * Единственный ответ выдачи, который уходит **без ключа доставки**. Поэтому в
+ * нём нет ничего, кроме того, чем рисуют: ни настроек, ни локалей, ни
+ * юрисдикции, ни номера релиза. Состав ограничен не вкусом, а решением
+ * штаба — исключение из ADR-0018 существует ровно в этих границах.
+ */
+export interface PublicBrandResponse {
+  readonly contract: string
+  readonly site: { readonly slug: string; readonly name: string }
+  readonly brand: BrandResponse
+}
+
 export interface NavItemResponse {
   readonly label: string
   /** `null` — заголовок раздела: сам никуда не ведёт, но группирует вложенные. */

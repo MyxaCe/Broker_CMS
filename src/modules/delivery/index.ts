@@ -86,6 +86,13 @@ export { buildSiteConfigResponse, DeliveryAssemblyError, resolveLocale } from '.
 export type { ReleaseFacts, SiteConfigRequest } from './api/site-config'
 export { buildBootstrapResponse } from './api/bootstrap'
 export {
+  buildPublicBrandResponse,
+  handlePublicBrand,
+  PUBLIC_BRAND_CACHE_CONTROL,
+  PUBLIC_BRAND_RULE,
+} from './api/public-brand'
+export type { PublicBrandRequest } from './api/public-brand'
+export {
   errorResponse,
   handleBootstrap,
   handleSiteConfig,
@@ -135,6 +142,7 @@ export {
   respondBootstrap,
   respondPageManifest,
   respondPromoBoard,
+  respondPublicBrand,
   respondSearch,
   respondSiteConfig,
   respondSyndication,
