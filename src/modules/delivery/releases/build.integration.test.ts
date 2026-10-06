@@ -117,10 +117,21 @@ describe('успешная сборка', () => {
   it('разрешённые инструменты доезжают из карточки до ответа выдачи символами', async () => {
     const syncedAt = new Date().toISOString()
 
+    /**
+     * Символ помечен тем же штампом, что и тенанты файла.
+     *
+     * Постоянный `BUILDUSD` делал тест одноразовым: `symbol` уникален, база
+     * между прогонами не стирается, и второй прогон падал на фикстуре, а не
+     * на проверяемом. Проверка, которую нельзя повторить, не проверка —
+     * красный цвет здесь означал бы «тест уже запускали», а не «сборка
+     * сломана».
+     */
+    const symbol = `BUILD${stamp}USD`
+
     await payload.create({
       collection: 'mds-instruments',
       overrideAccess: true,
-      data: { symbol: `BUILDUSD`, name: 'Фикстура', quoted: true, syncedAt } as never,
+      data: { symbol, name: 'Фикстура', quoted: true, syncedAt } as never,
     })
 
     await payload.create({
@@ -138,13 +149,13 @@ describe('успешная сборка', () => {
     await payload.create({
       collection: 'instrument-access',
       overrideAccess: true,
-      data: { site: readySiteId, instruments: [{ symbol: 'BUILDUSD' }] } as never,
+      data: { site: readySiteId, instruments: [{ symbol }] } as never,
     })
 
     const result = await buildRelease({ payload, siteId: readySiteId })
 
     expect(result.snapshot.instruments).toEqual({
-      symbols: ['BUILDUSD'],
+      symbols: [symbol],
       configured: true,
       confirmedUnquoted: [],
     })
@@ -155,7 +166,7 @@ describe('успешная сборка', () => {
     })
 
     // Символ, а не числовой id: нумерация — внутренняя деталь терминала (Р-024).
-    expect(response.settings.instruments).toEqual(['BUILDUSD'])
+    expect(response.settings.instruments).toEqual([symbol])
   })
 
   /**
