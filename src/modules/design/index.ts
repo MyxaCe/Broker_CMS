@@ -46,6 +46,13 @@ export type {
   TokenGraphInput,
 } from './validators'
 
+export { composeBrand } from './brand/compose'
+export type { ComposeBrandInput, MediaRecord } from './brand/compose'
+export { loadBrand, mediaPublicUrl } from './brand/load'
+export { EMPTY_BRAND } from './brand/types'
+export type { BrandFinding, BrandImage, BrandSnapshot, BrandSocial } from './brand/types'
+export { brandAssetsValidator } from './brand/validator'
+
 export { buildJsonLd, JSON_LD_KIND_LABELS, JSON_LD_KINDS } from './seo/jsonld'
 export type { JsonLdInput, JsonLdKind } from './seo/jsonld'
 export { composeRouting } from './seo/manifest'

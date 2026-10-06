@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
+import { EMPTY_BRAND } from '@/modules/design'
 import { runValidation } from '@/platform'
 
 import { composeSnapshot } from './snapshot'
 import { RELEASE_VALIDATORS } from './validators'
 
-import type { TenantNode, TenantSettings } from '@/platform'
+import type { FieldResolution, TenantBrand, TenantNode, TenantSettings } from '@/platform'
 
 /**
  * Набор валидаторов релиза целиком — против состояния, в котором сборка
@@ -21,6 +22,32 @@ import type { TenantNode, TenantSettings } from '@/platform'
  */
 
 const SITE: TenantNode = { id: 'de', slug: 'apex-de', kind: 'site', parentId: 'eu' }
+
+/** Разрешение «значения нет ни на одном слое» — для полей, которые тест не трогает. */
+function unset<T>(): FieldResolution<T> {
+  return {
+    value: undefined,
+    provenance: 'unset',
+    sourceTenantId: null,
+    inheritedValue: undefined,
+    inheritedFromTenantId: null,
+  }
+}
+
+function brandLayers(): TenantBrand {
+  return {
+    assets: {
+      logoLight: unset<string>(),
+      logoDark: unset<string>(),
+      logoMono: unset<string>(),
+      logoMark: unset<string>(),
+      favicon: unset<string>(),
+      emailLogo: unset<string>(),
+    },
+    primaryColor: unset<string>(),
+    socials: { entries: [], forkedAtTenantId: null },
+  }
+}
 
 function settings(): TenantSettings {
   return {
@@ -42,6 +69,14 @@ function settings(): TenantSettings {
       entries: [{ key: 'de', value: 'de', provenance: 'overridden', sourceTenantId: 'de' }],
       forkedAtTenantId: null,
     },
+    demoStartBalanceCents: {
+      value: 1_000_000,
+      provenance: 'overridden',
+      sourceTenantId: 'de',
+      inheritedValue: undefined,
+      inheritedFromTenantId: null,
+    },
+    brand: brandLayers(),
   }
 }
 
@@ -49,6 +84,7 @@ function settings(): TenantSettings {
 function cleanContent() {
   return {
     texts: [],
+    brand: EMPTY_BRAND,
     instruments: { symbols: [], configured: false, confirmedUnquoted: [] },
     examined: { tokens: 12, structureNodes: 2, routedPages: 1, compliancePages: 1 },
   }
@@ -104,6 +140,7 @@ describe('RELEASE_VALIDATORS — гейт не отдаёт чистый отч�
   it('сайт без страниц и текстов собирается', () => {
     const snapshot = composeSnapshot(SITE, settings(), {
       texts: [],
+      brand: EMPTY_BRAND,
       instruments: { symbols: [], configured: false, confirmedUnquoted: [] },
       examined: { tokens: 12, structureNodes: 0, routedPages: 0, compliancePages: 0 },
     })

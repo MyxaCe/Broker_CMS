@@ -63,6 +63,11 @@ export type { UserDraft } from './auth/user-rules'
 export { normalizeRelationId, normalizeRelationIds } from './shared/relation'
 
 export {
+  BRAND_ASSET_LABELS,
+  BRAND_ASSET_SLOTS,
+  BRAND_ASSETS_SHOWN_TODAY,
+  BRAND_COLOR_PATTERN,
+  MAX_DEMO_START_BALANCE_CENTS,
   buildChain,
   canAccessTenant,
   createTenantAccess,
@@ -91,12 +96,14 @@ export {
 export type {
   AccessDecision,
   Actor,
+  BrandAssetSlot,
   CollectionEntry,
   CollectionLayerState,
   CollectionResolution,
   FieldResolution,
   LayerState,
   Provenance,
+  TenantBrand,
   TenantDraft,
   TenantKind,
   TenantLayerSource,

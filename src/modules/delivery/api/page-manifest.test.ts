@@ -1,3 +1,4 @@
+import { EMPTY_BRAND } from '@/modules/design'
 import { describe, expect, it } from 'vitest'
 
 import { checkAgainstSchema, SCHEMA_IDS } from '@/contracts'
@@ -18,7 +19,9 @@ const SNAPSHOT: ReleaseSnapshot = {
     jurisdiction: { value: 'eu-mifid', source: '2' },
     defaultLocale: { value: 'de', source: '2' },
     availableLocales: ['de', 'en'],
+    demoStartBalanceCents: 1_000_000,
   },
+  brand: EMPTY_BRAND,
   colorPairs: [],
   instruments: { symbols: ['BTCUSD'], configured: true, confirmedUnquoted: [] },
   texts: [],

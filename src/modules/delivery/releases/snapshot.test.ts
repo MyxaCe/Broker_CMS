@@ -1,13 +1,41 @@
 import { describe, expect, it } from 'vitest'
 
+import { EMPTY_BRAND } from '@/modules/design'
+
 import { contentHash } from '../cache-key'
 
 import { composeSnapshot, SNAPSHOT_SCHEMA_VERSION } from './snapshot'
 import { siteReadinessValidator } from './validators'
 
-import type { TenantNode, TenantSettings } from '@/platform'
+import type { FieldResolution, TenantBrand, TenantNode, TenantSettings } from '@/platform'
 
 const SITE: TenantNode = { id: 'de', slug: 'apex-de', kind: 'site', parentId: 'eu' }
+
+/** Разрешение «значения нет ни на одном слое» — для полей, которые тест не трогает. */
+function unset<T>(): FieldResolution<T> {
+  return {
+    value: undefined,
+    provenance: 'unset',
+    sourceTenantId: null,
+    inheritedValue: undefined,
+    inheritedFromTenantId: null,
+  }
+}
+
+function brandLayers(): TenantBrand {
+  return {
+    assets: {
+      logoLight: unset<string>(),
+      logoDark: unset<string>(),
+      logoMono: unset<string>(),
+      logoMark: unset<string>(),
+      favicon: unset<string>(),
+      emailLogo: unset<string>(),
+    },
+    primaryColor: unset<string>(),
+    socials: { entries: [], forkedAtTenantId: null },
+  }
+}
 
 function settings(overrides: Partial<TenantSettings> = {}): TenantSettings {
   return {
@@ -32,6 +60,14 @@ function settings(overrides: Partial<TenantSettings> = {}): TenantSettings {
       ],
       forkedAtTenantId: null,
     },
+    demoStartBalanceCents: {
+      value: 1_000_000,
+      provenance: 'inherited',
+      sourceTenantId: 'apex',
+      inheritedValue: 1_000_000,
+      inheritedFromTenantId: 'apex',
+    },
+    brand: brandLayers(),
     ...overrides,
   }
 }
@@ -47,6 +83,7 @@ function content(
 ): Parameters<typeof composeSnapshot>[2] {
   return {
     texts: [],
+    brand: EMPTY_BRAND,
     instruments: { symbols: [], configured: false, confirmedUnquoted: [] },
     ...overrides,
   }
@@ -160,9 +197,25 @@ describe('siteReadinessValidator', () => {
         inheritedValue: undefined,
         inheritedFromTenantId: null,
       },
+      demoStartBalanceCents: unset<number>(),
+      brand: brandLayers(),
       availableLocales: { entries: [], forkedAtTenantId: null },
     }
 
-    expect(siteReadinessValidator.run(composeSnapshot(SITE, empty, content()))).toHaveLength(3)
+    const findings = siteReadinessValidator.run(composeSnapshot(SITE, empty, content()))
+
+    /**
+     * Коды перечислены поимённо, а не посчитаны: счётчик «ровно три» ломался
+     * бы от добавления любой соседней находки и чинился бы правкой числа —
+     * то есть перестал бы проверять то, ради чего написан.
+     */
+    expect(
+      findings.filter((finding) => finding.severity === 'blocking').map((f) => f.code),
+    ).toEqual(['jurisdiction-missing', 'locales-missing', 'default-locale-missing'])
+
+    /** Незаданный демо-баланс публикацию не останавливает, но назван вслух (Р-027). */
+    expect(findings.filter((finding) => finding.severity === 'warning').map((f) => f.code)).toEqual(
+      ['demo-balance-missing'],
+    )
   })
 })

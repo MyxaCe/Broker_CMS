@@ -1,4 +1,5 @@
 import {
+  brandAssetsValidator,
   complianceValidator,
   contrastValidator,
   forbiddenClaimsValidator,
@@ -67,6 +68,25 @@ export const siteReadinessValidator: Validator<ReleaseSnapshot> = {
       })
     }
 
+    /**
+     * Стартовый демо-баланс — предупреждение, а не блокировка (Р-027).
+     *
+     * Сайт без демо-счёта существует, и останавливать из-за этого публикацию
+     * нельзя. Но legacy отдаёт величину сегодня, подставляя её умолчанием, —
+     * и переезд на v2 оставит кабинет без неё молча, если об этом не сказать
+     * в отчёте.
+     */
+    if (snapshot.settings.demoStartBalanceCents === null) {
+      findings.push({
+        validator: 'site-readiness',
+        severity: 'warning' as const,
+        code: 'demo-balance-missing',
+        message:
+          'Стартовый баланс демо-счёта не задан ни на сайте, ни выше по цепочке. Выдача отдаст null — кабинет обязан отказать, а не подставить своё число.',
+        location: snapshot.site.slug,
+      })
+    }
+
     const defaultLocale = snapshot.settings.defaultLocale.value
 
     if (defaultLocale === null) {
@@ -115,6 +135,11 @@ export const RELEASE_VALIDATORS: readonly Validator<ReleaseSnapshot>[] = [
     examined: snapshot.examined.tokens,
   })),
   adaptValidator(contrastValidator, (snapshot) => ({ colorPairs: snapshot.colorPairs })),
+  /**
+   * Брендовые ассеты — рядом с токенами: это тот же слой А, и находки у них
+   * одной природы — «витрина получит не то, что обещано дизайн-системой».
+   */
+  adaptValidator(brandAssetsValidator, (snapshot) => ({ brand: snapshot.brand })),
   adaptValidator(forbiddenClaimsValidator, (snapshot) => ({ texts: snapshot.texts })),
   /**
    * Структура — после токенов и до комплаенса: её находки говорят о том, чего

@@ -24,6 +24,8 @@ export type {
   ArticleFeedItemResponse,
   ArticleFeedResponse,
   BootstrapResponse,
+  BrandImageResponse,
+  BrandResponse,
   ErrorCode,
   ErrorResponse,
   FeedItemReference,

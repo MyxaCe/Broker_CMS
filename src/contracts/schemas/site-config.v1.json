@@ -5,7 +5,7 @@
   "description": "Ответ доставки на запрос конфигурации сайта. Форма ответа — обещание потребителю: любое несовместимое изменение требует новой версии контракта, а не правки этой схемы.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["contract", "site", "release", "resolution", "settings"],
+  "required": ["contract", "site", "release", "resolution", "settings", "brand"],
   "properties": {
     "contract": {
       "description": "Версия контракта. Совпадает с сегментом пути и входит в ключ кеша.",
@@ -47,30 +47,335 @@
       "additionalProperties": false,
       "required": ["locale", "jurisdiction", "variant"],
       "properties": {
-        "locale": { "type": "string", "minLength": 2, "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
-        "jurisdiction": { "type": "string", "minLength": 1 },
-        "variant": { "type": "string", "minLength": 1 }
+        "locale": {
+          "type": "string",
+          "minLength": 2,
+          "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "variant": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "settings": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["defaultLocale", "availableLocales", "jurisdiction", "instruments"],
+      "required": [
+        "defaultLocale",
+        "availableLocales",
+        "jurisdiction",
+        "instruments",
+        "demoStartBalanceCents"
+      ],
       "properties": {
-        "defaultLocale": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+        "defaultLocale": {
+          "type": "string",
+          "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+        },
         "availableLocales": {
           "description": "Отсортирован и без повторов: порядок не должен зависеть от того, как значения накопились по цепочке наследования — иначе меняется отпечаток содержимого при неизменных данных.",
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" }
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+          }
         },
-        "jurisdiction": { "type": "string", "minLength": 1 },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
         "instruments": {
           "description": "Разрешённые инструменты сайта — каноническими символами, не числовыми id (Р-024). Поле обязательное: пустой массив означает «ничего не разрешено» и обязан быть отличим от недоступной CMS, когда ответа нет вовсе (Р-025). Отсортирован и без повторов — порядок не должен влиять на отпечаток содержимого.",
           "type": "array",
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[^\\s,]+$" }
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[^\\s,]+$"
+          }
+        },
+        "demoStartBalanceCents": {
+          "description": "Стартовый баланс демо-счёта в центах, целым числом. Поле обязательное и присутствует всегда; `null` означает «не задан ни на сайте, ни выше по цепочке» — это отказ, а не ноль и не умолчание. Потребитель обязан отличать его от значения: подставить своё число значит открыть демо-счёт на сумму, которой никто не назначал.",
+          "type": ["integer", "null"],
+          "minimum": 0
+        }
+      }
+    },
+    "brand": {
+      "description": "Брендовые ассеты сайта, разрешённые по цепочке наследования (ТЗ 2.1). Объект присутствует всегда; `null` у слота означает «ассет не задан», и это отличимо от недоступной CMS, когда ответа нет вовсе. Форма картинки повторяет ответ `brand` legacy — переезд контура на v2 обязан быть для витрины сменой адреса, а не переписыванием разметки (Р-014).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "logoLight",
+        "logoDark",
+        "logoMono",
+        "logoMark",
+        "favicon",
+        "emailLogo",
+        "primaryColor",
+        "socials"
+      ],
+      "properties": {
+        "logoLight": {
+          "description": "Основной логотип. Витрина берёт логотип из legacy сегодня — соответствует полю `logo` её ответа.",
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["url", "width", "height", "alt", "mimeType"],
+              "properties": {
+                "url": {
+                  "description": "Абсолютный адрес файла в хранилище медиа. Относительный адрес у потребителя на другом домене не разрешился бы.",
+                  "type": "string",
+                  "format": "uri"
+                },
+                "width": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "height": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "alt": {
+                  "description": "Альтернативный текст из карточки файла. В медиатеке он обязателен, поэтому здесь непустой.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "mimeType": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "logoDark": {
+          "description": "Вариант для тёмной темы. `null` — варианта нет; подменять его светлым не следует, это решение владельца бренда.",
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["url", "width", "height", "alt", "mimeType"],
+              "properties": {
+                "url": {
+                  "description": "Абсолютный адрес файла в хранилище медиа. Относительный адрес у потребителя на другом домене не разрешился бы.",
+                  "type": "string",
+                  "format": "uri"
+                },
+                "width": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "height": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "alt": {
+                  "description": "Альтернативный текст из карточки файла. В медиатеке он обязателен, поэтому здесь непустой.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "mimeType": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "logoMono": {
+          "description": "Одноцветный вариант.",
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["url", "width", "height", "alt", "mimeType"],
+              "properties": {
+                "url": {
+                  "description": "Абсолютный адрес файла в хранилище медиа. Относительный адрес у потребителя на другом домене не разрешился бы.",
+                  "type": "string",
+                  "format": "uri"
+                },
+                "width": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "height": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "alt": {
+                  "description": "Альтернативный текст из карточки файла. В медиатеке он обязателен, поэтому здесь непустой.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "mimeType": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "logoMark": {
+          "description": "Знак без надписи.",
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["url", "width", "height", "alt", "mimeType"],
+              "properties": {
+                "url": {
+                  "description": "Абсолютный адрес файла в хранилище медиа. Относительный адрес у потребителя на другом домене не разрешился бы.",
+                  "type": "string",
+                  "format": "uri"
+                },
+                "width": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "height": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "alt": {
+                  "description": "Альтернативный текст из карточки файла. В медиатеке он обязателен, поэтому здесь непустой.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "mimeType": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "favicon": {
+          "description": "Фавикон. Соответствует полю `favicon` ответа `brand` legacy.",
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["url", "width", "height", "alt", "mimeType"],
+              "properties": {
+                "url": {
+                  "description": "Абсолютный адрес файла в хранилище медиа. Относительный адрес у потребителя на другом домене не разрешился бы.",
+                  "type": "string",
+                  "format": "uri"
+                },
+                "width": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "height": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "alt": {
+                  "description": "Альтернативный текст из карточки файла. В медиатеке он обязателен, поэтому здесь непустой.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "mimeType": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "emailLogo": {
+          "description": "Логотип для писем: без тёмной темы и без SVG.",
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["url", "width", "height", "alt", "mimeType"],
+              "properties": {
+                "url": {
+                  "description": "Абсолютный адрес файла в хранилище медиа. Относительный адрес у потребителя на другом домене не разрешился бы.",
+                  "type": "string",
+                  "format": "uri"
+                },
+                "width": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "height": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "alt": {
+                  "description": "Альтернативный текст из карточки файла. В медиатеке он обязателен, поэтому здесь непустой.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "mimeType": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "primaryColor": {
+          "description": "Фирменный цвет в том же виде, в каком его отдаёт legacy. `null` — не задан; полная палитра приходит токенами в ответе `bootstrap`.",
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "socials": {
+          "description": "Ссылки на социальные сети, отсортированные по названию сети: порядок не должен зависеть от обхода цепочки наследования.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "url"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
         }
       }
     }

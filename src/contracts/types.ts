@@ -43,7 +43,45 @@ export interface SiteConfigResponse {
      * сегодня означает «граница снята».
      */
     readonly instruments: readonly string[]
+    /**
+     * Стартовый баланс демо-счёта в центах (Р-027).
+     *
+     * `null` означает «не задан ни на сайте, ни выше по цепочке». Это отказ,
+     * а не ноль: ноль — правдоподобный баланс, по нему не идут разбираться.
+     * Legacy на этом месте подставляет миллион центов умолчанием, и мы
+     * сознательно не повторяем этого — умолчание выдало бы за решение
+     * владельца то, чего он не выбирал.
+     */
+    readonly demoStartBalanceCents: number | null
   }
+  /**
+   * Брендовые ассеты (ТЗ 2.1, DEBT-014).
+   *
+   * Объект присутствует всегда, его слоты — `null`, когда ассет не задан.
+   * Форма картинки повторяет ответ `brand` legacy: витрина берёт логотип и
+   * фавикон оттуда сегодня, и переезд обязан быть для неё сменой адреса
+   * (Р-014).
+   */
+  readonly brand: BrandResponse
+}
+
+export interface BrandImageResponse {
+  readonly url: string
+  readonly width: number
+  readonly height: number
+  readonly alt: string
+  readonly mimeType: string
+}
+
+export interface BrandResponse {
+  readonly logoLight: BrandImageResponse | null
+  readonly logoDark: BrandImageResponse | null
+  readonly logoMono: BrandImageResponse | null
+  readonly logoMark: BrandImageResponse | null
+  readonly favicon: BrandImageResponse | null
+  readonly emailLogo: BrandImageResponse | null
+  readonly primaryColor: string | null
+  readonly socials: readonly { readonly name: string; readonly url: string }[]
 }
 
 export interface NavItemResponse {

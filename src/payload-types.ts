@@ -211,8 +211,131 @@ export interface Tenant {
      */
     value?: string | null;
   };
+  /**
+   * В центах, целым числом: 1000000 — это 10 000 единиц валюты. Не задан ни здесь, ни выше по цепочке — выдача отдаёт null, и кабинет обязан отказать, а не подставить своё число.
+   */
+  demoStartBalanceCents: {
+    mode: 'inherit' | 'override' | 'fork';
+    value?: number | null;
+  };
+  /**
+   * Витрина берёт логотип отсюда. Без него переезд контура на v2 отнимет у неё картинку, которую legacy отдаёт сегодня (Р-014).
+   */
+  logoLight: {
+    mode: 'inherit' | 'override' | 'fork';
+    /**
+     * Выбирается из медиатеки. Альтернативный текст берётся из карточки файла — отдельно здесь не задаётся, иначе один и тот же логотип описывался бы по-разному на каждом сайте.
+     */
+    value?: (number | null) | Media;
+  };
+  /**
+   * Для тёмной темы. Отсутствует — витрина не подменяет его светлым, а не рисует ничего.
+   */
+  logoDark: {
+    mode: 'inherit' | 'override' | 'fork';
+    /**
+     * Выбирается из медиатеки. Альтернативный текст берётся из карточки файла — отдельно здесь не задаётся, иначе один и тот же логотип описывался бы по-разному на каждом сайте.
+     */
+    value?: (number | null) | Media;
+  };
+  /**
+   * Одноцветный вариант: печать, водяные знаки, факсимиле.
+   */
+  logoMono: {
+    mode: 'inherit' | 'override' | 'fork';
+    /**
+     * Выбирается из медиатеки. Альтернативный текст берётся из карточки файла — отдельно здесь не задаётся, иначе один и тот же логотип описывался бы по-разному на каждом сайте.
+     */
+    value?: (number | null) | Media;
+  };
+  /**
+   * Знак без надписи: фавикон-исходник, аватар, мобильная шапка.
+   */
+  logoMark: {
+    mode: 'inherit' | 'override' | 'fork';
+    /**
+     * Выбирается из медиатеки. Альтернативный текст берётся из карточки файла — отдельно здесь не задаётся, иначе один и тот же логотип описывался бы по-разному на каждом сайте.
+     */
+    value?: (number | null) | Media;
+  };
+  /**
+   * Витрина берёт фавикон отсюда. Без него переезд контура на v2 — регресс по тому же счёту, что и логотип (Р-014).
+   */
+  favicon: {
+    mode: 'inherit' | 'override' | 'fork';
+    /**
+     * Выбирается из медиатеки. Альтернативный текст берётся из карточки файла — отдельно здесь не задаётся, иначе один и тот же логотип описывался бы по-разному на каждом сайте.
+     */
+    value?: (number | null) | Media;
+  };
+  /**
+   * Для писем: там нет ни тёмной темы, ни SVG, поэтому вариант отдельный, а не вычисляемый из логотипа.
+   */
+  emailLogo: {
+    mode: 'inherit' | 'override' | 'fork';
+    /**
+     * Выбирается из медиатеки. Альтернативный текст берётся из карточки файла — отдельно здесь не задаётся, иначе один и тот же логотип описывался бы по-разному на каждом сайте.
+     */
+    value?: (number | null) | Media;
+  };
+  primaryColor: {
+    mode: 'inherit' | 'override' | 'fork';
+    /**
+     * Hex вида #d4a437. Отдаётся витрине в том же виде, в каком его отдаёт legacy. Полная палитра живёт в дизайн-токенах — это поле их не заменяет.
+     */
+    value?: string | null;
+  };
+  socials: {
+    mode: 'inherit' | 'extend' | 'fork';
+    /**
+     * Название сети и ссылка. Регион и сайт переопределяют пункт бренда по названию, а не добавляют второй пункт с тем же именем.
+     */
+    items?:
+      | {
+          name: string;
+          url: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Альтернативный текст обязателен: без него материал не пройдёт сборку релиза. Это требование доступности, а не формальность.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  /**
+   * Что изображено — словами. Читается вслух скринридером и показывается, когда картинка не загрузилась.
+   */
+  alt: string;
+  /**
+   * Файл бренда доступен всем его сайтам — так же, как категории.
+   */
+  owner: number | Tenant;
+  /**
+   * Автор или агентство. Требуется по условиям фотобанков и служит доказательством права на использование.
+   */
+  credit?: string | null;
+  /**
+   * Видимая подпись под изображением. В отличие от alt — необязательна.
+   */
+  caption?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -251,42 +374,6 @@ export interface User {
     | null;
   password?: string | null;
   collection: 'users';
-}
-/**
- * Альтернативный текст обязателен: без него материал не пройдёт сборку релиза. Это требование доступности, а не формальность.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
- */
-export interface Media {
-  id: number;
-  /**
-   * Что изображено — словами. Читается вслух скринридером и показывается, когда картинка не загрузилась.
-   */
-  alt: string;
-  /**
-   * Файл бренда доступен всем его сайтам — так же, как категории.
-   */
-  owner: number | Tenant;
-  /**
-   * Автор или агентство. Требуется по условиям фотобанков и служит доказательством права на использование.
-   */
-  credit?: string | null;
-  /**
-   * Видимая подпись под изображением. В отличие от alt — необязательна.
-   */
-  caption?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
 }
 /**
  * Раздел, в котором живёт материал. У записи она одна. Категория бренда доступна всем его сайтам.
@@ -1443,6 +1530,66 @@ export interface TenantsSelect<T extends boolean = true> {
     | {
         mode?: T;
         value?: T;
+      };
+  demoStartBalanceCents?:
+    | T
+    | {
+        mode?: T;
+        value?: T;
+      };
+  logoLight?:
+    | T
+    | {
+        mode?: T;
+        value?: T;
+      };
+  logoDark?:
+    | T
+    | {
+        mode?: T;
+        value?: T;
+      };
+  logoMono?:
+    | T
+    | {
+        mode?: T;
+        value?: T;
+      };
+  logoMark?:
+    | T
+    | {
+        mode?: T;
+        value?: T;
+      };
+  favicon?:
+    | T
+    | {
+        mode?: T;
+        value?: T;
+      };
+  emailLogo?:
+    | T
+    | {
+        mode?: T;
+        value?: T;
+      };
+  primaryColor?:
+    | T
+    | {
+        mode?: T;
+        value?: T;
+      };
+  socials?:
+    | T
+    | {
+        mode?: T;
+        items?:
+          | T
+          | {
+              name?: T;
+              url?: T;
+              id?: T;
+            };
       };
   updatedAt?: T;
   createdAt?: T;

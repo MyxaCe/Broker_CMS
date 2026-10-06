@@ -1,6 +1,13 @@
 import { auditHooks } from '../audit/record'
 import { normalizeRelationId } from '../shared/relation'
 
+import {
+  BRAND_ASSET_LABELS,
+  BRAND_ASSET_SLOTS,
+  BRAND_COLOR_PATTERN,
+  MAX_DEMO_START_BALANCE_CENTS,
+} from './brand'
+
 import { countDependents, describeDependents } from './dependents'
 import { resolveTenantSettings, validateResolvedSettings } from './layers'
 import { createTenantAccess, crossTenantOnly } from './payload-access'
@@ -26,7 +33,12 @@ import type { CollectionConfig, Field } from 'payload'
  * существенна для аудита: «наследую», «переопределяю» и «отвязываюсь» —
  * разные решения редактора, и по журналу они обязаны различаться (ADR-0010).
  */
-function inheritableScalar(name: string, label: string, description: string): Field {
+function inheritableScalar(
+  name: string,
+  label: string,
+  description: string,
+  validate?: (value: unknown) => true | string,
+): Field {
   return {
     name,
     type: 'group',
@@ -44,7 +56,113 @@ function inheritableScalar(name: string, label: string, description: string): Fi
           { value: 'fork', label: 'Отвязано' },
         ] satisfies { value: (typeof SCALAR_MODES)[number]; label: string }[],
       },
-      { name: 'value', type: 'text', label: 'Значение', admin: { description } },
+      {
+        name: 'value',
+        type: 'text',
+        label: 'Значение',
+        admin: { description },
+        ...(validate ? { validate } : {}),
+      },
+    ],
+  }
+}
+
+/**
+ * Наследуемая ссылка на медиатеку.
+ *
+ * Та же форма `{ mode, value }`, что у скаляров, и по той же причине: «беру
+ * логотип бренда», «у меня свой» и «отвязался» — три разных решения
+ * редактора, и в журнале аудита они обязаны выглядеть по-разному. Хранить
+ * вместо режима «пусто значит наследую» нельзя: тогда сайт, у которого
+ * логотипа нет сознательно, неотличим от сайта, которому его не завели.
+ */
+function inheritableMedia(name: string, label: string, description: string): Field {
+  return {
+    name,
+    type: 'group',
+    label,
+    admin: { description },
+    fields: [
+      {
+        name: 'mode',
+        type: 'select',
+        required: true,
+        defaultValue: 'inherit',
+        label: 'Источник',
+        options: [
+          { value: 'inherit', label: 'Наследуется' },
+          { value: 'override', label: 'Переопределено' },
+          { value: 'fork', label: 'Отвязано' },
+        ] satisfies { value: (typeof SCALAR_MODES)[number]; label: string }[],
+      },
+      {
+        name: 'value',
+        type: 'upload',
+        relationTo: 'media',
+        label: 'Файл',
+        admin: {
+          description:
+            'Выбирается из медиатеки. Альтернативный текст берётся из карточки файла — отдельно здесь не задаётся, иначе один и тот же логотип описывался бы по-разному на каждом сайте.',
+        },
+      },
+    ],
+  }
+}
+
+/**
+ * Наследуемый числовой слой.
+ *
+ * Отдельно от `inheritableScalar`, потому что текстовое поле приняло бы
+ * строку «NaN»: она разбирается как число успешно, а приведение к целому
+ * даёт ноль. Ноль здесь становится стартовым балансом демо-счёта, то есть
+ * правдоподобным значением на месте отказа.
+ */
+function inheritableNumber(
+  name: string,
+  label: string,
+  description: string,
+  bounds: { readonly min: number; readonly max: number },
+): Field {
+  return {
+    name,
+    type: 'group',
+    label,
+    admin: { description },
+    fields: [
+      {
+        name: 'mode',
+        type: 'select',
+        required: true,
+        defaultValue: 'inherit',
+        label: 'Источник',
+        options: [
+          { value: 'inherit', label: 'Наследуется' },
+          { value: 'override', label: 'Переопределено' },
+          { value: 'fork', label: 'Отвязано' },
+        ] satisfies { value: (typeof SCALAR_MODES)[number]; label: string }[],
+      },
+      {
+        name: 'value',
+        type: 'number',
+        label: 'Значение',
+        min: bounds.min,
+        max: bounds.max,
+        validate: (value: unknown) => {
+          if (value === null || value === undefined) {
+            return true
+          }
+
+          if (typeof value !== 'number' || !Number.isInteger(value)) {
+            return 'Целое число без дробной части.'
+          }
+
+          if (value < bounds.min || value > bounds.max) {
+            return `Ожидается значение от ${bounds.min} до ${bounds.max}.`
+          }
+
+          return true
+        },
+      },
     ],
   }
 }
@@ -76,6 +194,25 @@ function inheritableCollection(name: string, label: string, description: string)
       },
     ],
   }
+}
+
+const HTTPS_URL = /^https:\/\/[^\s/]+/
+
+/**
+ * Подсказка у слота. Для логотипа и фавикона она называет цену их отсутствия:
+ * витрина берёт оба из ответа `brand` legacy сегодня, и переезд контура без
+ * них — регресс, а не недостающее удобство (Р-014).
+ */
+const BRAND_ASSET_HINTS: Readonly<Record<(typeof BRAND_ASSET_SLOTS)[number], string>> = {
+  logoLight:
+    'Витрина берёт логотип отсюда. Без него переезд контура на v2 отнимет у неё картинку, которую legacy отдаёт сегодня (Р-014).',
+  logoDark: 'Для тёмной темы. Отсутствует — витрина не подменяет его светлым, а не рисует ничего.',
+  logoMono: 'Одноцветный вариант: печать, водяные знаки, факсимиле.',
+  logoMark: 'Знак без надписи: фавикон-исходник, аватар, мобильная шапка.',
+  favicon:
+    'Витрина берёт фавикон отсюда. Без него переезд контура на v2 — регресс по тому же счёту, что и логотип (Р-014).',
+  emailLogo:
+    'Для писем: там нет ни тёмной темы, ни SVG, поэтому вариант отдельный, а не вычисляемый из логотипа.',
 }
 
 /** Событие о тенанте относится к нему самому. */
@@ -187,6 +324,90 @@ export const Tenants: CollectionConfig = {
       'Локаль по умолчанию',
       'Обязана входить в перечень разрешённых локалей — с учётом наследования.',
     ),
+
+    /**
+     * Стартовый демо-баланс (ТЗ часть 4, Р-027).
+     *
+     * Вынесен в M3 раньше своей части намеренно: legacy отдаёт его рядом с
+     * инструментами, и переезд контура на v2 без этого поля отнял бы у
+     * кабинета величину, которой тот пользуется сегодня. Причина записана
+     * здесь, чтобы поле не выглядело случайно забредшим из другого этапа и
+     * его не «прибрали» при наведении порядка.
+     */
+    inheritableNumber(
+      'demoStartBalanceCents',
+      'Стартовый баланс демо-счёта, центы',
+      'В центах, целым числом: 1000000 — это 10 000 единиц валюты. Не задан ни здесь, ни выше по цепочке — выдача отдаёт null, и кабинет обязан отказать, а не подставить своё число.',
+      { min: 0, max: MAX_DEMO_START_BALANCE_CENTS },
+    ),
+
+    /**
+     * Брендовые ассеты слоя А (ТЗ 2.1, DEBT-014).
+     *
+     * Лежат в карточке тенанта, а не отдельной коллекцией: у них ровно один
+     * владелец на каждом уровне цепочки, и наследование логотипа бренда
+     * сайтом — то самое поведение, ради которого цепочка и существует.
+     */
+    ...BRAND_ASSET_SLOTS.map((slot) =>
+      inheritableMedia(slot, BRAND_ASSET_LABELS[slot], BRAND_ASSET_HINTS[slot]),
+    ),
+
+    inheritableScalar(
+      'primaryColor',
+      'Фирменный цвет',
+      'Hex вида #d4a437. Отдаётся витрине в том же виде, в каком его отдаёт legacy. Полная палитра живёт в дизайн-токенах — это поле их не заменяет.',
+      (value: unknown) => {
+        if (value === null || value === undefined || value === '') {
+          return true
+        }
+
+        return typeof value === 'string' && BRAND_COLOR_PATTERN.test(value)
+          ? true
+          : 'Ожидается hex-цвет вида #d4a437 — ровно шесть знаков, как отдаёт legacy.'
+      },
+    ),
+
+    {
+      name: 'socials',
+      type: 'group',
+      label: 'Социальные сети',
+      fields: [
+        {
+          name: 'mode',
+          type: 'select',
+          required: true,
+          defaultValue: 'inherit',
+          label: 'Источник',
+          options: [
+            { value: 'inherit', label: 'Наследуется' },
+            { value: 'extend', label: 'Дополняет унаследованное' },
+            { value: 'fork', label: 'Отвязано: только своё' },
+          ] satisfies { value: (typeof COLLECTION_MODES)[number]; label: string }[],
+        },
+        {
+          name: 'items',
+          type: 'array',
+          label: 'Ссылки',
+          admin: {
+            description:
+              'Название сети и ссылка. Регион и сайт переопределяют пункт бренда по названию, а не добавляют второй пункт с тем же именем.',
+          },
+          fields: [
+            { name: 'name', type: 'text', required: true, label: 'Сеть' },
+            {
+              name: 'url',
+              type: 'text',
+              required: true,
+              label: 'Ссылка',
+              validate: (value: unknown) =>
+                typeof value === 'string' && HTTPS_URL.test(value)
+                  ? true
+                  : 'Ссылка по https, например https://t.me/apexcapital',
+            },
+          ],
+        },
+      ],
+    },
   ],
 
   hooks: {

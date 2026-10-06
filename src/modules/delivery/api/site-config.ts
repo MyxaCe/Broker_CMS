@@ -3,7 +3,7 @@ import { CONTRACT_VERSION, SCHEMA_IDS, validateOutgoing } from '@/contracts'
 import { DEFAULT_VARIANT } from '../cache-key'
 
 import type { ReleaseSnapshot } from '../releases/snapshot'
-import type { SiteConfigResponse } from '@/contracts'
+import type { BrandResponse, SiteConfigResponse } from '@/contracts'
 
 /**
  * Сборка ответа доставки из снапшота релиза.
@@ -24,6 +24,41 @@ export class DeliveryAssemblyError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'DeliveryAssemblyError'
+  }
+}
+
+/**
+ * Брендовые ассеты ответа.
+ *
+ * Снапшот хранит их в форме, пригодной и для проверок сборки; наружу уходит
+ * только то, что обещано контрактом. `findings` и число осмотренных ссылок
+ * здесь отсекаются намеренно: это отчёт о нашей работе, а не данные витрины.
+ */
+function brandOf(snapshot: ReleaseSnapshot): BrandResponse {
+  const brand = snapshot.brand
+
+  if (!brand) {
+    return {
+      logoLight: null,
+      logoDark: null,
+      logoMono: null,
+      logoMark: null,
+      favicon: null,
+      emailLogo: null,
+      primaryColor: null,
+      socials: [],
+    }
+  }
+
+  return {
+    logoLight: brand.assets.logoLight,
+    logoDark: brand.assets.logoDark,
+    logoMono: brand.assets.logoMono,
+    logoMark: brand.assets.logoMark,
+    favicon: brand.assets.favicon,
+    emailLogo: brand.assets.emailLogo,
+    primaryColor: brand.primaryColor,
+    socials: brand.socials.map((social) => ({ name: social.name, url: social.url })),
   }
 }
 
@@ -119,7 +154,27 @@ export function buildSiteConfigResponse(args: {
        * «разрешено всё»: на этой границе умолчание обязано закрывать.
        */
       instruments: [...(snapshot.instruments?.symbols ?? [])].sort(),
+      /**
+       * Стартовый демо-баланс (Р-027).
+       *
+       * Релизы, собранные до появления поля, снапшота с ним не имеют — и для
+       * них отдаётся `null`, то есть «не задан». Подставить привычный
+       * миллион центов значило бы выдать наше умолчание за решение
+       * владельца: кабинет не отличил бы настроенный демо-счёт от
+       * ненастроенного и открыл бы второй как первый.
+       */
+      demoStartBalanceCents: snapshot.settings.demoStartBalanceCents ?? null,
     },
+    /**
+     * Брендовые ассеты (Р-014).
+     *
+     * Для релизов, собранных до появления поля, отдаётся пустой бренд —
+     * объект со слотами `null`, а не отсутствие объекта. Потребитель,
+     * парсящий мягко, прочитал бы отсутствие как `undefined` и мог бы
+     * показать битую картинку; пустой слот он обязан обработать по
+     * контракту.
+     */
+    brand: brandOf(snapshot),
   }
 
   /**

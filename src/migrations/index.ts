@@ -20,6 +20,7 @@ import * as migration_20260806_115914_add_global_areas from './20260806_115914_a
 import * as migration_20260806_144906_structure_sections_navigations from './20260806_144906_structure_sections_navigations'
 import * as migration_20260807_140435_seo_layer from './20260807_140435_seo_layer'
 import * as migration_20261005_202531_add_instrument_allow_list from './20261005_202531_add_instrument_allow_list'
+import * as migration_20261006_162655_add_brand_assets from './20261006_162655_add_brand_assets'
 
 export const migrations = [
   {
@@ -131,5 +132,10 @@ export const migrations = [
     up: migration_20261005_202531_add_instrument_allow_list.up,
     down: migration_20261005_202531_add_instrument_allow_list.down,
     name: '20261005_202531_add_instrument_allow_list',
+  },
+  {
+    up: migration_20261006_162655_add_brand_assets.up,
+    down: migration_20261006_162655_add_brand_assets.down,
+    name: '20261006_162655_add_brand_assets',
   },
 ]

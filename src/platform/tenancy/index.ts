@@ -11,6 +11,17 @@ export {
   resolveField,
   revertLeavesEmpty,
 } from './inheritance'
+export {
+  BRAND_ASSET_LABELS,
+  BRAND_ASSET_SLOTS,
+  BRAND_ASSETS_SHOWN_TODAY,
+  BRAND_COLOR_PATTERN,
+  MAX_DEMO_START_BALANCE_CENTS,
+  readMoneyLayer,
+  readRelationLayer,
+  readSocialsLayer,
+} from './brand'
+export type { BrandAssetSlot } from './brand'
 export { validateTenantDraft } from './tenant-rules'
 export type { TenantDraft } from './tenant-rules'
 export {
@@ -23,7 +34,7 @@ export {
   SCALAR_MODES,
   validateResolvedSettings,
 } from './layers'
-export type { TenantLayerSource, TenantSettings } from './layers'
+export type { TenantBrand, TenantLayerSource, TenantSettings } from './layers'
 export {
   loadTenantChainIds,
   loadTenantLayers,

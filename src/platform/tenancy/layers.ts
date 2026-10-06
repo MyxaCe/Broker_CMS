@@ -1,5 +1,7 @@
+import { BRAND_ASSET_SLOTS, readMoneyLayer, readRelationLayer, readSocialsLayer } from './brand'
 import { resolveCollection, resolveField } from './inheritance'
 
+import type { BrandAssetSlot } from './brand'
 import type {
   CollectionLayerState,
   CollectionResolution,
@@ -20,7 +22,7 @@ import type {
  */
 
 /** Поля, наследуемые по цепочке. Расширяется по мере появления новых. */
-export const INHERITABLE_SCALARS = ['jurisdiction', 'defaultLocale'] as const
+export const INHERITABLE_SCALARS = ['jurisdiction', 'defaultLocale', 'primaryColor'] as const
 export const INHERITABLE_COLLECTIONS = ['availableLocales'] as const
 
 export type InheritableScalar = (typeof INHERITABLE_SCALARS)[number]
@@ -34,10 +36,36 @@ export interface TenantLayerSource {
   readonly data: Record<string, unknown>
 }
 
+/**
+ * Брендовые ассеты, разрешённые по цепочке (ТЗ 2.1).
+ *
+ * Наследуются **по слотам, а не блоком целиком**: регион, у которого свой
+ * фавикон, не должен терять логотип бренда. Наследование блоком выглядело бы
+ * дешевле ровно до первого такого случая, а дальше означало бы копирование
+ * чужого логотипа в каждую карточку — то есть потерю связи с источником.
+ */
+export interface TenantBrand {
+  readonly assets: Readonly<Record<BrandAssetSlot, FieldResolution<string>>>
+  readonly primaryColor: FieldResolution<string>
+  /** Ключ — название сети, значение — ссылка. */
+  readonly socials: CollectionResolution<string>
+}
+
 export interface TenantSettings {
   readonly jurisdiction: FieldResolution<string>
   readonly defaultLocale: FieldResolution<string>
   readonly availableLocales: CollectionResolution<string>
+  /**
+   * Стартовый баланс демо-счёта в центах (ТЗ часть 4, Р-027).
+   *
+   * Живёт в карточке тенанта и наследуется, потому что величина у бренда одна
+   * на все его сайты, а исключения бывают страновые. `undefined` означает «не
+   * задан ни на одном слое» и наружу уходит как `null`: подставить вместо
+   * него правдоподобную тысячу долларов значило бы выдать умолчание за
+   * решение владельца.
+   */
+  readonly demoStartBalanceCents: FieldResolution<number>
+  readonly brand: TenantBrand
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -105,10 +133,31 @@ export function resolveTenantSettings(layers: readonly TenantLayerSource[]): Ten
   ): Map<string, CollectionLayerState<string>> =>
     new Map(layers.map((layer) => [layer.node.id, readCollectionLayer(layer.data[field])]))
 
+  const relationLayers = (field: string): Map<string, LayerState<string>> =>
+    new Map(layers.map((layer) => [layer.node.id, readRelationLayer(layer.data[field])]))
+
+  const assets = Object.fromEntries(
+    BRAND_ASSET_SLOTS.map((slot) => [slot, resolveField(chain, relationLayers(slot))]),
+  ) as Record<BrandAssetSlot, FieldResolution<string>>
+
   return {
     jurisdiction: resolveField(chain, scalarLayers('jurisdiction')),
     defaultLocale: resolveField(chain, scalarLayers('defaultLocale')),
     availableLocales: resolveCollection(chain, collectionLayers('availableLocales')),
+    demoStartBalanceCents: resolveField(
+      chain,
+      new Map(
+        layers.map((layer) => [layer.node.id, readMoneyLayer(layer.data.demoStartBalanceCents)]),
+      ),
+    ),
+    brand: {
+      assets,
+      primaryColor: resolveField(chain, scalarLayers('primaryColor')),
+      socials: resolveCollection(
+        chain,
+        new Map(layers.map((layer) => [layer.node.id, readSocialsLayer(layer.data.socials)])),
+      ),
+    },
   }
 }
 

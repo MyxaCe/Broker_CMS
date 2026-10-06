@@ -1,6 +1,7 @@
 import {
   collectContrastPairs,
   collectTexts,
+  loadBrand,
   loadComplianceInput,
   loadRouting,
   loadStructure,
@@ -8,7 +9,7 @@ import {
   runComplianceRules,
 } from '@/modules/design'
 import { resolveAllowList } from '@/modules/trading'
-import { resolveTenantById, runValidation, summarizeReport } from '@/platform'
+import { ensureEnv, resolveTenantById, runValidation, summarizeReport } from '@/platform'
 
 import { contentHash } from '../cache-key'
 
@@ -142,6 +143,20 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
   const instruments = await resolveAllowList(payload, args.siteId)
 
   /**
+   * Брендовые ассеты (ТЗ 2.1, Р-014) читаются здесь и замораживаются вместе
+   * с релизом: логотип, подменённый после публикации, означал бы, что
+   * вчерашний релиз сегодня выглядит иначе — то есть перестаёт что-либо
+   * обещать. По той же причине заморожены токены и структура.
+   */
+  const env = ensureEnv()
+  const brand = await loadBrand({
+    payload,
+    settings,
+    mediaBaseUrl: env.MEDIA_PUBLIC_URL,
+    mediaBucket: env.S3_BUCKET,
+  })
+
+  /**
    * Тексты для стоп-словаря (ТЗ 2.4).
    *
    * Собираются из того же набора страниц, что проверяет комплаенс, — из
@@ -210,6 +225,7 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
       structure,
       routing,
       texts,
+      brand,
       instruments: {
         symbols: instruments.symbols,
         configured: instruments.configured,

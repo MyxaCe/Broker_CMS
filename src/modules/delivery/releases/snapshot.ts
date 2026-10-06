@@ -1,6 +1,12 @@
 import { EMPTY_ROUTING, EMPTY_STRUCTURE } from '@/modules/design'
 
-import type { ColorPair, RoutingSnapshot, StructureSnapshot, TextItem } from '@/modules/design'
+import type {
+  BrandSnapshot,
+  ColorPair,
+  RoutingSnapshot,
+  StructureSnapshot,
+  TextItem,
+} from '@/modules/design'
 import type { TenantNode, TenantSettings } from '@/platform'
 
 /**
@@ -37,7 +43,25 @@ export interface ReleaseSnapshot {
     readonly jurisdiction: ResolvedValue
     readonly defaultLocale: ResolvedValue
     readonly availableLocales: readonly string[]
+    /**
+     * Стартовый баланс демо-счёта в центах (ТЗ часть 4, Р-027).
+     *
+     * `null` означает «не задан ни на одном слое цепочки». Подставлять сюда
+     * привычный миллион центов нельзя: правдоподобное число на месте отказа
+     * не вызывает вопросов, а отсутствие значения — вызывает. Legacy
+     * подставляет, и это одно из расхождений, названных при переезде.
+     */
+    readonly demoStartBalanceCents: number | null
   }
+  /**
+   * Брендовые ассеты на момент сборки (ТЗ 2.1, DEBT-014).
+   *
+   * `null` означает, что сбор не выполнялся, и это **не то же самое**, что
+   * «ассетов нет»: у пустого бренда слоты пусты, но сам он собран. Поле
+   * различает их по тому же уроку, что `texts` — проверка, не получившая
+   * материала, обязана быть отличима от пройденной.
+   */
+  readonly brand: BrandSnapshot | null
   /**
    * Разрешённые инструменты сайта на момент сборки (Р-026).
    *
@@ -145,6 +169,13 @@ export function composeSnapshot(
      * комплаенса чистый отчёт на непроверенном материале.
      */
     instruments: ReleaseSnapshot['instruments']
+    /**
+     * Обязательное поле без умолчания — по тому же уроку, что `texts` и
+     * `instruments`. Умолчание `EMPTY_BRAND` означало бы «ассетов нет» там,
+     * где на деле их не собирали, и проверка снова отдала бы чистый отчёт,
+     * не выполнившись.
+     */
+    brand: BrandSnapshot | null
     examined?: Partial<ReleaseSnapshot['examined']>
     tokenIssues?: readonly { readonly code: string; readonly message: string }[]
     tokens?: Readonly<Record<string, Readonly<Record<string, string>>>>
@@ -172,7 +203,9 @@ export function composeSnapshot(
       // Сортировка обязательна: порядок накопления по цепочке не должен влиять
       // на отпечаток содержимого.
       availableLocales: settings.availableLocales.entries.map((entry) => entry.value).sort(),
+      demoStartBalanceCents: settings.demoStartBalanceCents.value ?? null,
     },
+    brand: content.brand,
     instruments: content.instruments,
     colorPairs: content.colorPairs ?? [],
     texts: content.texts,
