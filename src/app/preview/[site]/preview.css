@@ -281,3 +281,22 @@
   background: var(--bkc-surface-raised, #f3f3f5);
   border-top: 1px solid rgb(0 0 0 / 12%);
 }
+
+/*
+ * Сообщение о скрытом юрисдикцией (ТЗ 5.4, ADR-0034).
+ *
+ * Стоит в потоке предпросмотра, а не в полосе управления: это свойство того,
+ * что показано ниже, а не настройка просмотра.
+ */
+.pv-hidden {
+  margin: 0;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.82rem;
+  background: #4a1414;
+  color: #ffd9d9;
+}
+
+.pv-hidden--soft {
+  background: #3a2f12;
+  color: #f3e6c0;
+}

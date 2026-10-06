@@ -118,6 +118,9 @@ export type {
 export { isKnownJurisdiction, JURISDICTIONS, requirementsFor } from './compliance/jurisdictions'
 export type { JurisdictionRequirements } from './compliance/jurisdictions'
 
+export { blockVisibilityIn, filterByJurisdiction, visibilityIn } from './compliance/visibility'
+export type { FilterResult, VisibilityVerdict } from './compliance/visibility'
+
 export {
   BLOCK_DISCLAIMERS,
   checkImageAlt,
