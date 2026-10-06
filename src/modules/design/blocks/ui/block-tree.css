@@ -370,3 +370,60 @@
   gap: 0.6rem;
   align-items: center;
 }
+
+/* ── Перетаскивание блоков (DEBT-011, ADR-0034) ──────────────────────────── */
+
+.block-card__grip {
+  cursor: grab;
+  user-select: none;
+  color: var(--theme-elevation-400);
+  padding: 0 0.3rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.block-card__grip:active {
+  cursor: grabbing;
+}
+
+.block-card--moving {
+  opacity: 0.45;
+}
+
+/*
+ * Промежуток между карточками. В обычном состоянии зон нет вовсе — они
+ * появляются только на время переноса: постоянные пустоты между блоками
+ * сделали бы дерево вдвое длиннее ради того, что нужно раз в минуту.
+ */
+.block-tree__drop {
+  list-style: none;
+  min-height: 10px;
+  border-radius: 3px;
+  border: 1px dashed var(--theme-elevation-200);
+  margin: 2px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.block-tree__drop--over {
+  border-color: var(--theme-success-500, #2a7);
+  background: var(--theme-elevation-100);
+  min-height: 24px;
+}
+
+.block-tree__drop--refused {
+  border-color: var(--theme-error-500, #a33);
+  border-style: solid;
+  opacity: 0.6;
+}
+
+.block-tree__drop-reason {
+  font-size: 0.7rem;
+  color: var(--theme-error-500, #a33);
+  padding: 0 0.4rem;
+}
+
+.block-tree__list--dragging .block-card {
+  transition: opacity 120ms ease;
+}

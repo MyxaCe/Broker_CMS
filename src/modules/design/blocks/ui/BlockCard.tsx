@@ -26,6 +26,10 @@ export function BlockCard(props: {
   readonly allowRestricted: boolean
   readonly first: boolean
   readonly last: boolean
+  /** Адрес блока, который сейчас тащат, либо `null`. */
+  readonly dragging: BlockPath | null
+  readonly onDragStart: (path: BlockPath) => void
+  readonly onDragEnd: () => void
   readonly onChange: (path: BlockPath, name: string, value: unknown) => void
   readonly onStyle: (path: BlockPath, name: string, value: unknown) => void
   readonly onVariant: (path: BlockPath, variant: string) => void
@@ -58,9 +62,42 @@ export function BlockCard(props: {
 
   const style = (props.node.style ?? {}) as Record<string, unknown>
 
+  const moving = props.dragging !== null && pathKey(props.dragging) === here
+
   return (
-    <li className={`block-card${own.length > 0 ? ' block-card--bad' : ''}`}>
+    <li
+      className={`block-card${own.length > 0 ? ' block-card--bad' : ''}${
+        moving ? ' block-card--moving' : ''
+      }`}
+    >
       <div className="block-card__head">
+        {/*
+         * Тащат за ручку, а не за карточку целиком. Карточка содержит поля
+         * ввода: `draggable` на ней отнимает у них выделение текста мышью —
+         * правка подписи превращается в перенос блока.
+         */}
+        <span
+          className="block-card__grip"
+          draggable
+          role="button"
+          tabIndex={-1}
+          aria-label="Перетащить блок"
+          title="Перетащить блок"
+          data-testid="block-grip"
+          onDragStart={(event) => {
+            /**
+             * Полезная нагрузка не используется — адрес берётся из состояния
+             * поля. Но без `setData` Firefox перетаскивание не начинает вовсе.
+             */
+            event.dataTransfer.setData('text/plain', here)
+            event.dataTransfer.effectAllowed = 'move'
+            props.onDragStart(props.path)
+          }}
+          onDragEnd={props.onDragEnd}
+        >
+          ⠿
+        </span>
+
         <button
           type="button"
           className="block-card__toggle"
@@ -73,6 +110,12 @@ export function BlockCard(props: {
         {own.length > 0 ? <span className="block-card__badge">{own.length}</span> : null}
 
         <div className="block-card__controls">
+          {/*
+           * Стрелки остались, и это решение, а не недоделка. Перетаскивание
+           * мышью недоступно с клавиатуры, а редактор, работающий только
+           * клавишами, обязан уметь переставить блок. ТЗ требует
+           * перетаскивания — не требует отмены всего остального.
+           */}
           <button
             type="button"
             className="block-tree__button"

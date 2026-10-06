@@ -1,6 +1,7 @@
 import { emptyProps } from '../props'
-import { findBlock, propsOf } from '../registry'
+import { findBlock, isAllowedSlot, propsOf } from '../registry'
 import { DEFAULT_BLOCK_STYLE, DEFAULT_BLOCK_VISIBILITY } from '../style'
+import { MAX_BLOCK_DEPTH } from '../validate-tree'
 
 /**
  * Операции над деревом блоков для конструктора ([[DEBT-011]]).
@@ -340,4 +341,205 @@ export function describeBlock(node: EditorBlock): string {
   }
 
   return title
+}
+
+/**
+ * Перенос блока мышью ([[DEBT-011]], ADR-0034).
+ *
+ * Отдельно от `moveBlock`, потому что это другая операция. `moveBlock`
+ * двигает на шаг внутри своего списка и упирается в границу; перенос мышью
+ * забирает блок из одного списка и кладёт в другой, в том числе в слот
+ * другого блока и на другой уровень вложенности.
+ *
+ * Именно здесь легко потерять ветку. Три способа:
+ *
+ *  · **положить блок в собственный слот** — узел исчезает вместе с
+ *    потомками, потому что удаляется из дерева раньше, чем вставляется в
+ *    свою же копию;
+ *  · **съехать на единицу** при переносе внутри одного списка — удаление
+ *    сдвигает индексы, и блок встаёт не туда, куда его отпустили;
+ *  · **положить в слот, которого у типа нет** — дерево станет непроходимым
+ *    для рендерера, и узнает об этом сборка релиза, а не редактор.
+ *
+ * Все три проверяются тестами, и ни один из них не виден на разметке.
+ */
+
+/** Можно ли перенести узел в указанный список. */
+export type DropVerdict =
+  { readonly kind: 'allow' } | { readonly kind: 'refuse'; readonly reason: string }
+
+/** Адрес списка — префикс адреса узла: `[]`, `[0, 'columns']`, … */
+function isPrefixOf(prefix: BlockPath, path: BlockPath): boolean {
+  if (prefix.length > path.length) {
+    return false
+  }
+
+  return prefix.every((part, index) => part === path[index])
+}
+
+/**
+ * Глубина списка в уровнях вложенности. Верхний уровень — 1, слот блока
+ * верхнего уровня — 2. Считается так же, как в `validateBlockTree`: иначе
+ * редактор и сборка разошлись бы в том, что считать «глубже трёх».
+ */
+export function listDepth(listPath: BlockPath): number {
+  return 1 + listPath.length / 2
+}
+
+/** Насколько глубока ветка под узлом: сам узел — 1. */
+export function subtreeHeight(node: EditorBlock): number {
+  const children = Object.values(node.slots ?? {}).flatMap((list) =>
+    Array.isArray(list) ? list : [],
+  )
+
+  if (children.length === 0) {
+    return 1
+  }
+
+  return 1 + Math.max(...children.map((child) => subtreeHeight(child)))
+}
+
+export function canDropInto(
+  tree: readonly EditorBlock[],
+  from: BlockPath,
+  toListPath: BlockPath,
+): DropVerdict {
+  const node = getNode(tree, from)
+
+  if (node === undefined) {
+    return { kind: 'refuse', reason: 'Перетаскиваемый блок не найден.' }
+  }
+
+  /**
+   * Собственный слот и слот любого потомка. Проверка идёт по адресу, а не по
+   * ссылке на объект: адрес переживает пересоздание узлов, а ссылка — нет.
+   */
+  if (isPrefixOf(from, toListPath)) {
+    return {
+      kind: 'refuse',
+      reason: 'Блок нельзя вложить в самого себя или в свой же слот — ветка была бы потеряна.',
+    }
+  }
+
+  if (toListPath.length > 0) {
+    const parentPath = toListPath.slice(0, -1)
+    const slot = toListPath[toListPath.length - 1]
+    const parent = getNode(tree, parentPath)
+
+    if (parent === undefined || typeof slot !== 'string') {
+      return { kind: 'refuse', reason: 'Целевой слот не найден.' }
+    }
+
+    if (!isAllowedSlot(parent.type, slot)) {
+      return {
+        kind: 'refuse',
+        reason: `Блок «${parent.type}» не принимает содержимое в слот «${slot}».`,
+      }
+    }
+  }
+
+  const depth = listDepth(toListPath) + subtreeHeight(node) - 1
+
+  if (depth > MAX_BLOCK_DEPTH) {
+    return {
+      kind: 'refuse',
+      reason: `Вложенность стала бы глубже ${MAX_BLOCK_DEPTH} уровней: такую структуру невозможно отрисовать предсказуемо.`,
+    }
+  }
+
+  return { kind: 'allow' }
+}
+
+/**
+ * Переносит узел в указанную позицию другого (или того же) списка.
+ *
+ * Запрещённый перенос **возвращает дерево неизменным**, а не бросает: отказ
+ * показывает интерфейс до отпускания кнопки, и падать здесь было бы поздно.
+ * Тот же результат при тех же аргументах — и при неверном адресе тоже.
+ */
+export function moveBlockTo(
+  tree: readonly EditorBlock[],
+  from: BlockPath,
+  toListPath: BlockPath,
+  toIndex: number,
+): EditorBlock[] {
+  if (canDropInto(tree, from, toListPath).kind === 'refuse') {
+    return [...tree]
+  }
+
+  const node = getNode(tree, from)
+
+  if (node === undefined) {
+    return [...tree]
+  }
+
+  const fromListPath = from.slice(0, -1)
+  const fromIndex = from[from.length - 1]
+
+  if (typeof fromIndex !== 'number') {
+    return [...tree]
+  }
+
+  const sameList =
+    fromListPath.length === toListPath.length &&
+    fromListPath.every((part, index) => part === toListPath[index])
+
+  /**
+   * Сдвиг индексов при переносе внутри одного списка.
+   *
+   * Узел сначала вынимается, и всё, что было после него, съезжает на один
+   * влево. Позиция, на которую его отпустили, считалась **до** изъятия —
+   * значит при движении вниз её надо уменьшить на единицу. Без этого блок
+   * встаёт на место раньше нужного, и выглядит это как «перетаскивание не
+   * работает», а не как ошибка на единицу.
+   */
+  const target = sameList && toIndex > fromIndex ? toIndex - 1 : toIndex
+
+  /**
+   * Тот же сдвиг, но в **адресе назначения**, и он не очевиден.
+   *
+   * `[1, 'columns']` — это слот второго блока. Вынули первый — второй стал
+   * первым, и прежний адрес указывает в чужой слот либо в пустоту. Поймано
+   * собственным тестом на переносе сверху в слот: блок исчезал, и дерево при
+   * этом оставалось правильным деревом, то есть ни одна проверка формы не
+   * сработала бы.
+   */
+  const destination = shiftAfterRemoval(toListPath, fromListPath, fromIndex)
+
+  const without = removeBlock(tree, from)
+
+  return insertBlock(without, destination, target, node)
+}
+
+/**
+ * Поправляет адрес после изъятия узла из списка.
+ *
+ * Трогается ровно один сегмент: индекс в том самом списке, из которого
+ * вынули узел. Остальные уровни изъятие не затрагивает.
+ */
+function shiftAfterRemoval(
+  path: BlockPath,
+  removedFromList: BlockPath,
+  removedIndex: number,
+): BlockPath {
+  const at = removedFromList.length
+
+  if (path.length <= at) {
+    return path
+  }
+
+  if (!removedFromList.every((part, index) => part === path[index])) {
+    return path
+  }
+
+  const here = path[at]
+
+  if (typeof here !== 'number' || here <= removedIndex) {
+    return path
+  }
+
+  const next = [...path]
+  next[at] = here - 1
+
+  return next
 }
