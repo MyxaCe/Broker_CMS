@@ -125,7 +125,6 @@ export {
   checkRiskWarning,
   collectBlocks,
   collectMediaReferences,
-  requiredDisclaimers,
   runComplianceRules,
 } from './compliance/rules'
 export type {

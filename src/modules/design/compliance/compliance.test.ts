@@ -7,7 +7,6 @@ import {
   checkRiskWarning,
   collectBlocks,
   collectMediaReferences,
-  requiredDisclaimers,
   runComplianceRules,
 } from './rules'
 
@@ -243,38 +242,6 @@ describe('обход дерева', () => {
     ])
 
     expect(found.map((item) => item.id).sort()).toEqual(['1', '2'])
-  })
-})
-
-describe('дисклеймеры по типу блока', () => {
-  /**
-   * Ручное прикрепление означает, что рано или поздно забудут — и забудут
-   * именно там, где нужнее всего.
-   */
-  it('калькулятор требует своего дисклеймера', () => {
-    expect(requiredDisclaimers([{ type: 'calculator' }])).toEqual(['disclaimer.calculator'])
-  })
-
-  it('таблицы условий требуют дисклеймера торговых условий', () => {
-    expect(requiredDisclaimers([{ type: 'pricing-grid' }, { type: 'account-types' }])).toEqual([
-      'disclaimer.trading-conditions',
-    ])
-  })
-
-  it('блок без правила дисклеймера не требует', () => {
-    expect(requiredDisclaimers([{ type: 'quote' }])).toEqual([])
-  })
-
-  it('вложенный блок тоже учитывается', () => {
-    const blocks = [{ type: 'columns', slots: { columns: [{ type: 'calculator' }] } }]
-
-    expect(requiredDisclaimers(blocks)).toEqual(['disclaimer.calculator'])
-  })
-
-  it('перечень без повторов и в устойчивом порядке', () => {
-    const blocks = [{ type: 'quote-ticker' }, { type: 'calculator' }, { type: 'economic-calendar' }]
-
-    expect(requiredDisclaimers(blocks)).toEqual(['disclaimer.calculator', 'disclaimer.market-data'])
   })
 })
 

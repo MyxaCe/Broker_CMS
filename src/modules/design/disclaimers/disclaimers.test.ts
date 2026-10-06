@@ -119,6 +119,68 @@ describe('вывод ключей из состава блоков', () => {
     expect(snapshot.pages[0]?.blocks).toEqual([])
     expect(snapshot.findings).toEqual([])
   })
+
+  /**
+   * Случаи, переехавшие сюда вместе с удалением `requiredDisclaimers`
+   * (плоский список на страницу, отвергнутый правкой штаба к Р-028).
+   * Проверяемое поведение то же, форма результата — другая.
+   */
+  it('два блока одного семейства требуют один дисклеймер, но каждый назван', () => {
+    const snapshot = composeDisclaimers(
+      args({
+        pages: [
+          {
+            path: '/p',
+            locale: 'de',
+            blocks: [{ type: 'pricing-grid' }, { type: 'account-types' }],
+          },
+        ],
+        texts: [{ key: 'disclaimer.trading-conditions', locale: 'de', text: 'Условия меняются.' }],
+      }),
+    )
+
+    expect(snapshot.pages[0]?.blocks).toEqual([
+      { path: 'blocks[0]', type: 'pricing-grid', keys: ['disclaimer.trading-conditions'] },
+      { path: 'blocks[1]', type: 'account-types', keys: ['disclaimer.trading-conditions'] },
+    ])
+
+    /** Требование одно: ключ дедуплицируется при сверке с текстами. */
+    expect(snapshot.examinedRequirements).toBe(1)
+    expect(snapshot.findings).toEqual([])
+  })
+
+  it('блок без правила дисклеймера не требует', () => {
+    const snapshot = composeDisclaimers(
+      args({ pages: [{ path: '/p', locale: 'de', blocks: [{ type: 'quote' }] }] }),
+    )
+
+    expect(snapshot.pages[0]?.blocks).toEqual([])
+    expect(snapshot.examinedRequirements).toBe(0)
+  })
+
+  it('разные семейства дают разные ключи', () => {
+    const snapshot = composeDisclaimers(
+      args({
+        pages: [
+          {
+            path: '/p',
+            locale: 'de',
+            blocks: [{ type: 'quote-ticker' }, { type: 'calculator' }],
+          },
+        ],
+        texts: [
+          { key: 'disclaimer.market-data', locale: 'de', text: 'Данные с задержкой.' },
+          { key: 'disclaimer.calculator', locale: 'de', text: 'Не оферта.' },
+        ],
+      }),
+    )
+
+    expect(snapshot.pages[0]?.blocks.flatMap((block) => block.keys)).toEqual([
+      'disclaimer.market-data',
+      'disclaimer.calculator',
+    ])
+    expect(snapshot.examinedRequirements).toBe(2)
+  })
 })
 
 describe('инвариант «ключ есть — текст есть»', () => {
