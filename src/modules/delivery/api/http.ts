@@ -10,6 +10,7 @@ import {
 
 import type { SyndicationFormat } from './syndication'
 import { handleBootstrap, handlePageManifest, handleSiteConfig } from './handler'
+import { handlePublicBrand } from './public-brand'
 
 import type { FeedDeliveryRequest } from './feed-handler'
 import type { DeliveryRequest, DeliveryResponse, DeliverySource } from './handler'
@@ -166,6 +167,37 @@ export async function respondPageManifest(
   const parsed = readDeliveryRequest(request, siteSlug)
 
   return finish(parsed.requestId, await handlePageManifest(parsed, source))
+}
+
+/**
+ * Публичный бренд (Р-039, ADR-0035) — единственная дверь без ключа.
+ *
+ * Запрос читается **своим** разбором, а не `readDeliveryRequest`: тот
+ * вытаскивает заголовок авторизации, локаль, вариант и канал, то есть
+ * ровно то, чего у публичной двери быть не должно. Передать туда лишнее —
+ * значит дать следующему читателю повод решить, что это можно учитывать.
+ */
+export async function respondPublicBrand(
+  request: Request,
+  siteSlug: string,
+  source: DeliverySource,
+): Promise<Response> {
+  const url = new URL(request.url)
+  const requestId = request.headers.get('x-request-id') ?? randomUUID()
+
+  return finish(
+    requestId,
+    await handlePublicBrand(
+      {
+        siteSlug,
+        ifNoneMatch: request.headers.get('if-none-match'),
+        channel: url.searchParams.get('channel'),
+        requestId,
+        clientIp: firstForwardedFor(request.headers.get('x-forwarded-for')),
+      },
+      source,
+    ),
+  )
 }
 
 /**

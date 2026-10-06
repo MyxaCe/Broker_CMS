@@ -38,6 +38,7 @@ export type {
   PopupDisplayResponse,
   PromoBoardResponse,
   PromoItemResponse,
+  PublicBrandResponse,
   SearchHitResponse,
   SearchResponse,
   SiteConfigResponse,
