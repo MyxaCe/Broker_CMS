@@ -1,4 +1,8 @@
+import { BLOCK_PROPS } from '../blocks/registry-props'
+
 import { requirementsFor } from './jurisdictions'
+
+import type { PropField } from '../blocks/props'
 
 /**
  * Комплаенс-ограничители (ТЗ 2.4).
@@ -256,14 +260,52 @@ interface MediaReference {
 }
 
 /**
+ * Имена полей, которые считаются ссылкой на медиатеку.
+ *
+ * Собираются **из реестра пропсов**, а не перечисляются руками. Руками было
+ * ровно до `2026-10-06`, и список отставал: из восьми полей вида `media` в
+ * реестре в нём было пять — `icon`, `avatar` и `file` проверка alt не видела
+ * вовсе. Правило работало, объявляло охват и молча осматривало меньше, чем
+ * заявляло.
+ *
+ * Имена, которых в реестре нет, оставлены сверху списком: описание типа
+ * покрывает только известные типы, а дерево переживает переименование блока и
+ * приходит из поля JSON. Пропустить картинку из-за незнакомого типа хуже, чем
+ * лишний раз заглянуть в поле, которого нет.
+ */
+const LEGACY_MEDIA_FIELD_NAMES = ['images', 'cover', 'logo', 'logos', 'media'] as const
+
+export function mediaPropNames(): ReadonlySet<string> {
+  const names = new Set<string>(LEGACY_MEDIA_FIELD_NAMES)
+
+  const walk = (fields: readonly PropField[]): void => {
+    for (const field of fields) {
+      if (field.kind === 'media') {
+        names.add(field.name)
+      }
+
+      if (field.of !== undefined) {
+        walk(field.of)
+      }
+    }
+  }
+
+  for (const fields of Object.values(BLOCK_PROPS)) {
+    walk(fields)
+  }
+
+  return names
+}
+
+/**
  * Собирает ссылки на медиа из дерева.
  *
- * Ищет по имени поля в пропсах: реестр объявляет, какие типы содержат медиа,
- * но конкретные имена полей у типов разные. Перебор по известным именам —
- * компромисс, зато он не пропустит изображение из-за незнакомого типа.
+ * Ищет по имени поля в пропсах: конкретные имена у типов разные, а дерево
+ * приходит из поля JSON и может содержать блок типа, которого в реестре уже
+ * нет.
  */
 export function collectMediaReferences(blocks: unknown, prefix = 'blocks'): MediaReference[] {
-  const MEDIA_FIELDS = ['image', 'images', 'cover', 'poster', 'logo', 'logos', 'media']
+  const MEDIA_FIELDS = mediaPropNames()
   const found: MediaReference[] = []
 
   const walk = (value: unknown, path: string): void => {
@@ -279,7 +321,7 @@ export function collectMediaReferences(blocks: unknown, prefix = 'blocks'): Medi
     }
 
     for (const [key, nested] of Object.entries(value as Record<string, unknown>)) {
-      if (MEDIA_FIELDS.includes(key)) {
+      if (MEDIA_FIELDS.has(key)) {
         for (const id of toIds(nested)) {
           found.push({ id, path: `${path}.${key}` })
         }

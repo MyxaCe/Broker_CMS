@@ -283,3 +283,90 @@
   font-size: 0.7rem;
   color: var(--theme-elevation-500);
 }
+
+/* ── Выбор файла из медиатеки (DEBT-011, ADR-0034) ───────────────────────── */
+
+.media-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.media-pick__note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--theme-elevation-500);
+}
+
+.media-pick__actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.media-pick__id {
+  font-size: 0.8rem;
+}
+
+.media-pick__card {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: 3px;
+  padding: 0.4rem;
+}
+
+.media-pick__card--bad {
+  border-color: var(--theme-error-500, #a33);
+}
+
+.media-pick__thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  background: var(--theme-elevation-50);
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+.media-pick__thumb--none {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: var(--theme-elevation-500);
+  text-align: center;
+}
+
+.media-pick__title {
+  font-size: 0.8rem;
+  color: var(--theme-elevation-800);
+}
+
+.media-pick__browser {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border: 1px solid var(--theme-elevation-150);
+  border-radius: 3px;
+  padding: 0.5rem;
+  background: var(--theme-elevation-50);
+}
+
+.media-pick__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.media-pick__row {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+}

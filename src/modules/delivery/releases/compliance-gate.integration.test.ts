@@ -205,6 +205,51 @@ describe('изображение без alt блокирует релиз', () =
       true,
     )
   })
+
+  /**
+   * Три поля из восьми правило не видело вовсе (найдено `2026-10-06` при
+   * ADR-0034). Перечень имён вёлся руками и отставал от реестра пропсов:
+   * `icon`, `avatar` и `file` объявлены как медиа, а в списке их не было.
+   *
+   * Регресс пишется на том состоянии, в котором дефект жил: страница с
+   * блоком, ссылающимся на недоступный файл **через такое поле**. На `image`
+   * тот же тест был зелёным и тогда.
+   */
+  it('поля icon, avatar и file проверяются наравне с image', async () => {
+    const site = await makeSite(coveredBrandId, `cmp-alt-fields-${stamp}`)
+
+    await payload.create({
+      collection: 'pages',
+      overrideAccess: true,
+      data: {
+        title: 'Карточки и файлы',
+        path: `/alt-fields-${stamp}`,
+        locale: 'en',
+        site: site.id,
+        status: 'published',
+        blocks: [
+          { type: 'benefit-stack', props: { items: [{ title: 'Пункт', icon: '999991' }] } },
+          {
+            type: 'testimonials',
+            props: { items: [{ quote: 'Хорошо', author: 'Клиент', avatar: '999992' }] },
+          },
+          {
+            type: 'downloads',
+            props: { items: [{ file: '999993', label: 'Договор' }] },
+          },
+        ],
+      } as never,
+    })
+
+    const result = await buildRelease({ payload, siteId: site.id })
+
+    expect(result.status).toBe('failed')
+
+    const alt = result.report.findings.filter((finding) => finding.code === 'image-without-alt')
+
+    /** Все три, а не одно: правило обязано осмотреть каждое поле, а не первое. */
+    expect(alt).toHaveLength(3)
+  })
 })
 
 describe('юрисдикционная видимость блокирует релиз', () => {

@@ -62,6 +62,9 @@ export { validateUserDraft } from './auth/user-rules'
 export type { UserDraft } from './auth/user-rules'
 export { normalizeRelationId, normalizeRelationIds } from './shared/relation'
 
+export { describeMediaUsability } from './media/usability'
+export type { MediaCardFacts, MediaCardInput, MediaUsability } from './media/usability'
+
 export {
   BRAND_ASSET_LABELS,
   BRAND_ASSET_SLOTS,

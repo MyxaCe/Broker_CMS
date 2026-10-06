@@ -7,9 +7,13 @@ import {
   checkRiskWarning,
   collectBlocks,
   collectMediaReferences,
+  mediaPropNames,
   runComplianceRules,
 } from './rules'
 
+import { BLOCK_PROPS } from '../blocks/registry-props'
+
+import type { PropField } from '../blocks/props'
 import type { ComplianceInput } from './rules'
 
 function input(overrides: Partial<ComplianceInput> = {}): ComplianceInput {
@@ -242,6 +246,43 @@ describe('обход дерева', () => {
     ])
 
     expect(found.map((item) => item.id).sort()).toEqual(['1', '2'])
+  })
+
+  /**
+   * Охват перечня закреплён за реестром, а не за сегодняшним списком имён.
+   * До `2026-10-06` список вели руками, и он отставал: `icon`, `avatar` и
+   * `file` объявлены в реестре полями медиа и проверкой alt не осматривались.
+   * Правило работало и молча проверяло меньше, чем заявляло.
+   */
+  it('перечень полей покрывает каждое поле вида media из реестра', () => {
+    const names = mediaPropNames()
+    const declared = new Set<string>()
+
+    const walk = (fields: readonly PropField[]): void => {
+      for (const field of fields) {
+        if (field.kind === 'media') declared.add(field.name)
+        if (field.of !== undefined) walk(field.of)
+      }
+    }
+
+    for (const fields of Object.values(BLOCK_PROPS)) walk(fields)
+
+    expect(declared.size).toBeGreaterThan(0)
+    expect([...declared].filter((name) => !names.has(name))).toEqual([])
+  })
+
+  it('поля, которые перечень терял, теперь находятся', () => {
+    const found = collectMediaReferences([
+      { type: 'logo-wall', props: { icon: 1, avatar: 2, file: 3 } },
+    ])
+
+    expect(found.map((item) => item.id).sort()).toEqual(['1', '2', '3'])
+  })
+
+  it('имена вне реестра сохранены: дерево переживает удаление типа из реестра', () => {
+    const found = collectMediaReferences([{ type: 'снят-с-поддержки', props: { logos: [4, 5] } }])
+
+    expect(found.map((item) => item.id).sort()).toEqual(['4', '5'])
   })
 })
 
