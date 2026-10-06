@@ -7,13 +7,19 @@
   "additionalProperties": false,
   "required": ["contract", "site", "release", "resolution", "pages", "redirects", "robots"],
   "properties": {
-    "contract": { "const": "v1" },
+    "contract": {
+      "const": "v1"
+    },
     "site": {
       "type": "object",
       "additionalProperties": false,
       "required": ["slug"],
       "properties": {
-        "slug": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" }
+        "slug": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        }
       }
     },
     "release": {
@@ -21,8 +27,14 @@
       "additionalProperties": false,
       "required": ["number", "builtAt"],
       "properties": {
-        "number": { "type": "integer", "minimum": 1 },
-        "builtAt": { "type": "string", "format": "date-time" }
+        "number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "builtAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       }
     },
     "resolution": {
@@ -30,9 +42,19 @@
       "additionalProperties": false,
       "required": ["locale", "jurisdiction", "variant"],
       "properties": {
-        "locale": { "type": "string", "minLength": 2, "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
-        "jurisdiction": { "type": "string", "minLength": 1 },
-        "variant": { "type": "string", "minLength": 1 }
+        "locale": {
+          "type": "string",
+          "minLength": 2,
+          "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "variant": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "pages": {
@@ -40,20 +62,43 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["path", "title", "updatedAt", "noindex", "alternates", "jsonLd"],
+        "required": [
+          "path",
+          "title",
+          "updatedAt",
+          "noindex",
+          "alternates",
+          "jsonLd",
+          "disclaimers"
+        ],
         "properties": {
-          "path": { "type": "string", "pattern": "^/" },
-          "title": { "type": "string" },
+          "path": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "title": {
+            "type": "string"
+          },
           "updatedAt": {
             "description": "Дата последнего изменения — значение lastmod в карте сайта.",
             "type": "string",
             "format": "date-time"
           },
-          "noindex": { "type": "boolean" },
-          "canonical": { "type": ["string", "null"] },
-          "description": { "type": ["string", "null"] },
-          "ogImage": { "type": ["string", "null"] },
-          "twitterSite": { "type": ["string", "null"] },
+          "noindex": {
+            "type": "boolean"
+          },
+          "canonical": {
+            "type": ["string", "null"]
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "ogImage": {
+            "type": ["string", "null"]
+          },
+          "twitterSite": {
+            "type": ["string", "null"]
+          },
           "alternates": {
             "description": "Граф hreflang: языковые версии этой же страницы, в том числе на других сайтах бренда. Версии без публичного адреса сайта в граф не попадают — относительная ссылка в hreflang не значит ничего.",
             "type": "array",
@@ -62,8 +107,14 @@
               "additionalProperties": false,
               "required": ["locale", "href"],
               "properties": {
-                "locale": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
-                "href": { "type": "string", "pattern": "^https://" }
+                "locale": {
+                  "type": "string",
+                  "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+                },
+                "href": {
+                  "type": "string",
+                  "pattern": "^https://"
+                }
               }
             }
           },
@@ -74,7 +125,55 @@
               "type": "object",
               "required": ["@type"],
               "properties": {
-                "@type": { "type": "string", "minLength": 1 }
+                "@type": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "disclaimers": {
+            "description": "Дисклеймеры, которые обязаны быть показаны на этой странице (ТЗ 2.4, Р-028). Выводятся из состава блоков движком, а не проставляются редактором. Объект присутствует всегда; пустые списки означают «эта страница дисклеймеров не требует».",
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["page", "blocks"],
+            "properties": {
+              "page": {
+                "description": "Ключи, относящиеся к странице целиком: выведены из глобальных областей, которые показываются на каждой странице. Привязать их к блоку страницы нельзя — такого блока на ней нет.",
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "blocks": {
+                "description": "Ключи при блоке, из которого выведены. Раскладку выбирает витрина, но данные позволяют поставить текст рядом с источником, а не только в подвал: связь «этот дисклеймер про этот калькулятор» может быть требованием регулятора.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["path", "type", "keys"],
+                  "properties": {
+                    "path": {
+                      "description": "Адрес блока в дереве страницы, например blocks[2].slots.main[0].",
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "type": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "keys": {
+                      "type": "array",
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                }
               }
             }
           }
@@ -88,12 +187,17 @@
         "additionalProperties": false,
         "required": ["from", "to", "status"],
         "properties": {
-          "from": { "type": "string", "pattern": "^/" },
+          "from": {
+            "type": "string",
+            "pattern": "^/"
+          },
           "to": {
             "description": "Пусто у 410: «удалено навсегда» — это не переход.",
             "type": "string"
           },
-          "status": { "enum": [301, 302, 410] },
+          "status": {
+            "enum": [301, 302, 410]
+          },
           "locale": {
             "description": "null — правило действует на всех языках сайта.",
             "type": ["string", "null"]
@@ -110,7 +214,13 @@
           "description": "false — сайт закрыт от обхода целиком. Умолчание именно такое: открытый по ошибке сайт убирается из индекса месяцами.",
           "type": "boolean"
         },
-        "disallow": { "type": "array", "items": { "type": "string", "pattern": "^/" } }
+        "disallow": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^/"
+          }
+        }
       }
     }
   }

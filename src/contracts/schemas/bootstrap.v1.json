@@ -5,22 +5,38 @@
   "description": "Всё, что нужно потребителю до отрисовки первой страницы: токены темы, навигация, глобальные области. Один ответ вместо трёх запросов — иначе шапка приезжает отдельно от темы, и страница успевает мигнуть.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["contract", "site", "release", "resolution", "theme", "navigation", "globalAreas"],
+  "required": [
+    "contract",
+    "site",
+    "release",
+    "resolution",
+    "theme",
+    "navigation",
+    "globalAreas",
+    "disclaimers"
+  ],
   "$defs": {
     "navItem": {
       "type": "object",
       "additionalProperties": false,
       "required": ["label", "url", "openInNewTab", "children"],
       "properties": {
-        "label": { "type": "string", "minLength": 1 },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
         "url": {
           "description": "null — заголовок раздела: сам никуда не ведёт, но группирует вложенные пункты.",
           "type": ["string", "null"]
         },
-        "openInNewTab": { "type": "boolean" },
+        "openInNewTab": {
+          "type": "boolean"
+        },
         "children": {
           "type": "array",
-          "items": { "$ref": "#/$defs/navItem" }
+          "items": {
+            "$ref": "#/$defs/navItem"
+          }
         }
       }
     },
@@ -29,18 +45,27 @@
       "type": "object",
       "required": ["type"],
       "properties": {
-        "type": { "type": "string", "minLength": 1 }
+        "type": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     }
   },
   "properties": {
-    "contract": { "const": "v1" },
+    "contract": {
+      "const": "v1"
+    },
     "site": {
       "type": "object",
       "additionalProperties": false,
       "required": ["slug"],
       "properties": {
-        "slug": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" }
+        "slug": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        }
       }
     },
     "release": {
@@ -48,8 +73,14 @@
       "additionalProperties": false,
       "required": ["number", "builtAt"],
       "properties": {
-        "number": { "type": "integer", "minimum": 1 },
-        "builtAt": { "type": "string", "format": "date-time" }
+        "number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "builtAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       }
     },
     "resolution": {
@@ -57,9 +88,19 @@
       "additionalProperties": false,
       "required": ["locale", "jurisdiction", "variant"],
       "properties": {
-        "locale": { "type": "string", "minLength": 2, "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
-        "jurisdiction": { "type": "string", "minLength": 1 },
-        "variant": { "type": "string", "minLength": 1 }
+        "locale": {
+          "type": "string",
+          "minLength": 2,
+          "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "variant": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "theme": {
@@ -67,7 +108,9 @@
       "type": "object",
       "additionalProperties": {
         "type": "object",
-        "additionalProperties": { "type": "string" }
+        "additionalProperties": {
+          "type": "string"
+        }
       }
     },
     "navigation": {
@@ -75,7 +118,9 @@
       "type": "object",
       "additionalProperties": {
         "type": "array",
-        "items": { "$ref": "#/$defs/navItem" }
+        "items": {
+          "$ref": "#/$defs/navItem"
+        }
       }
     },
     "globalAreas": {
@@ -86,23 +131,46 @@
         "additionalProperties": false,
         "required": ["blocks", "riskWarning", "jurisdictions"],
         "properties": {
-          "blocks": { "type": "array", "items": { "$ref": "#/$defs/block" } },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/block"
+            }
+          },
           "riskWarning": {
             "description": "Заполнено только у полосы риск-предупреждения. Отдаётся отдельным полем, а не блоком: потребитель обязан уметь показать её даже там, где остального оформления нет.",
             "type": ["object", "null"],
             "additionalProperties": false,
             "required": ["text", "lossPercentage"],
             "properties": {
-              "text": { "type": "string", "minLength": 1 },
-              "lossPercentage": { "type": ["number", "null"], "minimum": 0, "maximum": 100 }
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "lossPercentage": {
+                "type": ["number", "null"],
+                "minimum": 0,
+                "maximum": 100
+              }
             }
           },
           "jurisdictions": {
             "description": "Пусто — область показывается во всех юрисдикциях сайта.",
             "type": "array",
-            "items": { "type": "string", "minLength": 1 }
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
           }
         }
+      }
+    },
+    "disclaimers": {
+      "description": "Тексты дисклеймеров для разрешённой локали: ключ → текст (Р-028). Ключи приходят с манифестом страниц — там они разложены по блокам, из которых выведены. Инвариант: ключ, перечисленный у страницы, гарантированно присутствует здесь. Его отсутствие — нарушение контракта, а не «текста нет»: рисовать пустое место нельзя.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
       }
     }
   }

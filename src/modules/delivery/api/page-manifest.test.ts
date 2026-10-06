@@ -1,4 +1,4 @@
-import { EMPTY_BRAND } from '@/modules/design'
+import { EMPTY_BRAND, EMPTY_DISCLAIMERS } from '@/modules/design'
 import { describe, expect, it } from 'vitest'
 
 import { checkAgainstSchema, SCHEMA_IDS } from '@/contracts'
@@ -22,6 +22,7 @@ const SNAPSHOT: ReleaseSnapshot = {
     demoStartBalanceCents: 1_000_000,
   },
   brand: EMPTY_BRAND,
+  disclaimers: EMPTY_DISCLAIMERS,
   colorPairs: [],
   instruments: { symbols: ['BTCUSD'], configured: true, confirmedUnquoted: [] },
   texts: [],

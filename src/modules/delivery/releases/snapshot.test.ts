@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { EMPTY_BRAND } from '@/modules/design'
+import { EMPTY_BRAND, EMPTY_DISCLAIMERS } from '@/modules/design'
 
 import { contentHash } from '../cache-key'
 
@@ -84,6 +84,7 @@ function content(
   return {
     texts: [],
     brand: EMPTY_BRAND,
+    disclaimers: EMPTY_DISCLAIMERS,
     instruments: { symbols: [], configured: false, confirmedUnquoted: [] },
     ...overrides,
   }

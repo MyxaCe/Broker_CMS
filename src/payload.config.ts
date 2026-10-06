@@ -16,6 +16,7 @@ import { DeliveryKeys } from './modules/delivery/keys/keys.collection'
 import { Channels } from './modules/delivery/releases/channels.collection'
 import { Releases } from './modules/delivery/releases/releases.collection'
 import { GlobalAreas } from './modules/design/compliance/global-areas.collection'
+import { Disclaimers } from './modules/design/disclaimers/disclaimers.collection'
 import { Navigations } from './modules/design/navigation/navigation.collection'
 import { Pages } from './modules/design/pages/pages.collection'
 import { Sections } from './modules/design/sections/sections.collection'
@@ -70,6 +71,7 @@ export default buildConfig({
     Sections,
     Navigations,
     GlobalAreas,
+    Disclaimers,
     SeoProfiles,
     Redirects,
     InstrumentAccess,

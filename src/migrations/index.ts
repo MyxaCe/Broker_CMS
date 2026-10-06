@@ -21,6 +21,7 @@ import * as migration_20260806_144906_structure_sections_navigations from './202
 import * as migration_20260807_140435_seo_layer from './20260807_140435_seo_layer'
 import * as migration_20261005_202531_add_instrument_allow_list from './20261005_202531_add_instrument_allow_list'
 import * as migration_20261006_162655_add_brand_assets from './20261006_162655_add_brand_assets'
+import * as migration_20261006_164830_add_disclaimers from './20261006_164830_add_disclaimers'
 
 export const migrations = [
   {
@@ -137,5 +138,10 @@ export const migrations = [
     up: migration_20261006_162655_add_brand_assets.up,
     down: migration_20261006_162655_add_brand_assets.down,
     name: '20261006_162655_add_brand_assets',
+  },
+  {
+    up: migration_20261006_164830_add_disclaimers.up,
+    down: migration_20261006_164830_add_disclaimers.down,
+    name: '20261006_164830_add_disclaimers',
   },
 ]

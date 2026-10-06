@@ -83,6 +83,7 @@ export interface Config {
     sections: Section;
     navigations: Navigation;
     'global-areas': GlobalArea;
+    disclaimers: Disclaimer;
     'seo-profiles': SeoProfile;
     redirects: Redirect;
     'instrument-access': InstrumentAccess;
@@ -116,6 +117,7 @@ export interface Config {
     sections: SectionsSelect<false> | SectionsSelect<true>;
     navigations: NavigationsSelect<false> | NavigationsSelect<true>;
     'global-areas': GlobalAreasSelect<false> | GlobalAreasSelect<true>;
+    disclaimers: DisclaimersSelect<false> | DisclaimersSelect<true>;
     'seo-profiles': SeoProfilesSelect<false> | SeoProfilesSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'instrument-access': InstrumentAccessSelect<false> | InstrumentAccessSelect<true>;
@@ -966,6 +968,38 @@ export interface GlobalArea {
   createdAt: string;
 }
 /**
+ * Тексты дисклеймеров. Ключ выбирается из закрытого перечня: какому блоку какой дисклеймер нужен, решает движок. Релиз со страницей, которой нужен дисклеймер без текста, не собирается.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "disclaimers".
+ */
+export interface Disclaimer {
+  id: number;
+  /**
+   * Перечень закрыт и выведен из правила движка. Нового ключа в списке нет до тех пор, пока его не потребует тип блока.
+   */
+  key: 'disclaimer.calculator' | 'disclaimer.market-data' | 'disclaimer.trading-conditions';
+  /**
+   * Код локали, например de. Текст нужен на каждой локали сайта: дисклеймер, существующий только по-английски, на немецкой версии не прочитают.
+   */
+  locale: string;
+  /**
+   * Текст бренда действует на всех его сайтах. Сайт переопределяет его своим — если формулировку требует его регулятор.
+   */
+  owner: number | Tenant;
+  /**
+   * Справочно: чьё требование исполняет эта формулировка. На отбор не влияет — отбор идёт по цепочке владельцев, а юрисдикция у сайта одна.
+   */
+  jurisdiction?: string | null;
+  text: string;
+  /**
+   * Выключенный текст сайта НЕ откатывает к тексту бренда: он оставляет пустое место, и релиз перестаёт собираться. Тихая подмена регуляторного текста хуже отказа.
+   */
+  isActive?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Умолчания для всех страниц: шаблон заголовка, описание, картинка для соцсетей, реквизиты организации. Наследуются бренд → регион → сайт.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1415,6 +1449,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'global-areas';
         value: number | GlobalArea;
+      } | null)
+    | ({
+        relationTo: 'disclaimers';
+        value: number | Disclaimer;
       } | null)
     | ({
         relationTo: 'seo-profiles';
@@ -1915,6 +1953,20 @@ export interface GlobalAreasSelect<T extends boolean = true> {
         code?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "disclaimers_select".
+ */
+export interface DisclaimersSelect<T extends boolean = true> {
+  key?: T;
+  locale?: T;
+  owner?: T;
+  jurisdiction?: T;
+  text?: T;
+  isActive?: T;
   updatedAt?: T;
   createdAt?: T;
 }

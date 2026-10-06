@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { EMPTY_BRAND } from '@/modules/design'
+import { EMPTY_BRAND, EMPTY_DISCLAIMERS } from '@/modules/design'
 import { runValidation } from '@/platform'
 
 import { composeSnapshot } from './snapshot'
@@ -85,6 +85,7 @@ function cleanContent() {
   return {
     texts: [],
     brand: EMPTY_BRAND,
+    disclaimers: EMPTY_DISCLAIMERS,
     instruments: { symbols: [], configured: false, confirmedUnquoted: [] },
     examined: { tokens: 12, structureNodes: 2, routedPages: 1, compliancePages: 1 },
   }
@@ -141,6 +142,7 @@ describe('RELEASE_VALIDATORS — гейт не отдаёт чистый отч�
     const snapshot = composeSnapshot(SITE, settings(), {
       texts: [],
       brand: EMPTY_BRAND,
+      disclaimers: EMPTY_DISCLAIMERS,
       instruments: { symbols: [], configured: false, confirmedUnquoted: [] },
       examined: { tokens: 12, structureNodes: 0, routedPages: 0, compliancePages: 0 },
     })

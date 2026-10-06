@@ -53,6 +53,23 @@ export { EMPTY_BRAND } from './brand/types'
 export type { BrandFinding, BrandImage, BrandSnapshot, BrandSocial } from './brand/types'
 export { brandAssetsValidator } from './brand/validator'
 
+export { composeDisclaimers } from './disclaimers/compose'
+export type {
+  ComposeDisclaimersArgs,
+  DisclaimerSourceArea,
+  DisclaimerSourcePage,
+  DisclaimerText,
+} from './disclaimers/compose'
+export {
+  Disclaimers,
+  DISCLAIMER_KEY_LABELS,
+  DISCLAIMER_KEYS,
+} from './disclaimers/disclaimers.collection'
+export { loadDisclaimers } from './disclaimers/load'
+export { EMPTY_DISCLAIMERS } from './disclaimers/types'
+export type { DisclaimerFinding, DisclaimersSnapshot, PageDisclaimers } from './disclaimers/types'
+export { disclaimersValidator } from './disclaimers/validator'
+
 export { buildJsonLd, JSON_LD_KIND_LABELS, JSON_LD_KINDS } from './seo/jsonld'
 export type { JsonLdInput, JsonLdKind } from './seo/jsonld'
 export { composeRouting } from './seo/manifest'

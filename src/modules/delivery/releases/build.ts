@@ -3,6 +3,7 @@ import {
   collectTexts,
   loadBrand,
   loadComplianceInput,
+  loadDisclaimers,
   loadRouting,
   loadStructure,
   loadTokenSet,
@@ -203,6 +204,28 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
     ),
   ]
 
+  /**
+   * Дисклеймеры (ТЗ 2.4, Р-028) — после комплаенса и структуры, потому что
+   * читают их результат: страницы берутся те же, что видел гейт, а области —
+   * те же, что уехали в снапшот структуры. Собственного обхода базы здесь
+   * нет намеренно: второй обход разошёлся бы с первым в отборе черновиков,
+   * и разошёлся бы незаметно.
+   */
+  const disclaimers = await loadDisclaimers({
+    payload,
+    siteId: args.siteId,
+    pages: complianceInput.pages.map((page) => ({
+      path: page.path,
+      locale: page.locale,
+      blocks: page.blocks,
+    })),
+    areas: structure.globalAreas.map((area) => ({
+      kind: area.kind,
+      locale: area.locale,
+      blocks: area.blocks,
+    })),
+  })
+
   const snapshot = composeSnapshot(
     {
       id: siteId,
@@ -226,6 +249,7 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
       routing,
       texts,
       brand,
+      disclaimers,
       instruments: {
         symbols: instruments.symbols,
         configured: instruments.configured,

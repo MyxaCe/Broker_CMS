@@ -2,6 +2,7 @@ import {
   brandAssetsValidator,
   complianceValidator,
   contrastValidator,
+  disclaimersValidator,
   forbiddenClaimsValidator,
   routingValidator,
   structureValidator,
@@ -162,4 +163,9 @@ export const RELEASE_VALIDATORS: readonly Validator<ReleaseSnapshot>[] = [
     complianceFindings: snapshot.complianceFindings,
     examined: snapshot.examined.compliancePages,
   })),
+  /**
+   * Дисклеймеры — следом за комплаенсом: это пятый ограничитель ТЗ 2.4, и
+   * читать его находки удобнее рядом с остальными четырьмя.
+   */
+  adaptValidator(disclaimersValidator, (snapshot) => ({ disclaimers: snapshot.disclaimers })),
 ]

@@ -3,6 +3,7 @@ import { EMPTY_ROUTING, EMPTY_STRUCTURE } from '@/modules/design'
 import type {
   BrandSnapshot,
   ColorPair,
+  DisclaimersSnapshot,
   RoutingSnapshot,
   StructureSnapshot,
   TextItem,
@@ -62,6 +63,15 @@ export interface ReleaseSnapshot {
    * материала, обязана быть отличима от пройденной.
    */
   readonly brand: BrandSnapshot | null
+  /**
+   * Дисклеймеры продукта (ТЗ 2.4, Р-028): карта текстов по локалям и
+   * требуемые ключи по страницам.
+   *
+   * `null` — сбор не выполнялся, и это блокирующая находка. Правило уже
+   * прожило месяц невызванным, отдавая при этом чистый отчёт (BUG-010);
+   * умолчание здесь вернуло бы ровно то состояние.
+   */
+  readonly disclaimers: DisclaimersSnapshot | null
   /**
    * Разрешённые инструменты сайта на момент сборки (Р-026).
    *
@@ -176,6 +186,8 @@ export function composeSnapshot(
      * не выполнившись.
      */
     brand: BrandSnapshot | null
+    /** Обязательное поле без умолчания — по тому же уроку, что `texts`. */
+    disclaimers: DisclaimersSnapshot | null
     examined?: Partial<ReleaseSnapshot['examined']>
     tokenIssues?: readonly { readonly code: string; readonly message: string }[]
     tokens?: Readonly<Record<string, Readonly<Record<string, string>>>>
@@ -206,6 +218,7 @@ export function composeSnapshot(
       demoStartBalanceCents: settings.demoStartBalanceCents.value ?? null,
     },
     brand: content.brand,
+    disclaimers: content.disclaimers,
     instruments: content.instruments,
     colorPairs: content.colorPairs ?? [],
     texts: content.texts,

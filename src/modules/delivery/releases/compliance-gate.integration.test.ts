@@ -2,6 +2,9 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import { buildBootstrapResponse } from '../api/bootstrap'
+import { buildPageManifestResponse } from '../api/page-manifest'
+
 import { buildRelease } from './build'
 
 import type { Payload } from 'payload'
@@ -373,5 +376,174 @@ describe('стоп-словарь блокирует релиз', () => {
 
     expect(coverage?.kind).toBe('checked')
     expect(coverage?.kind === 'checked' && coverage.examined).toBeGreaterThanOrEqual(2)
+  })
+})
+
+describe('дисклеймер продукта — пятый ограничитель, включённый блокирующим', () => {
+  /**
+   * CMS-07 и BUG-010. Правило было написано и не вызывалось ниоткуда; включить
+   * его было нельзя, потому что текста дисклеймера взять было неоткуда, а
+   * гейт, который невозможно удовлетворить, отключают.
+   *
+   * Поэтому проверяются **оба исхода**: страница с калькулятором собирается,
+   * когда текст есть, и не собирается, когда его нет. Один исход без второго
+   * ничего не доказывает — именно это и отличает исполнимое правило от
+   * неисполнимого.
+   */
+  async function pageWithCalculator(siteId: number | string, suffix: string) {
+    return payload.create({
+      collection: 'pages',
+      overrideAccess: true,
+      data: {
+        title: 'Калькулятор маржи',
+        path: `/calc-${suffix}-${stamp}`,
+        locale: 'en',
+        site: siteId,
+        status: 'published',
+        blocks: [
+          { type: 'hero', props: { title: 'Калькулятор' } },
+          { type: 'calculator', variant: 'margin', props: { title: 'Маржа' } },
+        ],
+      } as never,
+    })
+  }
+
+  async function addDisclaimer(owner: number | string, overrides: Record<string, unknown> = {}) {
+    return payload.create({
+      collection: 'disclaimers',
+      overrideAccess: true,
+      data: {
+        key: 'disclaimer.calculator',
+        locale: 'en',
+        owner,
+        text: 'Результат расчёта носит справочный характер и не является офертой.',
+        isActive: true,
+        ...overrides,
+      } as never,
+    })
+  }
+
+  it('страница с калькулятором НЕ собирается, когда текста нет', async () => {
+    const site = await makeSite(coveredBrandId, `dsc-missing-${stamp}`)
+    await pageWithCalculator(site.id, 'missing')
+
+    const result = await buildRelease({ payload, siteId: site.id })
+
+    expect(result.status).toBe('failed')
+    expect(result.report.blocking.map((finding) => finding.code)).toContain(
+      'disclaimer-text-missing',
+    )
+  })
+
+  it('и собирается, когда текст есть — правило удовлетворимо', async () => {
+    const site = await makeSite(coveredBrandId, `dsc-present-${stamp}`)
+    await pageWithCalculator(site.id, 'present')
+    await addDisclaimer(site.id)
+
+    const result = await buildRelease({ payload, siteId: site.id })
+
+    expect(result.status).toBe('ready')
+    expect(result.report.coverage.disclaimers).toEqual({ kind: 'checked', examined: 1 })
+  })
+
+  /**
+   * Текст бренда действует на его сайтах — иначе одна регуляторная
+   * формулировка жила бы в двадцати копиях.
+   */
+  it('текст бренда покрывает его сайт', async () => {
+    const brand = await makeBrand(`dsc-brand-${stamp}`)
+    await addRiskWarning(brand.id)
+    await addDisclaimer(brand.id)
+
+    const site = await makeSite(brand.id, `dsc-inherited-${stamp}`)
+    await pageWithCalculator(site.id, 'inherited')
+
+    const result = await buildRelease({ payload, siteId: site.id })
+
+    expect(result.status).toBe('ready')
+  })
+
+  /**
+   * Выключенный текст сайта **не** откатывает к тексту бренда. Тихая подмена
+   * регуляторной формулировки на чужую хуже отказа: её никто не заметит, а
+   * пустое место заметят — релиз не соберётся.
+   */
+  it('выключенный текст сайта не откатывает к тексту бренда', async () => {
+    const brand = await makeBrand(`dsc-brand-off-${stamp}`)
+    await addRiskWarning(brand.id)
+    await addDisclaimer(brand.id)
+
+    const site = await makeSite(brand.id, `dsc-off-${stamp}`)
+    await pageWithCalculator(site.id, 'off')
+    await addDisclaimer(site.id, { isActive: false })
+
+    const result = await buildRelease({ payload, siteId: site.id })
+
+    expect(result.status).toBe('failed')
+    expect(result.report.blocking.map((finding) => finding.code)).toContain(
+      'disclaimer-text-missing',
+    )
+  })
+
+  /**
+   * Инвариант контракта целиком (Р-028): ключ приезжает к витрине **при
+   * блоке**, из которого выведен, а текст — картой на сайт и локаль. Проверка
+   * идёт по двум ручкам сразу, потому что порознь инвариант не проверяется:
+   * смысл в том, что ключ одной ручки гарантированно есть в карте другой.
+   */
+  it('ключ приезжает при блоке, текст — картой, и они сходятся', async () => {
+    const site = await makeSite(coveredBrandId, `dsc-contract-${stamp}`)
+    const page = await pageWithCalculator(site.id, 'contract')
+    await addDisclaimer(site.id)
+
+    const result = await buildRelease({ payload, siteId: site.id })
+    expect(result.status).toBe('ready')
+
+    const release = { number: result.number, builtAt: new Date().toISOString() }
+
+    const manifest = buildPageManifestResponse({ snapshot: result.snapshot, release })
+    const entry = manifest.pages.find((candidate) => candidate.path === page.path)
+
+    expect(entry?.disclaimers.blocks).toEqual([
+      { path: 'blocks[1]', type: 'calculator', keys: ['disclaimer.calculator'] },
+    ])
+
+    const bootstrap = buildBootstrapResponse({ snapshot: result.snapshot, release })
+
+    for (const key of entry?.disclaimers.blocks.flatMap((block) => block.keys) ?? []) {
+      expect(bootstrap.disclaimers[key]).toBe(
+        'Результат расчёта носит справочный характер и не является офертой.',
+      )
+    }
+  })
+
+  /**
+   * Регресс пишется на состоянии, в котором дефект жил: страница без
+   * требующих блоков. Месяц правило не вызывалось вовсе, и отчёт выглядел
+   * чистым — теперь он обязан сказать «проверять было нечего».
+   */
+  it('сайт без требующих блоков даёт «нечего было проверять», а не «нарушений нет»', async () => {
+    const site = await makeSite(coveredBrandId, `dsc-empty-${stamp}`)
+
+    await payload.create({
+      collection: 'pages',
+      overrideAccess: true,
+      data: {
+        title: 'Обычная страница',
+        path: `/plain-${stamp}`,
+        locale: 'en',
+        site: site.id,
+        status: 'published',
+        blocks: [{ type: 'hero', props: { title: 'О компании' } }],
+      } as never,
+    })
+
+    const result = await buildRelease({ payload, siteId: site.id })
+
+    expect(result.status).toBe('ready')
+    expect(result.report.coverage.disclaimers).toEqual({
+      kind: 'empty',
+      reason: 'ни одна страница сайта не содержит блоков, требующих дисклеймера',
+    })
   })
 })

@@ -119,6 +119,31 @@ export interface BootstrapResponse {
   readonly navigation: Readonly<Record<string, readonly NavItemResponse[]>>
   /** Тип области → её содержимое. */
   readonly globalAreas: Readonly<Record<string, GlobalAreaResponse>>
+  /**
+   * Ключ дисклеймера → его текст на разрешённой локали (Р-028).
+   *
+   * Инвариант контракта: ключ, перечисленный у страницы в манифесте,
+   * **гарантированно присутствует** здесь. Его отсутствие — нарушение
+   * контракта, а не «текста нет»: пустое место на месте регуляторного
+   * предупреждения выглядит выполненным требованием и им не является.
+   */
+  readonly disclaimers: Readonly<Record<string, string>>
+}
+
+/**
+ * Дисклеймеры страницы: ключи при блоках, из которых выведены (Р-028).
+ *
+ * Раскладку выбирает витрина. Данные лишь позволяют поставить текст рядом с
+ * источником: связь «этот дисклеймер про этот калькулятор» может быть
+ * требованием регулятора, а не вкусом.
+ */
+export interface PageDisclaimersResponse {
+  readonly page: readonly string[]
+  readonly blocks: readonly {
+    readonly path: string
+    readonly type: string
+    readonly keys: readonly string[]
+  }[]
 }
 
 export interface HreflangAlternateResponse {
@@ -137,6 +162,7 @@ export interface ManifestPageResponse {
   readonly twitterSite: string | null
   readonly alternates: readonly HreflangAlternateResponse[]
   readonly jsonLd: readonly Readonly<Record<string, unknown>>[]
+  readonly disclaimers: PageDisclaimersResponse
 }
 
 export interface PageManifestResponse {

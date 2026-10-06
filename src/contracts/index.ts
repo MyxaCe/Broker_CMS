@@ -33,6 +33,7 @@ export type {
   HreflangAlternateResponse,
   ManifestPageResponse,
   NavItemResponse,
+  PageDisclaimersResponse,
   PageManifestResponse,
   PromoBoardResponse,
   PromoItemResponse,
