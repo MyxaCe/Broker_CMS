@@ -955,6 +955,19 @@ export interface GlobalArea {
      */
     lossPercentage?: number | null;
   };
+  variant?: ('default' | 'compact' | 'transparent' | 'landing') | null;
+  display?: {
+    /**
+     * Пусто — без задержки. Ноль и пусто различаются: ноль это «сразу», пусто это «задержка не задана».
+     */
+    delaySeconds?: number | null;
+    /**
+     * Пусто — показ не зависит от прокрутки.
+     */
+    scrollPercent?: number | null;
+    onExitIntent?: boolean | null;
+    frequency: 'once' | 'once-per-session' | 'once-per-day' | 'every-visit';
+  };
   /**
    * Пусто — область показывается во всех юрисдикциях сайта.
    */
@@ -1946,6 +1959,15 @@ export interface GlobalAreasSelect<T extends boolean = true> {
     | {
         text?: T;
         lossPercentage?: T;
+      };
+  variant?: T;
+  display?:
+    | T
+    | {
+        delaySeconds?: T;
+        scrollPercent?: T;
+        onExitIntent?: T;
+        frequency?: T;
       };
   jurisdictions?:
     | T

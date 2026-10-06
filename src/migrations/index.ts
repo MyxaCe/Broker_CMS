@@ -22,6 +22,7 @@ import * as migration_20260807_140435_seo_layer from './20260807_140435_seo_laye
 import * as migration_20261005_202531_add_instrument_allow_list from './20261005_202531_add_instrument_allow_list'
 import * as migration_20261006_162655_add_brand_assets from './20261006_162655_add_brand_assets'
 import * as migration_20261006_164830_add_disclaimers from './20261006_164830_add_disclaimers'
+import * as migration_20261006_170610_add_popup_display from './20261006_170610_add_popup_display'
 
 export const migrations = [
   {
@@ -143,5 +144,10 @@ export const migrations = [
     up: migration_20261006_164830_add_disclaimers.up,
     down: migration_20261006_164830_add_disclaimers.down,
     name: '20261006_164830_add_disclaimers',
+  },
+  {
+    up: migration_20261006_170610_add_popup_display.up,
+    down: migration_20261006_170610_add_popup_display.down,
+    name: '20261006_170610_add_popup_display',
   },
 ]

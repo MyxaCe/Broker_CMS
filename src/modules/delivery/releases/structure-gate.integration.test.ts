@@ -2,6 +2,8 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import { buildBootstrapResponse } from '../api/bootstrap'
+
 import { buildRelease } from './build'
 
 import type { Payload } from 'payload'
@@ -269,6 +271,171 @@ describe('расхождения структуры блокируют сбор�
       ])
     } finally {
       await payload.delete({ collection: 'navigations', id: own.id, overrideAccess: true })
+    }
+  })
+})
+
+describe('правила показа попапа и мега-меню доезжают до выдачи', () => {
+  /**
+   * DEBT-015, ADR-0033. Проверяется не то, что поля сохранились, а то, что
+   * они доезжают **числами** до ответа выдачи.
+   *
+   * Повод для «числами» конкретный: Payload хранит эти поля как `numeric`, а
+   * Postgres отдаёт `numeric` строкой. Задержка `'10'` прошла бы любую
+   * проверку «значение есть» и приехала бы к витрине строкой, где её сложили
+   * бы с числом.
+   */
+  it('попап отдаёт условия показа числами, а не строками', async () => {
+    const popup = await payload.create({
+      collection: 'global-areas',
+      overrideAccess: true,
+      data: {
+        title: 'Попап подписки',
+        kind: 'popup',
+        owner: siteId,
+        locale: 'en',
+        isActive: true,
+        blocks: [],
+        display: {
+          delaySeconds: 10,
+          scrollPercent: 40,
+          onExitIntent: true,
+          frequency: 'once-per-day',
+        },
+      } as never,
+    })
+
+    try {
+      const result = await buildRelease({ payload, siteId })
+
+      expect(result.status).toBe('ready')
+
+      const response = buildBootstrapResponse({
+        snapshot: result.snapshot,
+        release: { number: result.number, builtAt: new Date().toISOString() },
+      })
+
+      expect(response.globalAreas.popup?.display).toEqual({
+        delaySeconds: 10,
+        scrollPercent: 40,
+        onExitIntent: true,
+        frequency: 'once-per-day',
+      })
+    } finally {
+      await payload.delete({ collection: 'global-areas', id: popup.id, overrideAccess: true })
+    }
+  })
+
+  /**
+   * Попап без заполненных правил показывается сразу и каждому. Это
+   * поведение, и названо оно явно: редактор обязан отличать ненастроенный
+   * попап от настроенного на немедленный показ.
+   */
+  it('попап без правил отдаёт названное умолчание, а не отсутствие поля', async () => {
+    const popup = await payload.create({
+      collection: 'global-areas',
+      overrideAccess: true,
+      data: {
+        title: 'Попап без правил',
+        kind: 'popup',
+        owner: siteId,
+        locale: 'en',
+        isActive: true,
+        blocks: [],
+      } as never,
+    })
+
+    try {
+      const result = await buildRelease({ payload, siteId })
+
+      const response = buildBootstrapResponse({
+        snapshot: result.snapshot,
+        release: { number: result.number, builtAt: new Date().toISOString() },
+      })
+
+      expect(response.globalAreas.popup?.display).toEqual({
+        delaySeconds: null,
+        scrollPercent: null,
+        onExitIntent: false,
+        frequency: 'every-visit',
+      })
+    } finally {
+      await payload.delete({ collection: 'global-areas', id: popup.id, overrideAccess: true })
+    }
+  })
+
+  it('шапка отдаёт вариант, попап — null вместо чужого поля', async () => {
+    const header = await payload.create({
+      collection: 'global-areas',
+      overrideAccess: true,
+      data: {
+        title: 'Компактная шапка',
+        kind: 'header',
+        owner: siteId,
+        locale: 'en',
+        isActive: true,
+        variant: 'compact',
+        blocks: [],
+      } as never,
+    })
+
+    try {
+      const result = await buildRelease({ payload, siteId })
+
+      const response = buildBootstrapResponse({
+        snapshot: result.snapshot,
+        release: { number: result.number, builtAt: new Date().toISOString() },
+      })
+
+      expect(response.globalAreas.header?.variant).toBe('compact')
+      expect(response.globalAreas.header?.display).toBeNull()
+    } finally {
+      await payload.delete({ collection: 'global-areas', id: header.id, overrideAccess: true })
+    }
+  })
+
+  /**
+   * Мега-меню — признак при пункте дерева, а не тип блока в шапке
+   * (ADR-0033). Проверяется вместе со ссылкой на страницу: признак обязан
+   * пережить разрешение ссылки в адрес.
+   */
+  it('признак мега-меню доезжает до ответа вместе с разрешённым адресом', async () => {
+    const menu = await payload.create({
+      collection: 'navigations',
+      overrideAccess: true,
+      data: {
+        title: 'Меню с мега-разделом',
+        placement: 'primary',
+        owner: siteId,
+        locale: 'en',
+        isActive: true,
+        items: [
+          {
+            label: 'Trading',
+            target: 'none',
+            layout: 'mega',
+            children: [{ label: 'Accounts', target: 'page', pageId: String(accountsPageId) }],
+          },
+        ],
+      } as never,
+    })
+
+    try {
+      const result = await buildRelease({ payload, siteId })
+
+      const response = buildBootstrapResponse({
+        snapshot: result.snapshot,
+        release: { number: result.number, builtAt: new Date().toISOString() },
+      })
+
+      const top = response.navigation.primary?.[0]
+
+      expect(top?.layout).toBe('mega')
+      expect(top?.children[0]?.url).toBeTruthy()
+      /** У листа раскладка гасится: пустой мега-панели не бывает. */
+      expect(top?.children[0]?.layout).toBe('list')
+    } finally {
+      await payload.delete({ collection: 'navigations', id: menu.id, overrideAccess: true })
     }
   })
 })

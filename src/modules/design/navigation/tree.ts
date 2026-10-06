@@ -34,6 +34,8 @@ export interface NavNode {
   readonly children?: unknown
   readonly jurisdictions?: unknown
   readonly openInNewTab?: unknown
+  /** `list` или `mega`. Значим только у пункта с потомками. */
+  readonly layout?: unknown
 }
 
 export interface NavIssue {
@@ -214,10 +216,41 @@ function checkNode(
   }
 }
 
+/**
+ * Как пункт раскрывается (ТЗ 2.2, DEBT-015).
+ *
+ * `list` — обычный выпадающий список; `mega` — мега-меню: широкая панель с
+ * колонками-разделами.
+ *
+ * Признак живёт **при пункте дерева**, а не отдельным типом блока в шапке, и
+ * это выбор модели (ADR-0033). ТЗ прямо называет навигацию отдельной
+ * древовидной структурой; блок в шапке означал бы вторую навигацию рядом с
+ * первой — с собственными ссылками, которые никто не проверяет на
+ * существование страниц.
+ */
+export const NAV_LAYOUTS = ['list', 'mega'] as const
+
+export type NavLayout = (typeof NAV_LAYOUTS)[number]
+
+export const NAV_LAYOUT_LABELS: Record<NavLayout, string> = {
+  list: 'Выпадающий список',
+  mega: 'Мега-меню',
+}
+
+export function isNavLayout(value: unknown): value is NavLayout {
+  return typeof value === 'string' && (NAV_LAYOUTS as readonly string[]).includes(value)
+}
+
 export interface ResolvedNavItem {
   readonly label: string
   readonly url: string | null
   readonly openInNewTab: boolean
+  /**
+   * Раскладка раскрытия. У пункта без потомков всегда `list`: мега-меню без
+   * содержимого — это обещание панели, которой не будет, и витрина нарисовала
+   * бы пустую.
+   */
+  readonly layout: NavLayout
   readonly children: readonly ResolvedNavItem[]
 }
 
@@ -266,6 +299,7 @@ export function resolveNavTree(
       label,
       url,
       openInNewTab: item.openInNewTab === true,
+      layout: children.length > 0 && isNavLayout(item.layout) ? item.layout : 'list',
       children,
     })
   }

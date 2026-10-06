@@ -86,6 +86,9 @@ export async function loadStructure(args: {
             typeof entry.code === 'string' ? [entry.code] : [],
           )
         : [],
+      /** Сырые поля: разбор и проверка границ — в `composeStructure`. */
+      display: doc.display,
+      variant: doc.variant,
     }
   })
 

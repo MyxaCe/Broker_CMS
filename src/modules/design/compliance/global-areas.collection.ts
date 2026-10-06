@@ -1,6 +1,13 @@
 import { auditHooks, createTenantAccess, crossTenantOnly } from '@/platform'
 
 import { assertBlockTree } from '../blocks/guard'
+import {
+  HEADER_VARIANT_LABELS,
+  HEADER_VARIANTS,
+  MAX_POPUP_DELAY_SECONDS,
+  POPUP_FREQUENCIES,
+  POPUP_FREQUENCY_LABELS,
+} from '../structure/display'
 
 import type { CollectionConfig } from 'payload'
 
@@ -146,6 +153,73 @@ export const GlobalAreas: CollectionConfig = {
             description:
               'Требуется в ЕС и Великобритании. Число приходит от бэк-офиса и обновляется ежеквартально.',
           },
+        },
+      ],
+    },
+
+    {
+      /**
+       * Варианты шапки (ТЗ 2.2).
+       *
+       * Перечень закрытый: вариант исполняет витрина, и значение, которого
+       * она не знает, означало бы шапку, нарисованную не так, как решили, —
+       * причём молча.
+       */
+      name: 'variant',
+      type: 'select',
+      label: 'Вариант шапки',
+      defaultValue: 'default',
+      admin: { condition: (data) => data?.kind === 'header' },
+      options: HEADER_VARIANTS.map((value) => ({ value, label: HEADER_VARIANT_LABELS[value] })),
+    },
+
+    {
+      /**
+       * Правила показа попапа (ТЗ 2.2, DEBT-015).
+       *
+       * Попап без правил показывается сразу и каждому. Это не упрощённый
+       * попап, а неработающий: правила показа и есть его поведение.
+       */
+      name: 'display',
+      type: 'group',
+      label: 'Когда показывать',
+      admin: { condition: (data) => data?.kind === 'popup' },
+      fields: [
+        {
+          name: 'delaySeconds',
+          type: 'number',
+          label: 'Задержка, секунд',
+          min: 0,
+          max: MAX_POPUP_DELAY_SECONDS,
+          admin: {
+            description:
+              'Пусто — без задержки. Ноль и пусто различаются: ноль это «сразу», пусто это «задержка не задана».',
+          },
+        },
+        {
+          name: 'scrollPercent',
+          type: 'number',
+          label: 'Прокрутка, %',
+          min: 0,
+          max: 100,
+          admin: { description: 'Пусто — показ не зависит от прокрутки.' },
+        },
+        {
+          name: 'onExitIntent',
+          type: 'checkbox',
+          defaultValue: false,
+          label: 'При намерении уйти',
+        },
+        {
+          name: 'frequency',
+          type: 'select',
+          required: true,
+          defaultValue: 'every-visit',
+          label: 'Частота',
+          options: POPUP_FREQUENCIES.map((value) => ({
+            value,
+            label: POPUP_FREQUENCY_LABELS[value],
+          })),
         },
       ],
     },

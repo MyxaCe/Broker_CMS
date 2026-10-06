@@ -39,19 +39,30 @@ const SNAPSHOT: ReleaseSnapshot = {
         locale: 'de',
         placement: 'primary',
         items: [
-          { label: 'Konten', url: '/konten', openInNewTab: false, children: [] },
+          { label: 'Konten', url: '/konten', openInNewTab: false, layout: 'list', children: [] },
           {
             label: 'Handel',
             url: null,
             openInNewTab: false,
-            children: [{ label: 'CFD', url: '/cfd', openInNewTab: false, children: [] }],
+            layout: 'mega',
+            children: [
+              { label: 'CFD', url: '/cfd', openInNewTab: false, layout: 'list', children: [] },
+            ],
           },
         ],
       },
       {
         locale: 'en',
         placement: 'primary',
-        items: [{ label: 'Accounts', url: '/accounts', openInNewTab: false, children: [] }],
+        items: [
+          {
+            label: 'Accounts',
+            url: '/accounts',
+            openInNewTab: false,
+            layout: 'list',
+            children: [],
+          },
+        ],
       },
     ],
     globalAreas: [
@@ -61,6 +72,8 @@ const SNAPSHOT: ReleaseSnapshot = {
         blocks: [],
         riskWarning: { text: 'CFD sind риск.', lossPercentage: 74 },
         jurisdictions: [],
+        display: null,
+        variant: null,
       },
       {
         locale: 'de',
@@ -68,6 +81,8 @@ const SNAPSHOT: ReleaseSnapshot = {
         blocks: [{ type: 'rich-text', props: { text: 'Impressum' } }],
         riskWarning: null,
         jurisdictions: ['eu-mifid'],
+        display: null,
+        variant: null,
       },
       {
         locale: 'en',
@@ -75,6 +90,8 @@ const SNAPSHOT: ReleaseSnapshot = {
         blocks: [{ type: 'rich-text', props: { text: 'Legal' } }],
         riskWarning: null,
         jurisdictions: [],
+        display: null,
+        variant: null,
       },
     ],
     findings: [],
@@ -140,7 +157,7 @@ describe('сборка стартового набора', () => {
     })
 
     expect(body.navigation.primary).toEqual([
-      { label: 'Accounts', url: '/accounts', openInNewTab: false, children: [] },
+      { label: 'Accounts', url: '/accounts', openInNewTab: false, layout: 'list', children: [] },
     ])
     expect(Object.keys(body.globalAreas)).toEqual(['footer'])
   })
@@ -149,7 +166,7 @@ describe('сборка стартового набора', () => {
     const body = buildBootstrapResponse({ snapshot: SNAPSHOT, release: RELEASE })
 
     expect(body.navigation.primary?.[1]?.children).toEqual([
-      { label: 'CFD', url: '/cfd', openInNewTab: false, children: [] },
+      { label: 'CFD', url: '/cfd', openInNewTab: false, layout: 'list', children: [] },
     ])
   })
 

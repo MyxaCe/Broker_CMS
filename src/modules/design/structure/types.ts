@@ -1,3 +1,4 @@
+import type { HeaderVariant, PopupDisplayRules } from './display'
 import type { ResolvedNavItem } from '../navigation/tree'
 
 /**
@@ -25,6 +26,14 @@ export interface SnapshotGlobalArea {
   } | null
   /** Пусто — область показывается во всех юрисдикциях сайта. */
   readonly jurisdictions: readonly string[]
+  /**
+   * Правила показа попапа (ТЗ 2.2). Заполнено **только** у вида `popup`:
+   * у остальных областей показа по условию нет — они показываются всегда,
+   * и поле с умолчанием утверждало бы о них то, чего про них не спрашивали.
+   */
+  readonly display: PopupDisplayRules | null
+  /** Вариант оформления. Сегодня значим только у шапки. */
+  readonly variant: HeaderVariant | null
 }
 
 export interface StructureFinding {

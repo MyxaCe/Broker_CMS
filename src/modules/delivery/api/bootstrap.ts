@@ -56,6 +56,16 @@ export function buildBootstrapResponse(args: {
       blocks: Array.isArray(area.blocks) ? (area.blocks as { readonly type: string }[]) : [],
       riskWarning: area.riskWarning,
       jurisdictions: area.jurisdictions,
+      /**
+       * Правила показа и вариант отдаются **всегда**, в том числе `null`.
+       *
+       * Отсутствие поля потребитель, парсящий мягко, прочитал бы как
+       * `undefined` и не отличил бы «попап показывается всегда» от «правила
+       * не приехали». Релизы, собранные до появления полей, дают `null` — то
+       * есть «условий нет», и это верно: тогда их и не было.
+       */
+      display: area.display ?? null,
+      variant: area.variant ?? null,
     }
   }
 

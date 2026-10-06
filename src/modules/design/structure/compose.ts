@@ -1,6 +1,7 @@
 import { resolveNavTree, validateNavTree } from '../navigation/tree'
 import { expandSections, resolveSections } from '../sections/resolve'
 
+import { readHeaderVariant, readPopupDisplay } from './display'
 import { pickNearest } from './inherit'
 
 import type { SectionRecord } from '../sections/resolve'
@@ -35,6 +36,9 @@ export interface GlobalAreaRecord {
   readonly blocks: unknown
   readonly riskWarning: { readonly text: string; readonly lossPercentage: number | null } | null
   readonly jurisdictions: readonly string[]
+  /** Сырое поле карточки: правила показа читаются и проверяются здесь. */
+  readonly display?: unknown
+  readonly variant?: unknown
 }
 
 export interface ComposeStructureArgs {
@@ -137,6 +141,13 @@ export function composeStructure(args: ComposeStructureArgs): StructureSnapshot 
         blocks: expanded.blocks,
         riskWarning: record.riskWarning,
         jurisdictions: [...record.jurisdictions].sort(),
+        /**
+         * Правила показа — только у попапа. У шапки или подвала они
+         * означали бы «показывать по условию» там, где область показывается
+         * всегда: поле, способное соврать, хуже отсутствующего.
+         */
+        display: kind === 'popup' ? readPopupDisplay(record.display) : null,
+        variant: kind === 'header' ? readHeaderVariant(record.variant) : null,
       })
     }
   }

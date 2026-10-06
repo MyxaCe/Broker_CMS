@@ -89,7 +89,27 @@ export interface NavItemResponse {
   /** `null` — заголовок раздела: сам никуда не ведёт, но группирует вложенные. */
   readonly url: string | null
   readonly openInNewTab: boolean
+  /**
+   * Как раскрывается пункт: обычным списком или мега-меню (ТЗ 2.2).
+   *
+   * У пункта без потомков всегда `list`: мега-меню без содержимого — это
+   * обещание панели, которой не будет.
+   */
+  readonly layout: 'list' | 'mega'
   readonly children: readonly NavItemResponse[]
+}
+
+/**
+ * Правила показа попапа (ТЗ 2.2). Решение принимает CMS, исполняет витрина.
+ *
+ * `null` у условия означает «по этому условию не показывать», а не «ноль»:
+ * задержка `0` — это «сразу», и путать её с «задержка не задана» нельзя.
+ */
+export interface PopupDisplayResponse {
+  readonly delaySeconds: number | null
+  readonly scrollPercent: number | null
+  readonly onExitIntent: boolean
+  readonly frequency: 'once' | 'once-per-session' | 'once-per-day' | 'every-visit'
 }
 
 export interface GlobalAreaResponse {
@@ -99,6 +119,13 @@ export interface GlobalAreaResponse {
     readonly lossPercentage: number | null
   } | null
   readonly jurisdictions: readonly string[]
+  /**
+   * Правила показа. Заполнены **только** у попапа; у остальных областей
+   * `null` — они показываются всегда, и правила о них ничего не утверждают.
+   */
+  readonly display: PopupDisplayResponse | null
+  /** Вариант оформления. Сегодня значим только у шапки, у прочих `null`. */
+  readonly variant: string | null
 }
 
 export interface BootstrapResponse {

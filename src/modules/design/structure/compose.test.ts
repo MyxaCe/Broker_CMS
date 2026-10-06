@@ -60,7 +60,9 @@ describe('навигация в снапшоте', () => {
       {
         locale: 'ru',
         placement: 'primary',
-        items: [{ label: 'Счета', url: '/accounts', openInNewTab: false, children: [] }],
+        items: [
+          { label: 'Счета', url: '/accounts', openInNewTab: false, layout: 'list', children: [] },
+        ],
       },
     ])
     expect(structure.findings).toEqual([])

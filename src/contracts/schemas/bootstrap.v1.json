@@ -19,7 +19,7 @@
     "navItem": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["label", "url", "openInNewTab", "children"],
+      "required": ["children", "label", "layout", "openInNewTab", "url"],
       "properties": {
         "label": {
           "type": "string",
@@ -37,6 +37,10 @@
           "items": {
             "$ref": "#/$defs/navItem"
           }
+        },
+        "layout": {
+          "description": "Как раскрывается пункт: list — обычный выпадающий список, mega — мега-меню (ТЗ 2.2). У пункта без потомков всегда list: мега-меню без содержимого — обещание панели, которой не будет.",
+          "enum": ["list", "mega"]
         }
       }
     },
@@ -129,7 +133,7 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["blocks", "riskWarning", "jurisdictions"],
+        "required": ["blocks", "display", "jurisdictions", "riskWarning", "variant"],
         "properties": {
           "blocks": {
             "type": "array",
@@ -161,6 +165,62 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          "display": {
+            "description": "Правила показа попапа (ТЗ 2.2): решение принимает CMS, исполняет витрина. Заполнено только у вида popup; у остальных областей null — они показываются всегда, и правила о них ничего не утверждают. Внутри null у условия означает «по этому условию не показывать»: задержка 0 это «сразу», и путать её с «не задана» нельзя.",
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["delaySeconds", "scrollPercent", "onExitIntent", "frequency"],
+                "properties": {
+                  "delaySeconds": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 600
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "scrollPercent": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "onExitIntent": {
+                    "type": "boolean"
+                  },
+                  "frequency": {
+                    "enum": ["once", "once-per-session", "once-per-day", "every-visit"]
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "variant": {
+            "description": "Вариант оформления области. Сегодня значим только у шапки; у прочих null. Перечень закрыт на стороне CMS — значение, которого витрина не знает, означало бы область, нарисованную не так, как решили.",
+            "anyOf": [
+              {
+                "enum": ["default", "compact", "transparent", "landing"]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       }

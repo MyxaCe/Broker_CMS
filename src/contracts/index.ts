@@ -35,6 +35,7 @@ export type {
   NavItemResponse,
   PageDisclaimersResponse,
   PageManifestResponse,
+  PopupDisplayResponse,
   PromoBoardResponse,
   PromoItemResponse,
   SearchHitResponse,

@@ -130,7 +130,7 @@ describe('разворачивание для выдачи', () => {
     const resolved = resolveNavTree([{ label: 'Счета', target: 'page', pageId: '11' }], paths)
 
     expect(resolved).toEqual([
-      { label: 'Счета', url: '/accounts', openInNewTab: false, children: [] },
+      { label: 'Счета', url: '/accounts', openInNewTab: false, layout: 'list', children: [] },
     ])
   })
 
@@ -156,7 +156,10 @@ describe('разворачивание для выдачи', () => {
         label: 'Торговля',
         url: null,
         openInNewTab: false,
-        children: [{ label: 'Счета', url: '/accounts', openInNewTab: false, children: [] }],
+        layout: 'list',
+        children: [
+          { label: 'Счета', url: '/accounts', openInNewTab: false, layout: 'list', children: [] },
+        ],
       },
     ])
   })
@@ -180,5 +183,59 @@ describe('разворачивание для выдачи', () => {
   it('мусор не роняет разворачивание', () => {
     expect(resolveNavTree(null, paths)).toEqual([])
     expect(resolveNavTree([null, 'строка', {}], paths)).toEqual([])
+  })
+})
+
+/**
+ * Мега-меню как признак при пункте дерева, а не отдельный тип блока в шапке
+ * (ADR-0033, DEBT-015).
+ */
+describe('раскладка раскрытия', () => {
+  const paths = new Map([['11', '/accounts']])
+
+  it('мега-меню сохраняется у пункта с потомками', () => {
+    const resolved = resolveNavTree(
+      [
+        {
+          label: 'Торговля',
+          target: 'none',
+          layout: 'mega',
+          children: [{ label: 'Счета', target: 'page', pageId: '11' }],
+        },
+      ],
+      paths,
+    )
+
+    expect(resolved[0]?.layout).toBe('mega')
+  })
+
+  /**
+   * Мега-меню без содержимого — обещание панели, которой не будет: витрина
+   * нарисовала бы пустую. Признак у листа гасится здесь, а не проверяется у
+   * потребителя — иначе каждый потребитель повторял бы это правило.
+   */
+  it('у пункта без потомков раскладка всегда list', () => {
+    const resolved = resolveNavTree(
+      [{ label: 'Счета', target: 'page', pageId: '11', layout: 'mega' }],
+      paths,
+    )
+
+    expect(resolved[0]?.layout).toBe('list')
+  })
+
+  it('неизвестная раскладка читается как list, а не уезжает к витрине', () => {
+    const resolved = resolveNavTree(
+      [
+        {
+          label: 'Торговля',
+          target: 'none',
+          layout: 'carousel',
+          children: [{ label: 'Счета', target: 'page', pageId: '11' }],
+        },
+      ],
+      paths,
+    )
+
+    expect(resolved[0]?.layout).toBe('list')
   })
 })

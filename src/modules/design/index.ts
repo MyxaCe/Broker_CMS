@@ -91,6 +91,19 @@ export type {
 
 export { composeStructure } from './structure/compose'
 export type { ComposeStructureArgs, GlobalAreaRecord, NavigationRecord } from './structure/compose'
+export {
+  DEFAULT_POPUP_DISPLAY,
+  HEADER_VARIANT_LABELS,
+  HEADER_VARIANTS,
+  isHeaderVariant,
+  isPopupFrequency,
+  MAX_POPUP_DELAY_SECONDS,
+  POPUP_FREQUENCY_LABELS,
+  POPUP_FREQUENCIES,
+  readHeaderVariant,
+  readPopupDisplay,
+} from './structure/display'
+export type { HeaderVariant, PopupDisplayRules, PopupFrequency } from './structure/display'
 export { pickNearest } from './structure/inherit'
 export type { NearestArgs, NearestPick } from './structure/inherit'
 export { loadStructure } from './structure/load'
