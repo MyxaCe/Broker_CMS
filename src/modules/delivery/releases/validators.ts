@@ -116,7 +116,7 @@ export const siteReadinessValidator: Validator<ReleaseSnapshot> = {
    * существует всегда, иначе сборка не началась бы.
    */
   coverage() {
-    return { kind: 'checked', examined: 1 }
+    return { kind: 'checked', examined: 1, unit: 'карточек сайта' }
   },
 }
 
@@ -161,7 +161,8 @@ export const RELEASE_VALIDATORS: readonly Validator<ReleaseSnapshot>[] = [
    */
   adaptValidator(complianceValidator, (snapshot) => ({
     complianceFindings: snapshot.complianceFindings,
-    examined: snapshot.examined.compliancePages,
+    examined: snapshot.examined.complianceBlocks,
+    examinedPages: snapshot.examined.compliancePages,
   })),
   /**
    * Дисклеймеры — следом за комплаенсом: это пятый ограничитель ТЗ 2.4, и

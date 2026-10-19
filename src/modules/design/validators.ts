@@ -75,7 +75,7 @@ export const contrastValidator: Validator<ContrastInput> = {
   coverage(input) {
     return input.colorPairs.length === 0
       ? { kind: 'empty', reason: 'у сайта не разрешено ни одной цветовой роли' }
-      : { kind: 'checked', examined: input.colorPairs.length }
+      : { kind: 'checked', examined: input.colorPairs.length, unit: 'пар цветовых ролей' }
   },
 }
 
@@ -116,7 +116,7 @@ export const tokenGraphValidator: Validator<TokenGraphInput> = {
 
     return input.examined === 0
       ? { kind: 'empty', reason: 'у сайта не заведено ни одного токена' }
-      : { kind: 'checked', examined: input.examined }
+      : { kind: 'checked', examined: input.examined, unit: 'разрешённых токенов' }
   },
 }
 
@@ -126,6 +126,16 @@ export interface ComplianceValidatorInput extends RelayedCoverage {
     readonly message: string
     readonly location: string
   }[]
+  /**
+   * Сколько опубликованных страниц было в материале.
+   *
+   * Второе число, а не замена первому: `examined` считает блоки — единицу, в
+   * которой проверка действительно работает, — а страницы нужны затем, чтобы
+   * отличить «страниц нет» от «страницы есть, а блоков в них нет». Сложить их
+   * в один счётчик нельзя: метрика, склеивающая разные единицы, начинает
+   * противоречить сама себе.
+   */
+  readonly examinedPages: number | null
 }
 
 /**
@@ -150,17 +160,28 @@ export const complianceValidator: Validator<ComplianceValidatorInput> = {
   },
 
   /**
-   * Ретранслятор: страницы обходят и нарушения считает правила комплаенса. Пустой список находок ничего не
-   * говорит сам по себе, поэтому `examined` приходит извне.
+   * Ретранслятор: страницы обходят и нарушения считает правила комплаенса.
+   * Пустой список находок ничего не говорит сам по себе, поэтому `examined`
+   * приходит извне.
+   *
+   * Считаются **блоки после раскрытия ссылок на секции**, и единица названа
+   * вслух. До 19.10 тот же счётчик считал страницы, а дерево оставалось
+   * нераскрытым: число было верным, а текст внутри переиспользуемой секции в
+   * проверку не входил. Охват, объявленный голым числом, этого не показывает
+   * (DEBT-021).
    */
   coverage(input) {
-    if (input.examined === null) {
+    if (input.examined === null || input.examinedPages === null) {
       return { kind: 'missing', reason: 'правила комплаенса не запускались' }
     }
 
-    return input.examined === 0
-      ? { kind: 'empty', reason: 'у сайта нет ни одной страницы и ни одной глобальной области' }
-      : { kind: 'checked', examined: input.examined }
+    return input.examinedPages === 0
+      ? { kind: 'empty', reason: 'у сайта нет ни одной опубликованной страницы' }
+      : {
+          kind: 'checked',
+          examined: input.examined,
+          unit: 'блоков страниц после раскрытия ссылок на секции',
+        }
   },
 }
 
@@ -203,7 +224,7 @@ export const structureValidator: Validator<StructureValidatorInput> = {
 
     return input.examined === 0
       ? { kind: 'empty', reason: 'у сайта нет ни одного меню и ни одной глобальной области' }
-      : { kind: 'checked', examined: input.examined }
+      : { kind: 'checked', examined: input.examined, unit: 'меню и глобальных областей' }
   },
 }
 
@@ -244,7 +265,7 @@ export const routingValidator: Validator<RoutingValidatorInput> = {
 
     return input.examined === 0
       ? { kind: 'empty', reason: 'у сайта нет ни одной страницы' }
-      : { kind: 'checked', examined: input.examined }
+      : { kind: 'checked', examined: input.examined, unit: 'маршрутизируемых страниц' }
   },
 }
 
@@ -296,6 +317,16 @@ export const forbiddenClaimsValidator: Validator<ForbiddenClaimsInput> = {
 
     return input.texts.length === 0
       ? { kind: 'empty', reason: 'на сайте нет ни одного текстового блока' }
-      : { kind: 'checked', examined: input.texts.length }
+      : {
+          kind: 'checked',
+          examined: input.texts.length,
+          /**
+           * Единица названа с оговоркой «после раскрытия ссылок» намеренно:
+           * до 19.10 тексты внутри переиспользуемых секций страниц в этот
+           * счётчик не входили вовсе, а число выглядело таким же верным
+           * (DEBT-021).
+           */
+          unit: 'редакторских текстов после раскрытия ссылок на секции',
+        }
   },
 }

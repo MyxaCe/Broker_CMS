@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { isKnownJurisdiction, requirementsFor } from './jurisdictions'
 import {
   checkImageAlt,
+  checkSectionExpansion,
   checkJurisdictionVisibility,
   checkRiskWarning,
   collectBlocks,
@@ -14,12 +15,13 @@ import {
 import { BLOCK_PROPS } from '../blocks/registry-props'
 
 import type { PropField } from '../blocks/props'
-import type { ComplianceInput } from './rules'
+import type { ComplianceInput, SectionExpansionIssue } from './rules'
 
 function input(overrides: Partial<ComplianceInput> = {}): ComplianceInput {
   return {
     jurisdiction: 'eu-mifid',
     locales: ['en'],
+    sectionIssues: [],
     riskWarnings: [
       {
         isActive: true,
@@ -312,5 +314,63 @@ describe('полный прогон', () => {
     expect(codes).toContain('risk-warning-missing')
     expect(codes).toContain('image-without-alt')
     expect(codes).toContain('unreachable-jurisdiction')
+  })
+})
+
+/**
+ * Нераскрытая ссылка на секцию (DEBT-021).
+ *
+ * Два исхода и два кода: «подставлять было нечего» и «содержимое есть, но в
+ * проверку не вошло». Склеить их в один код значило бы сказать «нарушений
+ * нет» там, где известно только «результат неизвестен».
+ */
+describe('checkSectionExpansion', () => {
+  const issue = (code: SectionExpansionIssue['code']): SectionExpansionIssue => ({
+    code,
+    location: 'страница /pricing (en) → blocks[1]',
+    message: 'Сообщение раскрытия.',
+  })
+
+  it('отсутствующая и невыбранная секция — дыра на странице', () => {
+    const findings = checkSectionExpansion(
+      input({ sectionIssues: [issue('unknown-section'), issue('missing-key')] }),
+    )
+
+    expect(findings.map((finding) => finding.code)).toEqual(['section-missing', 'section-missing'])
+    expect(findings[0]?.message).toContain('пустое место')
+  })
+
+  /**
+   * Цикл и превышенная вложенность — **непроверенное содержимое**. Это не
+   * косметическая разница: в регулируемой области «не проверено» обязано
+   * быть отличимо от «проверено и чисто».
+   */
+  it('цикл и превышенная вложенность — непроверенное содержимое', () => {
+    const findings = checkSectionExpansion(
+      input({ sectionIssues: [issue('cycle'), issue('too-deep')] }),
+    )
+
+    expect(findings.map((finding) => finding.code)).toEqual([
+      'section-unexamined',
+      'section-unexamined',
+    ])
+    expect(findings[0]?.message).toContain('не вошло')
+  })
+
+  it('адрес находки сохраняется как есть — он ведёт в секцию', () => {
+    const findings = checkSectionExpansion(input({ sectionIssues: [issue('cycle')] }))
+
+    expect(findings[0]?.location).toBe('страница /pricing (en) → blocks[1]')
+  })
+
+  /**
+   * Правило включено в общий прогон. Проверка на уровне связки живёт в
+   * интеграционном наборе; здесь закрепляется сам факт вызова — иначе
+   * правило осталось бы написанным и невызываемым, как уже было дважды.
+   */
+  it('правило включено в runComplianceRules', () => {
+    const findings = runComplianceRules(input({ sectionIssues: [issue('unknown-section')] }))
+
+    expect(findings.map((finding) => finding.code)).toContain('section-missing')
   })
 })

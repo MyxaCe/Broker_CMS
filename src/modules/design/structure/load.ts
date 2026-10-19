@@ -1,5 +1,7 @@
 import { loadTenantChainIds } from '@/platform'
 
+import { toSectionRecords } from '../sections/load'
+
 import { composeStructure } from './compose'
 
 import type { GlobalAreaRecord, NavigationRecord } from './compose'
@@ -41,15 +43,13 @@ export async function loadStructure(args: {
     }),
   ])
 
-  const sections: SectionRecord[] = (
-    sectionsResult.docs as unknown as Record<string, unknown>[]
-  ).map((doc) => ({
-    key: typeof doc.key === 'string' ? doc.key : '',
-    locale: typeof doc.locale === 'string' ? doc.locale : '',
-    ownerId: relationId(doc.owner),
-    isActive: doc.isActive === true,
-    blocks: doc.blocks,
-  }))
+  /**
+   * Разбор карточки секции — общий с комплаенс-входом. Два разбора одного
+   * материала расходятся молча, и расходились бы ровно в признаке действия.
+   */
+  const sections: SectionRecord[] = toSectionRecords(
+    sectionsResult.docs as unknown as Record<string, unknown>[],
+  )
 
   const navigations: NavigationRecord[] = (
     navigationsResult.docs as unknown as Record<string, unknown>[]

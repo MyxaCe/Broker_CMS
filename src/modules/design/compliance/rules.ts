@@ -23,6 +23,8 @@ export interface ComplianceFinding {
     | 'forbidden-block'
     | 'unreachable-jurisdiction'
     | 'disclaimer-missing'
+    | 'section-missing'
+    | 'section-unexamined'
   readonly message: string
   readonly location: string
 }
@@ -38,8 +40,30 @@ export interface RiskWarningArea {
 export interface CompliancePageInput {
   readonly path: string
   readonly locale: string
+  /**
+   * Дерево блоков **после раскрытия ссылок на секции** (DEBT-021).
+   *
+   * До 19.10 сюда приходило сырое дерево, и текст внутри переиспользуемой
+   * секции не видели ни стоп-словарь, ни правило дисклеймеров: `section-ref`
+   * оставался ссылкой, а отчёт релиза выходил чистым. Один и тот же текст
+   * проверялся или нет в зависимости от того, вставили его в глобальную
+   * область или в страницу, — обойти комплаенс можно было обычной работой.
+   */
   readonly blocks: unknown
   readonly jurisdictions: readonly string[]
+}
+
+/**
+ * Ссылка на секцию, которую раскрыть не удалось.
+ *
+ * Тип объявлен здесь, а не взят из `sections/resolve`, чтобы правила
+ * оставались чистыми и не зависели от загрузчика: сюда приходит уже
+ * приведённая находка с адресом в терминах страницы редактора.
+ */
+export interface SectionExpansionIssue {
+  readonly code: 'missing-key' | 'unknown-section' | 'cycle' | 'too-deep'
+  readonly location: string
+  readonly message: string
 }
 
 export interface ComplianceInput {
@@ -51,6 +75,14 @@ export interface ComplianceInput {
   readonly pages: readonly CompliancePageInput[]
   /** Идентификатор медиа → есть ли непустой alt. */
   readonly mediaAlt: ReadonlyMap<string, boolean>
+  /**
+   * Ссылки на секции в блоках страниц, которые раскрыть не удалось.
+   *
+   * Поле обязательное без умолчания: `?? []` означало бы «нераскрытых ссылок
+   * нет» там, где известно только «их не передали». Это ровно то умолчание,
+   * которым стоп-словарь месяц отдавал чистый отчёт (DEBT-013).
+   */
+  readonly sectionIssues: readonly SectionExpansionIssue[]
 }
 
 /**
@@ -191,8 +223,43 @@ export function checkJurisdictionVisibility(input: ComplianceInput): ComplianceF
   return findings
 }
 
+/**
+ * Ссылка на секцию, которая не раскрылась (DEBT-021).
+ *
+ * Два разных исхода, и путать их нельзя:
+ *
+ *  · **`section-missing`** — подставлять было нечего: секции нет, она снята с
+ *    публикации, заведена на другом языке или не выбрана вовсе. На странице
+ *    останется пустое место, и заметить его можно только на витрине. Тот же
+ *    уровень, что у такой же дыры в глобальной области: там это блокирующая
+ *    находка с первого дня.
+ *
+ *  · **`section-unexamined`** — содержимое есть, но в проверку **не вошло**:
+ *    цикл в ссылках или вложенность глубже разрешённой. Это не «нарушений
+ *    нет», а «результат проверки для этого куска неизвестен», и отличать одно
+ *    от другого в регулируемой области — разница между отчётом и подлогом.
+ */
+export function checkSectionExpansion(input: ComplianceInput): ComplianceFinding[] {
+  return input.sectionIssues.map((issue) => {
+    const unexamined = issue.code === 'cycle' || issue.code === 'too-deep'
+
+    return {
+      code: unexamined ? ('section-unexamined' as const) : ('section-missing' as const),
+      message: unexamined
+        ? `${issue.message} Содержимое этой ссылки в комплаенс-проверку не вошло — результат по нему неизвестен.`
+        : `${issue.message} На опубликованной странице останется пустое место.`,
+      location: issue.location,
+    }
+  })
+}
+
 export function runComplianceRules(input: ComplianceInput): ComplianceFinding[] {
   return [
+    /**
+     * Первым — то, что проверить не удалось: непроверенное читают раньше
+     * проверенного, иначе оно теряется среди находок.
+     */
+    ...checkSectionExpansion(input),
     ...checkRiskWarning(input),
     ...checkImageAlt(input),
     ...checkJurisdictionVisibility(input),

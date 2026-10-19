@@ -1,5 +1,8 @@
 import { collectSubtree, loadTenantChainIds } from '@/platform'
 
+import { loadSectionRecords } from '../sections/load'
+import { expandSections, resolveSections } from '../sections/resolve'
+
 import { composeRouting } from './manifest'
 import { REDIRECT_STATUSES } from './types'
 
@@ -66,7 +69,7 @@ export async function loadRouting(args: {
     (id) => nodes.get(id)?.kind === 'site',
   )
 
-  const [pagesResult, profilesResult, redirectsResult] = await Promise.all([
+  const [pagesResult, profilesResult, redirectsResult, sectionRecords] = await Promise.all([
     args.payload.find({
       collection: 'pages',
       where: { site: { in: brandSiteIds }, status: { equals: 'published' } },
@@ -82,11 +85,38 @@ export async function loadRouting(args: {
       where: { site: { equals: args.siteId } },
       ...READ,
     }),
+    loadSectionRecords({ payload: args.payload, chainIds }),
   ])
 
   const allPages = (pagesResult.docs as unknown as Record<string, unknown>[]).map(toPageInput)
-  const own = allPages.filter((page) => page.siteId === siteId)
   const siblings = allPages.filter((page) => page.siteId !== siteId)
+
+  /**
+   * Третье следствие DEBT-021: разметка для поисковика читала **сырое**
+   * дерево, и FAQ, вынесенный в переиспользуемую секцию, в `FAQPage` не
+   * попадал вовсе. Тот же дефект, что у комплаенса, только тише: отчёт
+   * ничего не говорит, потому что разметка — не проверка.
+   *
+   * Раскрытие здесь **плоское**, в отличие от комплаенс-входа: разметка
+   * описывает то, что увидит посетитель, а не то, где редактору править.
+   * Адрес здесь никому не нужен, содержимое — нужно.
+   *
+   * Расхождения раскрытия отсюда в отчёт не идут, и это не замалчивание:
+   * ту же страницу тем же материалом осматривает комплаенс-гейт, и
+   * нераскрытая ссылка блокирует релиз там (`section-missing`,
+   * `section-unexamined`). Вторая жалоба на то же самое только удлинила бы
+   * отчёт. Связь намеренная: уберут проверку там — здесь появится молчание,
+   * поэтому она названа здесь словами.
+   */
+  const own = allPages
+    .filter((page) => page.siteId === siteId)
+    .map((page) => ({
+      ...page,
+      blocks: expandSections(
+        page.blocks,
+        resolveSections({ chainIds, records: sectionRecords, locale: page.locale }),
+      ).blocks,
+    }))
 
   const siblingSites: ManifestSiteInput[] = brandSiteIds
     .filter((id) => id !== siteId)

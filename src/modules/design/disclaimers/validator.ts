@@ -60,6 +60,10 @@ export const disclaimersValidator: Validator<{ readonly disclaimers: Disclaimers
         }
       }
 
-      return { kind: 'checked', examined: input.disclaimers.examinedRequirements }
+      return {
+        kind: 'checked',
+        examined: input.disclaimers.examinedRequirements,
+        unit: 'требуемых дисклеймеров после раскрытия ссылок на секции',
+      }
     },
   }

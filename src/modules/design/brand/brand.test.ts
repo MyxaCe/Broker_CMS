@@ -187,6 +187,10 @@ describe('brandAssetsValidator', () => {
     const findings = brandAssetsValidator.run({ brand })
 
     expect(findings.filter((finding) => finding.severity === 'blocking')).toHaveLength(1)
-    expect(brandAssetsValidator.coverage({ brand })).toEqual({ kind: 'checked', examined: 1 })
+    expect(brandAssetsValidator.coverage({ brand })).toEqual({
+      kind: 'checked',
+      examined: 1,
+      unit: 'ссылок на файлы',
+    })
   })
 })

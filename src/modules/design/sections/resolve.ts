@@ -91,6 +91,26 @@ export interface ExpansionResult {
   readonly issues: readonly SectionIssue[]
 }
 
+export interface ExpandOptions {
+  /**
+   * Сохранять узел ссылки, положив содержимое секции в слот `section:<ключ>`.
+   *
+   * Нужно проверкам, а не выдаче. При обычном раскрытии содержимое секции
+   * **вклеивается на место ссылки**, и адрес находки съезжает: текст, который
+   * редактор видит в секции `risks`, комплаенс назвал бы `blocks[3].title`
+   * страницы, где такого блока нет вовсе. Редактор пошёл бы править страницу,
+   * а править надо секцию — одну на десяток страниц.
+   *
+   * Поэтому у проверок своя форма раскрытия: дерево то же, обход тот же,
+   * ровно один шаг — подстановка — другой. Второй реализации раскрытия здесь
+   * нет намеренно: она разошлась бы с движком в наследовании, вложенности и
+   * защите от цикла, и разошлась бы незаметно.
+   *
+   * В выдачу такая форма не уходит: её строит только сборка комплаенс-входа.
+   */
+  readonly keepReference?: boolean
+}
+
 /**
  * Подставляет содержимое секций в дерево блоков.
  *
@@ -105,9 +125,10 @@ export interface ExpansionResult {
 export function expandSections(
   blocks: unknown,
   sections: ReadonlyMap<string, ResolvedSection>,
+  options: ExpandOptions = {},
 ): ExpansionResult {
   const issues: SectionIssue[] = []
-  const expanded = expand(blocks, sections, issues, 'blocks', [])
+  const expanded = expand(blocks, sections, issues, 'blocks', [], options)
 
   return { blocks: expanded, issues }
 }
@@ -118,6 +139,7 @@ function expand(
   issues: SectionIssue[],
   path: string,
   stack: readonly string[],
+  options: ExpandOptions,
 ): unknown {
   if (!Array.isArray(value)) {
     return value
@@ -136,7 +158,7 @@ function expand(
     const record = node as Record<string, unknown>
 
     if (record.type !== 'section-ref') {
-      result.push(expandSlots(record, sections, issues, nodePath, stack))
+      result.push(expandSlots(record, sections, issues, nodePath, stack, options))
       return
     }
 
@@ -194,11 +216,31 @@ function expand(
       return
     }
 
-    const inner = expand(section.blocks, sections, issues, `${nodePath}<${key}>`, [...stack, key])
+    const inner = expand(
+      section.blocks,
+      sections,
+      issues,
+      options.keepReference === true ? `${nodePath}.slots.section:${key}` : `${nodePath}<${key}>`,
+      [...stack, key],
+      options,
+    )
 
-    if (Array.isArray(inner)) {
-      result.push(...inner)
+    if (!Array.isArray(inner)) {
+      return
     }
+
+    if (options.keepReference === true) {
+      const slots = record.slots
+      const existing =
+        slots !== null && typeof slots === 'object' && !Array.isArray(slots)
+          ? (slots as Record<string, unknown>)
+          : {}
+
+      result.push({ ...record, slots: { ...existing, [`section:${key}`]: inner } })
+      return
+    }
+
+    result.push(...inner)
   })
 
   return result
@@ -216,6 +258,7 @@ function expandSlots(
   issues: SectionIssue[],
   path: string,
   stack: readonly string[],
+  options: ExpandOptions,
 ): Record<string, unknown> {
   const slots = node.slots
 
@@ -226,7 +269,7 @@ function expandSlots(
   const nextSlots: Record<string, unknown> = {}
 
   for (const [slot, children] of Object.entries(slots as Record<string, unknown>)) {
-    nextSlots[slot] = expand(children, sections, issues, `${path}.slots.${slot}`, stack)
+    nextSlots[slot] = expand(children, sections, issues, `${path}.slots.${slot}`, stack, options)
   }
 
   return { ...node, slots: nextSlots }
