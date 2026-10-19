@@ -23,6 +23,12 @@ export const PROP_KINDS = [
   'select',
   'media',
   'link',
+  /**
+   * Ключ переиспользуемой секции. Отдельный вид, а не `text`: значение
+   * выбирается из того, что действительно подставится в этой цепочке и на
+   * этом языке, — введённый руками ключ выясняется только при сборке.
+   */
+  'section',
   /** Повторяемая группа: пункты FAQ, строки таблицы, шаги. */
   'items',
 ] as const
@@ -130,6 +136,7 @@ function checkValue(field: PropField, value: unknown, path: string): PropIssue[]
     case 'richtext':
     case 'media':
     case 'link':
+    case 'section':
       return checkText(field, value, path)
 
     case 'number':

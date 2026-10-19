@@ -1,9 +1,22 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { resetAdminForm } from '@/testing/payload-ui'
 
 import { PropsForm } from './PropsForm'
 
 import type { PropField } from '../props'
+
+/**
+ * Выбор секции читает владельца и язык из контекста формы, а настоящий
+ * `@payloadcms/ui` тянет за собой CSS, который node-прогон не понимает.
+ * Та же заглушка на два десятка строк, что у дерева блоков.
+ */
+vi.mock('@payloadcms/ui', () => import('@/testing/payload-ui'))
+
+beforeEach(() => {
+  resetAdminForm()
+})
 
 /**
  * Форма пропсов — разметкой первого рендера.
@@ -96,5 +109,40 @@ describe('повторяемая группа', () => {
 
     expect(html).toContain('data-testid="media-pick"')
     expect(html).toContain('Читаю карточку файла #7')
+  })
+})
+
+/**
+ * Шестой пункт [[DEBT-011]]: ключ секции выбирается, а не вписывается.
+ *
+ * Проверяется проводка. Решения — что предложить, чем «перекрыта» отличается
+ * от «нет такой» — проверены в `section-options.test.ts`, и ни один из тех
+ * тестов не покраснеет, если контрол перестанет подключаться к полю.
+ */
+describe('ключ секции получает выбор, а не поле ввода', () => {
+  const fields: readonly PropField[] = [{ name: 'key', label: 'Ключ секции', kind: 'section' }]
+
+  it('контрол выбора подключён к полю типа section', () => {
+    expect(render(fields, {})).toContain('data-testid="section-pick"')
+  })
+
+  /**
+   * Без владельца и языка предлагать нечего, и это говорится словами: пустой
+   * список выглядел бы как «секций нет», а это разные вещи.
+   */
+  it('без владельца и языка объясняет, чего не хватает, а не молчит', () => {
+    expect(render(fields, {})).toContain('Выберите владельца и язык')
+  })
+
+  /**
+   * Заполненный ключ до чтения списка — «проверяем», а не «такого нет».
+   * Непрочитанное, выданное за отсутствующее, уже стирало живые ссылки в
+   * редакторе меню.
+   */
+  it('заполненный ключ сначала проверяется, а не объявляется битым', () => {
+    const html = render(fields, { key: 'risks' })
+
+    expect(html).toContain('risks')
+    expect(html).not.toContain('не найдена')
   })
 })

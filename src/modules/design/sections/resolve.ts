@@ -26,6 +26,16 @@ export interface ResolvedSection extends SectionRecord {
 }
 
 /**
+ * Разрешённая карточка сохраняет тип входа.
+ *
+ * Нужно редактору: он кладёт в отбор карточки со своими полями (название,
+ * идентификатор) и обязан получить их обратно, а не урезанную запись. Сам
+ * отбор от этого не меняется — и не должен: правило одно и то же у сборки и
+ * у формы, иначе они разойдутся в наследовании.
+ */
+export type ResolvedOf<T extends SectionRecord> = T & { readonly provenance: 'own' | 'inherited' }
+
+/**
  * Выбирает действующие секции для сайта.
  *
  * Ближайший к листу владелец побеждает: секция сайта перекрывает одноимённую
@@ -37,12 +47,12 @@ export interface ResolvedSection extends SectionRecord {
  * незаполненной. Обратное поведение — тихий откат к чужому тексту, а на сайте
  * брокера подмена текста без ведома редактора хуже пустого места.
  */
-export function resolveSections(args: {
+export function resolveSections<T extends SectionRecord>(args: {
   /** Цепочка от корня к листу: `[brandId, regionId, siteId]`. */
   readonly chainIds: readonly string[]
-  readonly records: readonly SectionRecord[]
+  readonly records: readonly T[]
   readonly locale: string
-}): Map<string, ResolvedSection> {
+}): Map<string, ResolvedOf<T>> {
   const picked = pickNearest({
     chainIds: args.chainIds,
     items: args.records.filter((record) => record.locale === args.locale),
@@ -51,7 +61,7 @@ export function resolveSections(args: {
     isActive: (record) => record.isActive,
   })
 
-  const resolved = new Map<string, ResolvedSection>()
+  const resolved = new Map<string, ResolvedOf<T>>()
 
   for (const [key, entry] of picked) {
     resolved.set(key, { ...entry.item, provenance: entry.provenance })

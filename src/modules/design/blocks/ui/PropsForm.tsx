@@ -2,6 +2,8 @@
 
 import { emptyProps } from '../props'
 
+import { SectionPicker } from '../../sections/ui/SectionPicker'
+
 import { MediaPicker } from './MediaPicker'
 
 import type { PropField } from '../props'
@@ -145,6 +147,14 @@ function Control(props: {
        * повесить, не существует.
        */
       return <MediaPicker id={props.id} value={value} onChange={props.onChange} />
+
+    case 'section':
+      /**
+       * Выбор переиспользуемой секции ([[DEBT-011]], шестой пункт). Ключ,
+       * введённый руками, не знает, существует ли секция, чья она и на каком
+       * она языке, — и выясняется это при сборке релиза.
+       */
+      return <SectionPicker id={props.id} value={value} onChange={props.onChange} />
 
     case 'items':
       return <ItemsControl {...props} />

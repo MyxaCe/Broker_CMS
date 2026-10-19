@@ -437,10 +437,10 @@ export const BLOCK_PROPS: Readonly<Record<string, readonly PropField[]>> = {
     {
       name: 'key',
       label: 'Ключ секции',
-      kind: 'text',
+      kind: 'section',
       required: true,
       max: 60,
-      help: 'Ключ переиспользуемой секции. Своя секция сайта перекрывает секцию бренда с тем же ключом.',
+      help: 'Выбор из секций, действующих в этой цепочке и на этом языке. Своя секция сайта перекрывает секцию бренда с тем же ключом.',
     },
   ],
   'raw-embed': [

@@ -259,6 +259,22 @@ export type {
   SectionRecord,
 } from './sections/resolve'
 export { Sections } from './sections/sections.collection'
+export {
+  chainTo,
+  describeSectionChoice,
+  SECTION_LIST_LIMIT,
+  sectionChoices,
+  sectionRowsOf,
+  sectionsUrl,
+} from './sections/ui/section-options'
+export type {
+  SectionChoice,
+  SectionChoices,
+  SectionOption,
+  SectionRow,
+  ShadowedSection,
+  TenantLink,
+} from './sections/ui/section-options'
 
 export {
   isNavLayout,
