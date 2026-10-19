@@ -18,6 +18,39 @@ import type { BootstrapResponse, GlobalAreaResponse, NavItemResponse } from '@/c
  * Функция чистая: всё берётся из снапшота релиза. Ни одного обращения к базе
  * здесь нет — иначе два ответа с одним `ETag` могли бы различаться.
  */
+/**
+ * Пункты меню из снапшота в форму ответа.
+ *
+ * Раньше здесь стояло приведение типа: снапшот и контракт совпадали поле в
+ * поле, и приведение работало ровно до первого расхождения. Расхождение
+ * наступило с появлением `jurisdictions` (Р-045): у релизов, собранных до
+ * него, поля в снапшоте нет, и приведение отдало бы ответ без обязательного
+ * поля — то есть `500` на каждом старом релизе, потому что схема такой ответ
+ * не пропускает.
+ *
+ * Поэтому пункты собираются явно, с обходом потомков. Пустой список
+ * ограничений у старого релиза — верное значение, а не умолчание на всякий
+ * случай: ограничение тогда и правда не действовало ни у кого.
+ */
+function navItemsOf(items: unknown): readonly NavItemResponse[] {
+  if (!Array.isArray(items)) {
+    return []
+  }
+
+  return items.map((item) => {
+    const node = item as Partial<NavItemResponse>
+
+    return {
+      label: String(node.label ?? ''),
+      url: node.url ?? null,
+      openInNewTab: node.openInNewTab === true,
+      layout: node.layout === 'mega' ? 'mega' : 'list',
+      jurisdictions: Array.isArray(node.jurisdictions) ? [...node.jurisdictions] : [],
+      children: navItemsOf(node.children),
+    }
+  })
+}
+
 export function buildBootstrapResponse(args: {
   readonly snapshot: ReleaseSnapshot
   readonly release: ReleaseFacts
@@ -35,7 +68,7 @@ export function buildBootstrapResponse(args: {
 
   for (const menu of snapshot.structure.navigation) {
     if (menu.locale === locale) {
-      navigation[menu.placement] = menu.items as readonly NavItemResponse[]
+      navigation[menu.placement] = navItemsOf(menu.items)
     }
   }
 

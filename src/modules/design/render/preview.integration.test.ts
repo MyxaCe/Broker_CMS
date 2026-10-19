@@ -129,6 +129,40 @@ beforeAll(async () => {
     } as never,
   })
 
+  /**
+   * Меню с ограниченным пунктом и ограниченным разделом. Раздел нужен
+   * отдельно: скрытый раздел обязан уйти вместе с подпунктами, а не оставить
+   * их висеть без заголовка.
+   */
+  await payload.create({
+    collection: 'navigations',
+    overrideAccess: true,
+    data: {
+      title: `Главное меню ${stamp}`,
+      placement: 'primary',
+      owner: site.id,
+      locale: 'en',
+      isActive: true,
+      items: [
+        { label: 'Везде', target: 'external', href: 'https://example.test/all' },
+        {
+          label: 'Только Британия',
+          target: 'external',
+          href: 'https://example.test/uk',
+          jurisdictions: ['uk-fca'],
+        },
+        {
+          label: 'Британский раздел',
+          target: 'none',
+          jurisdictions: ['uk-fca'],
+          children: [
+            { label: 'Внутри раздела', target: 'external', href: 'https://example.test/inside' },
+          ],
+        },
+      ],
+    } as never,
+  })
+
   await payload.create({
     collection: 'pages',
     overrideAccess: true,
@@ -233,5 +267,68 @@ describe('неизвестная юрисдикция', () => {
     await expect(
       loadPreview({ payload, siteSlug, path: '/', locale: null, jurisdiction: 'выдумка' }),
     ).rejects.toBeInstanceOf(PreviewError)
+  })
+})
+
+/**
+ * Меню в предпросмотре (Р-045, ADR-0037).
+ *
+ * До этого навигация уезжала в предпросмотр **как есть**: ограниченный пункт
+ * показывался редактору всегда. Правило видимости покрыто своими тестами и
+ * осталось бы зелёным, не позови его предпросмотр, — класс «написано и не
+ * вызывается» ловится только связкой.
+ */
+describe('пункты меню фильтруются тем же правилом, что блоки', () => {
+  it('в чужой юрисдикции ограниченный пункт скрыт, остальные на месте', async () => {
+    const result = await loadPreview({ payload, siteSlug, path: '/', locale: null })
+    const menu = result.navigation.find((item) => item.placement === 'primary')
+
+    expect(menu?.items.map((item) => item.label)).toEqual(['Везде'])
+  })
+
+  it('скрытый раздел уходит вместе с подпунктами', async () => {
+    const result = await loadPreview({ payload, siteSlug, path: '/', locale: null })
+    const menu = result.navigation.find((item) => item.placement === 'primary')
+    const labels = JSON.stringify(menu?.items)
+
+    expect(labels).not.toContain('Внутри раздела')
+  })
+
+  it('в выбранной юрисдикции меню приходит целиком', async () => {
+    const result = await loadPreview({
+      payload,
+      siteSlug,
+      path: '/',
+      locale: null,
+      jurisdiction: 'uk-fca',
+    })
+    const menu = result.navigation.find((item) => item.placement === 'primary')
+
+    expect(menu?.items.map((item) => item.label)).toEqual([
+      'Везде',
+      'Только Британия',
+      'Британский раздел',
+    ])
+  })
+
+  /**
+   * Скрытое считается одним числом с блоками: редактор видит «здесь что-то
+   * спрятано», а не пустое место без объяснения.
+   */
+  it('скрытые пункты считаются своим числом, а не прибавкой к блокам', async () => {
+    const own = await loadPreview({
+      payload,
+      siteSlug,
+      path: '/',
+      locale: null,
+      jurisdiction: 'uk-fca',
+    })
+    const foreign = await loadPreview({ payload, siteSlug, path: '/', locale: null })
+
+    expect(own.hiddenNavItems).toBe(0)
+    /** Ограниченный пункт и ограниченный раздел — два, подпункт отдельно не считается. */
+    expect(foreign.hiddenNavItems).toBe(2)
+    /** Число блоков от этого не изменилось: единицы разные. */
+    expect(foreign.hiddenByJurisdiction).toBe(own.hiddenByJurisdiction + 3)
   })
 })

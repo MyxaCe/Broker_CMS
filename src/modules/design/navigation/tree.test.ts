@@ -130,7 +130,14 @@ describe('разворачивание для выдачи', () => {
     const resolved = resolveNavTree([{ label: 'Счета', target: 'page', pageId: '11' }], paths)
 
     expect(resolved).toEqual([
-      { label: 'Счета', url: '/accounts', openInNewTab: false, layout: 'list', children: [] },
+      {
+        label: 'Счета',
+        url: '/accounts',
+        openInNewTab: false,
+        layout: 'list',
+        jurisdictions: [],
+        children: [],
+      },
     ])
   })
 
@@ -157,8 +164,16 @@ describe('разворачивание для выдачи', () => {
         url: null,
         openInNewTab: false,
         layout: 'list',
+        jurisdictions: [],
         children: [
-          { label: 'Счета', url: '/accounts', openInNewTab: false, layout: 'list', children: [] },
+          {
+            label: 'Счета',
+            url: '/accounts',
+            openInNewTab: false,
+            layout: 'list',
+            jurisdictions: [],
+            children: [],
+          },
         ],
       },
     ])
@@ -237,5 +252,88 @@ describe('раскладка раскрытия', () => {
     )
 
     expect(resolved[0]?.layout).toBe('list')
+  })
+})
+
+/**
+ * Ограничение по юрисдикции у пункта меню (Р-045, ADR-0037).
+ *
+ * Год поле было объявлено в типе и не использовалось нигде (DEBT-020):
+ * редактор, проставивший ограничение, получал беззвучное «не действует».
+ */
+describe('ограничение по юрисдикции доезжает до выдачи', () => {
+  const paths = new Map([['11', '/accounts']])
+
+  it('без ограничения — пустой список, а не отсутствие поля', () => {
+    const resolved = resolveNavTree([{ label: 'Счета', target: 'page', pageId: '11' }], paths)
+
+    expect(resolved[0]?.jurisdictions).toEqual([])
+  })
+
+  it('ограничение переживает разрешение ссылки в адрес', () => {
+    const resolved = resolveNavTree(
+      [{ label: 'Счета', target: 'page', pageId: '11', jurisdictions: ['uk-fca'] }],
+      paths,
+    )
+
+    expect(resolved[0]).toMatchObject({ url: '/accounts', jurisdictions: ['uk-fca'] })
+  })
+
+  /**
+   * Порядок и повторы не должны влиять на отпечаток содержимого: иначе `ETag`
+   * меняется там, где данные не менялись.
+   */
+  it('коды отсортированы и без повторов', () => {
+    const resolved = resolveNavTree(
+      [
+        {
+          label: 'Счета',
+          target: 'page',
+          pageId: '11',
+          jurisdictions: ['uk-fca', 'eu-mifid', 'uk-fca'],
+        },
+      ],
+      paths,
+    )
+
+    expect(resolved[0]?.jurisdictions).toEqual(['eu-mifid', 'uk-fca'])
+  })
+
+  it('ограничение у вложенного пункта не теряется', () => {
+    const resolved = resolveNavTree(
+      [
+        {
+          label: 'Торговля',
+          target: 'none',
+          children: [{ label: 'Счета', target: 'page', pageId: '11', jurisdictions: ['eu-mifid'] }],
+        },
+      ],
+      paths,
+    )
+
+    expect(resolved[0]?.children[0]?.jurisdictions).toEqual(['eu-mifid'])
+  })
+
+  /**
+   * Опечатка в коде не сужает показ, а отменяет его: ни одна юрисдикция
+   * посетителя с несуществующим кодом не совпадёт, и пункт исчезает **везде**
+   * и молча.
+   */
+  it('неизвестный код юрисдикции — блокирующее расхождение, а не тихое исчезновение', () => {
+    const issues = validateNavTree(
+      [{ label: 'Счета', target: 'page', pageId: '11', jurisdictions: ['uk-fcaa'] }],
+      { knownPages: new Set(['11']) },
+    )
+
+    expect(issues.map((issue) => issue.code)).toEqual(['unknown-jurisdiction'])
+  })
+
+  it('известный код расхождением не считается', () => {
+    const issues = validateNavTree(
+      [{ label: 'Счета', target: 'page', pageId: '11', jurisdictions: ['uk-fca'] }],
+      { knownPages: new Set(['11']) },
+    )
+
+    expect(issues).toEqual([])
   })
 })

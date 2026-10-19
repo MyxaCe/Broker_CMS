@@ -1,3 +1,5 @@
+import { isKnownJurisdiction } from '../compliance/jurisdictions'
+import { readJurisdictions } from '../compliance/visibility'
 import { normalizePath } from '../pages/path'
 
 /**
@@ -49,6 +51,7 @@ export interface NavIssue {
     | 'insecure-href'
     | 'too-deep'
     | 'empty-group'
+    | 'unknown-jurisdiction'
     | 'cycle'
   readonly path: string
   readonly message: string
@@ -197,6 +200,25 @@ function checkNode(
     }
   }
 
+  /**
+   * Коды юрисдикций — из закрытого перечня (ADR-0037).
+   *
+   * Опечатка в коде не делает пункт «видимым в чуть меньшем числе мест»: она
+   * прячет его **везде**, потому что ни одна юрисдикция посетителя с
+   * несуществующим кодом не совпадёт. Молчаливое исчезновение пункта меню
+   * обнаруживается по жалобе, а не по ошибке, — поэтому проверка блокирующая,
+   * как и прочие проверки формы дерева.
+   */
+  for (const code of readJurisdictions(item.jurisdictions)) {
+    if (!isKnownJurisdiction(code)) {
+      issues.push({
+        code: 'unknown-jurisdiction',
+        path,
+        message: `Юрисдикция «${code}» неизвестна: пункт не показался бы ни в одной — ограничение совпадает по точному коду.`,
+      })
+    }
+  }
+
   const children = item.children
 
   if (target === 'none' && (!Array.isArray(children) || children.length === 0)) {
@@ -251,6 +273,20 @@ export interface ResolvedNavItem {
    * бы пустую.
    */
   readonly layout: NavLayout
+  /**
+   * В каких юрисдикциях пункт показывается (Р-045, ADR-0037).
+   *
+   * Пустой список — «во всех»; умолчание названо и совпадает с умолчанием
+   * областей и блоков. Отсортирован и без повторов: порядок не должен влиять
+   * на отпечаток содержимого, иначе `ETag` меняется при неизменных данных.
+   *
+   * **Здесь не фильтруют.** Юрисдикция относится к посетителю, а не к сайту:
+   * отфильтрованное на сборке дерево пришлось бы кешировать по юрисдикциям,
+   * то есть размножить `bootstrap`. Выдача отдаёт ограничение как факт,
+   * решение принимает общий модуль `compliance/visibility.ts` — один на
+   * витрину, кабинет, терминал и наш предпросмотр.
+   */
+  readonly jurisdictions: readonly string[]
   readonly children: readonly ResolvedNavItem[]
 }
 
@@ -300,6 +336,12 @@ export function resolveNavTree(
       url,
       openInNewTab: item.openInNewTab === true,
       layout: children.length > 0 && isNavLayout(item.layout) ? item.layout : 'list',
+      /**
+       * Ограничение читается **той же** функцией, что и при вычислении
+       * видимости: два читателя одного поля разошлись бы молча, а
+       * ограничение, прочитанное как пустое, означает «видно всем».
+       */
+      jurisdictions: [...new Set(readJurisdictions(item.jurisdictions))].sort(),
       children,
     })
   }

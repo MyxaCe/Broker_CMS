@@ -1,7 +1,11 @@
 import { loadTenantChainIds, resolveTenantById } from '@/platform'
 
 import { JURISDICTIONS } from '../compliance/jurisdictions'
-import { filterByJurisdiction, visibilityIn } from '../compliance/visibility'
+import {
+  filterByJurisdiction,
+  filterNavByJurisdiction,
+  visibilityIn,
+} from '../compliance/visibility'
 import { expandSections, resolveSections } from '../sections/resolve'
 import { loadStructure } from '../structure/load'
 import { loadTokenSet } from '../tokens/load'
@@ -39,6 +43,14 @@ export interface PreviewResult {
   readonly pageHiddenReason: string | null
   /** Сколько блоков скрыла юрисдикция — на странице и в областях. */
   readonly hiddenByJurisdiction: number
+  /**
+   * Сколько пунктов меню скрыла юрисдикция.
+   *
+   * Отдельным числом, а не прибавкой к блокам: счётчик, складывающий разные
+   * единицы, начинает противоречить сам себе — «скрыто пять» перестаёт
+   * означать что-либо проверяемое, и чинятся эти два случая по-разному.
+   */
+  readonly hiddenNavItems: number
   readonly navigation: readonly SnapshotNavigation[]
   readonly areas: readonly SnapshotGlobalArea[]
   readonly tokens: Readonly<Record<string, string>>
@@ -194,6 +206,25 @@ export async function loadPreview(args: {
       return [{ ...area, blocks: filtered.blocks }]
     })
 
+  /**
+   * Меню фильтруется **тем же** правилом, что области и блоки (Р-045).
+   *
+   * До этого навигация уезжала в предпросмотр как есть: ограниченный по
+   * юрисдикции пункт показывался редактору всегда, а посетителю — нет.
+   * Предпросмотр, у которого своё правило, показывает не то, что увидит
+   * посетитель, — то есть хуже отсутствующего.
+   */
+  let hiddenNavItems = 0
+
+  const menus = structure.navigation
+    .filter((menu) => menu.locale === locale)
+    .map((menu) => {
+      const filtered = filterNavByJurisdiction(menu.items, jurisdiction)
+      hiddenNavItems += filtered.hidden
+
+      return { ...menu, items: filtered.items }
+    })
+
   return {
     site: {
       id: siteId,
@@ -206,8 +237,9 @@ export async function loadPreview(args: {
     availableJurisdictions,
     pageHiddenReason: pageVisibility === null ? null : pageVisibility.reason,
     hiddenByJurisdiction,
+    hiddenNavItems,
     page: page === null ? null : { ...page, blocks: pageBlocks.blocks },
-    navigation: structure.navigation.filter((menu) => menu.locale === locale),
+    navigation: menus,
     areas,
     tokens: resolved.byTheme[theme] ?? {},
     paths: docs
