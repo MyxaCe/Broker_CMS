@@ -3,6 +3,8 @@
 import { useField, useFormFields } from '@payloadcms/ui'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 
+import { JURISDICTIONS } from '../../compliance/jurisdictions'
+import { readJurisdictions } from '../../compliance/visibility'
 import {
   NAV_LAYOUT_LABELS,
   NAV_LAYOUTS,
@@ -353,6 +355,8 @@ function NavItemCard(props: {
   const children = Array.isArray(props.item.children) ? props.item.children : []
   const target = props.item.target
   const choice = describePageChoice(props.item.pageId, props.sourceReady ? props.options : null)
+  /** Читается той же функцией, что и движком: два читателя разошлись бы молча. */
+  const restrictions = readJurisdictions(props.item.jurisdictions)
 
   return (
     <li className="nav-tree__item">
@@ -531,6 +535,48 @@ function NavItemCard(props: {
           </select>
         </div>
       ) : null}
+
+      {/*
+       * Ограничение по юрисдикции (Р-045, ADR-0037).
+       *
+       * Поле появилось в интерфейсе **вместе** с тем, как движок начал его
+       * отдавать, и ни минутой раньше: год оно было объявлено в типе и не
+       * использовалось нигде (DEBT-020). Выводить в форму то, что движок
+       * игнорирует, — значит обещать поведение, которого нет.
+       *
+       * Перечень закрытый: свободный ввод дал бы опечатку, а опечатка в коде
+       * юрисдикции прячет пункт **везде**, молча.
+       */}
+      <div className="nav-tree__row nav-tree__row--second">
+        <span className="nav-tree__label">Юрисдикции</span>
+        {JURISDICTIONS.map((jurisdiction) => {
+          const chosen = restrictions.includes(jurisdiction.code)
+
+          return (
+            <label className="nav-tree__checkbox" key={jurisdiction.code}>
+              <input
+                type="checkbox"
+                checked={chosen}
+                onChange={() => {
+                  props.onField(
+                    props.path,
+                    'jurisdictions',
+                    chosen
+                      ? restrictions.filter((code) => code !== jurisdiction.code)
+                      : [...restrictions, jurisdiction.code].sort(),
+                  )
+                }}
+              />
+              {jurisdiction.title}
+            </label>
+          )
+        })}
+      </div>
+      <p className="nav-tree__note">
+        {restrictions.length === 0
+          ? 'Ничего не отмечено — пункт показывается во всех юрисдикциях.'
+          : 'Отмечены только эти юрисдикции. Посетителю с незаданной юрисдикцией пункт не показывается: неизвестность — не разрешение.'}
+      </p>
 
       {own.map((issue) => (
         <p key={issue.message} className="nav-tree__issue">

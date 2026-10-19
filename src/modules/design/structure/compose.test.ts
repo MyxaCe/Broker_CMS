@@ -61,7 +61,14 @@ describe('навигация в снапшоте', () => {
         locale: 'ru',
         placement: 'primary',
         items: [
-          { label: 'Счета', url: '/accounts', openInNewTab: false, layout: 'list', children: [] },
+          {
+            label: 'Счета',
+            url: '/accounts',
+            openInNewTab: false,
+            layout: 'list',
+            jurisdictions: [],
+            children: [],
+          },
         ],
       },
     ])

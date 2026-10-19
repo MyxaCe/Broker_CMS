@@ -2,13 +2,13 @@
 title: DEBT-018 — Компонент выбора инструментов не покрыт автотестом
 aliases: [DEBT-018]
 type: debt
-status: closed
+status: paid
 priority: p2
 created: 2026-10-05
 updated: 2026-10-06
 pay_by: M4
 related: ["[[ADR-0030]]", "[[ADR-0034]]", "[[DEBT-011]]"]
-tags: [debt, status/closed, p2, stage/M3, area/trading]
+tags: [debt, status/paid, p2, stage/M3, area/trading]
 ---
 
 # DEBT-018 — Компонент выбора инструментов не покрыт автотестом

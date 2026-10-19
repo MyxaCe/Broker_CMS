@@ -233,3 +233,83 @@ describe('дерево из редактора доезжает до выдач�
     )
   })
 })
+
+/**
+ * Ограничение по юрисдикции у пункта меню (Р-045, ADR-0037, [[DEBT-020]]).
+ *
+ * Поле было объявлено в типе и не использовалось **нигде**: ни проверкой
+ * дерева, ни разрешением, ни выдачей. Редактор, проставивший ограничение,
+ * получал беззвучное «не действует» — в регулируемой области это то же, что
+ * показать продукт там, где он запрещён.
+ *
+ * Проверяется вся цепочка: операция редактора → запись в базе → сборка
+ * релиза → ответ `bootstrap`.
+ */
+describe('ограничение по юрисдикции доезжает от редактора до bootstrap', () => {
+  async function saveMenu(items: readonly EditorNavItem[]) {
+    const found = await payload.find({
+      collection: 'navigations',
+      where: { owner: { equals: siteId }, placement: { equals: 'primary' } },
+      pagination: false,
+      depth: 0,
+      overrideAccess: true,
+    })
+
+    const menu = found.docs[0]
+    expect(menu).toBeDefined()
+
+    await payload.update({
+      collection: 'navigations',
+      id: (menu as { id: string | number }).id,
+      overrideAccess: true,
+      data: { items } as never,
+    })
+  }
+
+  it('отмеченная в редакторе юрисдикция приезжает в ответ рядом с layout', async () => {
+    /** Ограничение ставится **операцией редактора**, а не правкой объекта. */
+    await saveMenu(setNavField(treeFromEditorActions(), [1], 'jurisdictions', ['uk-fca']))
+
+    const built = await buildRelease({ payload, siteId })
+
+    expect(built.report.blocking).toEqual([])
+
+    const response = buildBootstrapResponse({
+      snapshot: built.snapshot,
+      release: { number: built.number, builtAt: new Date().toISOString() },
+    })
+
+    const items = response.navigation.primary ?? []
+
+    expect(items[1]?.jurisdictions).toEqual(['uk-fca'])
+    /** Пункт **не отфильтрован**: решение принимает потребитель (Р-045). */
+    expect(items.map((item) => item.label)).toEqual(['Главная', 'Рынки'])
+    expect(items[0]?.jurisdictions).toEqual([])
+  })
+
+  /**
+   * Опечатка в коде не сужает показ, а отменяет его: пункт исчезает везде и
+   * молча. Барьер стоит **в хуке коллекции**, а не в интерфейсе: запись идёт
+   * мимо формы, через локальное API, и всё равно отклоняется.
+   */
+  it('неизвестный код юрисдикции отклоняется сервером, а не прячет пункт молча', async () => {
+    await expect(
+      saveMenu(setNavField(treeFromEditorActions(), [1], 'jurisdictions', ['uk-fcaa'])),
+    ).rejects.toThrow(/uk-fcaa/)
+
+    /**
+     * И в базе осталось прежнее значение: отказ обязан быть отказом, а не
+     * частичной записью, после которой «сохранилось почти всё».
+     */
+    const found = await payload.find({
+      collection: 'navigations',
+      where: { owner: { equals: siteId }, placement: { equals: 'primary' } },
+      pagination: false,
+      depth: 0,
+      overrideAccess: true,
+    })
+
+    expect(JSON.stringify(found.docs[0])).not.toContain('uk-fcaa')
+    expect(JSON.stringify(found.docs[0])).toContain('uk-fca')
+  })
+})

@@ -20,7 +20,20 @@ export interface VisibilityVerdict {
   readonly reason: string | null
 }
 
-function restrictionsOf(value: unknown): string[] {
+/**
+ * Приводит поле ограничений к списку кодов.
+ *
+ * Экспортируется намеренно. Ограничения приходят в двух формах: повторяемой
+ * группой Payload (`[{ code }]` у областей и страниц) и плоским списком строк
+ * (поле JSON у дерева меню). Если бы читающих было двое, они разошлись бы в
+ * мелочах — в пробелах, в пустых строках, в чужой форме записи, — и
+ * разошлись бы молча: ограничение, прочитанное как пустое, означает «видно
+ * всем».
+ *
+ * Поэтому читает одна функция, и **она же** используется при сборке снапшота,
+ * а не только при вычислении видимости.
+ */
+export function readJurisdictions(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return []
   }
@@ -45,7 +58,7 @@ export function visibilityIn(
   restrictions: unknown,
   jurisdiction: string | null,
 ): VisibilityVerdict {
-  const list = restrictionsOf(restrictions)
+  const list = readJurisdictions(restrictions)
 
   /**
    * Пустой список — «во всех». Умолчание названо и осознанно: запрет на
@@ -150,4 +163,65 @@ export function filterByJurisdiction(blocks: unknown, jurisdiction: string | nul
   }
 
   return { blocks: kept, hidden }
+}
+
+/** Пункт меню и его потомки. Форма повторяет `NavItemResponse` в контракте. */
+export interface NavVisibilityNode {
+  readonly jurisdictions?: unknown
+  readonly children?: unknown
+}
+
+export interface NavFilterResult<TItem> {
+  readonly items: TItem[]
+  /** Сколько пунктов скрыто вместе с подпунктами. */
+  readonly hidden: number
+}
+
+/**
+ * Прячет из меню то, что в этой юрисдикции не показывается (Р-045).
+ *
+ * Отдельная функция от `filterByJurisdiction`, а не обобщение: у блока дети
+ * лежат в именованных слотах, у пункта меню — прямо в `children`. Общий код
+ * был бы обобщением двух разных форм ради экономии десяти строк — и на этом
+ * обобщении легко потерять одну из форм.
+ *
+ * Скрытый пункт уходит **вместе с подпунктами**: раздела, которого нет, не
+ * бывает с видимыми подпунктами. Число скрытого возвращается отдельно —
+ * пустое меню и меню, из которого всё убрала юрисдикция, выглядят одинаково,
+ * а означают разное.
+ *
+ * Эта функция — то самое «одно правило на всех» из Р-045: её зовут и витрина,
+ * и кабинет, и терминал, и наш собственный предпросмотр. Предпросмотр со
+ * своим правилом показывал бы не то, что увидит посетитель, то есть был бы
+ * хуже отсутствующего.
+ */
+export function filterNavByJurisdiction<TItem extends NavVisibilityNode>(
+  items: readonly TItem[],
+  jurisdiction: string | null,
+): NavFilterResult<TItem> {
+  /** Поле приходит из JSON: «не список» — это пустое меню, а не исключение. */
+  if (!Array.isArray(items)) {
+    return { items: [], hidden: 0 }
+  }
+
+  const kept: TItem[] = []
+  let hidden = 0
+
+  for (const item of items) {
+    if (item === null || typeof item !== 'object') {
+      continue
+    }
+
+    if (!visibilityIn(item.jurisdictions, jurisdiction).visible) {
+      hidden += 1
+      continue
+    }
+
+    const below = filterNavByJurisdiction((item.children ?? []) as readonly TItem[], jurisdiction)
+    hidden += below.hidden
+
+    kept.push({ ...item, children: below.items })
+  }
+
+  return { items: kept, hidden }
 }

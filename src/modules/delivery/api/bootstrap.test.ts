@@ -39,14 +39,30 @@ const SNAPSHOT: ReleaseSnapshot = {
         locale: 'de',
         placement: 'primary',
         items: [
-          { label: 'Konten', url: '/konten', openInNewTab: false, layout: 'list', children: [] },
+          {
+            label: 'Konten',
+            url: '/konten',
+            openInNewTab: false,
+            layout: 'list',
+            jurisdictions: [],
+            children: [],
+          },
           {
             label: 'Handel',
             url: null,
             openInNewTab: false,
             layout: 'mega',
+            /** Ограничение по юрисдикции едет фактом, фильтрации в выдаче нет (Р-045). */
+            jurisdictions: ['uk-fca'],
             children: [
-              { label: 'CFD', url: '/cfd', openInNewTab: false, layout: 'list', children: [] },
+              {
+                label: 'CFD',
+                url: '/cfd',
+                openInNewTab: false,
+                layout: 'list',
+                jurisdictions: [],
+                children: [],
+              },
             ],
           },
         ],
@@ -60,6 +76,7 @@ const SNAPSHOT: ReleaseSnapshot = {
             url: '/accounts',
             openInNewTab: false,
             layout: 'list',
+            jurisdictions: [],
             children: [],
           },
         ],
@@ -157,7 +174,14 @@ describe('сборка стартового набора', () => {
     })
 
     expect(body.navigation.primary).toEqual([
-      { label: 'Accounts', url: '/accounts', openInNewTab: false, layout: 'list', children: [] },
+      {
+        label: 'Accounts',
+        url: '/accounts',
+        openInNewTab: false,
+        layout: 'list',
+        jurisdictions: [],
+        children: [],
+      },
     ])
     expect(Object.keys(body.globalAreas)).toEqual(['footer'])
   })
@@ -166,7 +190,14 @@ describe('сборка стартового набора', () => {
     const body = buildBootstrapResponse({ snapshot: SNAPSHOT, release: RELEASE })
 
     expect(body.navigation.primary?.[1]?.children).toEqual([
-      { label: 'CFD', url: '/cfd', openInNewTab: false, layout: 'list', children: [] },
+      {
+        label: 'CFD',
+        url: '/cfd',
+        openInNewTab: false,
+        layout: 'list',
+        jurisdictions: [],
+        children: [],
+      },
     ])
   })
 
@@ -237,5 +268,80 @@ describe('дверь наружу', () => {
     )
 
     expect(result.status).toBe(404)
+  })
+})
+
+/**
+ * Ограничение по юрисдикции у пункта меню (Р-045, ADR-0037).
+ *
+ * Выдача отдаёт факт и не фильтрует: юрисдикция относится к посетителю, а не
+ * к сайту, и отфильтрованное дерево пришлось бы кешировать по юрисдикциям,
+ * размножив `bootstrap`.
+ */
+describe('видимость пунктов меню по юрисдикции', () => {
+  it('ограничение приезжает рядом с layout, а не фильтрует дерево', () => {
+    const body = buildBootstrapResponse({ snapshot: SNAPSHOT, release: RELEASE })
+    const restricted = body.navigation.primary?.[1]
+
+    expect(restricted?.jurisdictions).toEqual(['uk-fca'])
+    /** Пункт на месте: решение «показывать ли» принимает потребитель. */
+    expect(restricted?.label).toBe('Handel')
+  })
+
+  it('пункт без ограничения отдаёт пустой список, а не отсутствие поля', () => {
+    const body = buildBootstrapResponse({ snapshot: SNAPSHOT, release: RELEASE })
+
+    expect(body.navigation.primary?.[0]?.jurisdictions).toEqual([])
+  })
+
+  /**
+   * Снапшоты релизов неизменяемы, и собранные до появления поля его не имеют.
+   * Приведение типа на этом месте отдало бы ответ без обязательного поля, то
+   * есть `500` на каждом старом релизе — схема такой ответ не пропускает.
+   */
+  it('релиз, собранный до появления поля, отдаётся, а не падает', () => {
+    const legacy = {
+      ...SNAPSHOT,
+      structure: {
+        ...SNAPSHOT.structure,
+        navigation: [
+          {
+            locale: 'de',
+            placement: 'primary',
+            items: [
+              {
+                label: 'Konten',
+                url: '/konten',
+                openInNewTab: false,
+                layout: 'list',
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+    } as unknown as ReleaseSnapshot
+
+    const body = buildBootstrapResponse({ snapshot: legacy, release: RELEASE })
+
+    expect(checkAgainstSchema(SCHEMA_IDS.bootstrap, body).valid).toBe(true)
+    expect(body.navigation.primary?.[0]?.jurisdictions).toEqual([])
+  })
+
+  /**
+   * Обязательность проверяется **у схемы**: сборка кладёт поле всегда,
+   * поэтому «забыли объявить обязательным» не покрасило бы ничего.
+   */
+  it('схема отвергает пункт меню без поля ограничений', () => {
+    const body = buildBootstrapResponse({ snapshot: SNAPSHOT, release: RELEASE })
+    const [first, ...rest] = body.navigation.primary!
+    const { jurisdictions: _dropped, ...maimedItem } = first!
+
+    const maimed = {
+      ...body,
+      navigation: { ...body.navigation, primary: [maimedItem, ...rest] },
+    }
+
+    expect(checkAgainstSchema(SCHEMA_IDS.bootstrap, maimed).valid).toBe(false)
   })
 })

@@ -99,6 +99,18 @@ export default async function PreviewPage({
         </p>
       )}
 
+      {/*
+       * Отдельной строкой, а не прибавкой к блокам: пункты меню и блоки —
+       * разные единицы, и чинятся они в разных местах. Склеенный счётчик
+       * отправил бы редактора искать пропавший блок там, где пропал пункт.
+       */}
+      {result.hiddenNavItems === 0 ? null : (
+        <p className="pv-hidden pv-hidden--soft">
+          Юрисдикция «{result.jurisdiction ?? 'не задана'}» скрыла пунктов меню:{' '}
+          {result.hiddenNavItems}.
+        </p>
+      )}
+
       <PageView
         page={result.page}
         navigation={result.navigation}
