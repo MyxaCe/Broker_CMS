@@ -129,6 +129,7 @@ export type {
   FilterResult,
   NavFilterResult,
   NavVisibilityNode,
+  VisibilityReason,
   VisibilityVerdict,
 } from './compliance/visibility'
 
