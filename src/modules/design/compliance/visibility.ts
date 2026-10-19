@@ -14,10 +14,31 @@
  * хуже отсутствующего.
  */
 
+/**
+ * Почему содержимое скрыто — **машинным кодом**, а не фразой (Р-061).
+ *
+ * Два разных отказа, и до 19.10 они были неотличимы снаружи: оба давали
+ * `visible: false`, а различались только текстом по-русски. Команда
+ * `terminal`, прогоняя эталонную таблицу, измерила это прямо: мутация
+ * «пустая строка — особая юрисдикция» не покрасила **ничего**, потому что
+ * таблица смотрела одно булево.
+ *
+ * Разделение на код и подпись — ещё и наше общее правило: машинный признак
+ * не должен проходить через перевод. Признак, по которому проверка отличает
+ * состояния, и строка, которую читает человек, — два разных поля.
+ */
+export type VisibilityReason =
+  /** Ограничение есть, а юрисдикция посетителя неизвестна. Чинится знанием. */
+  | 'jurisdiction-unknown'
+  /** Юрисдикция известна и в списке её нет. Чинится составом списка. */
+  | 'jurisdiction-not-listed'
+
 export interface VisibilityVerdict {
   readonly visible: boolean
-  /** Почему скрыто. `null` — видно. */
-  readonly reason: string | null
+  /** Машинный код отказа. `null` — видно. */
+  readonly reason: VisibilityReason | null
+  /** Подпись для человека. `null` — видно. Через перевод ходит только она. */
+  readonly explanation: string | null
 }
 
 /**
@@ -54,6 +75,9 @@ export function readJurisdictions(value: unknown): string[] {
   })
 }
 
+/** Положительный вердикт один на все пути: три копии разошлись бы в полях. */
+const VISIBLE: VisibilityVerdict = { visible: true, reason: null, explanation: null }
+
 export function visibilityIn(
   restrictions: unknown,
   jurisdiction: string | null,
@@ -67,7 +91,7 @@ export function visibilityIn(
    * молча, и заметить это было бы некому.
    */
   if (list.length === 0) {
-    return { visible: true, reason: null }
+    return VISIBLE
   }
 
   /**
@@ -80,30 +104,32 @@ export function visibilityIn(
   if (jurisdiction === null || jurisdiction === '') {
     return {
       visible: false,
-      reason: `Ограничено юрисдикциями (${list.join(', ')}), а юрисдикция не задана: показывать нельзя — неизвестность не разрешение.`,
+      reason: 'jurisdiction-unknown',
+      explanation: `Ограничено юрисдикциями (${list.join(', ')}), а юрисдикция не задана: показывать нельзя — неизвестность не разрешение.`,
     }
   }
 
   if (list.includes(jurisdiction)) {
-    return { visible: true, reason: null }
+    return VISIBLE
   }
 
   return {
     visible: false,
-    reason: `Ограничено юрисдикциями (${list.join(', ')}) — в «${jurisdiction}» не показывается.`,
+    reason: 'jurisdiction-not-listed',
+    explanation: `Ограничено юрисдикциями (${list.join(', ')}) — в «${jurisdiction}» не показывается.`,
   }
 }
 
 /** Ограничения блока лежат в `visibility.jurisdictions`, а не в корне узла. */
 export function blockVisibilityIn(node: unknown, jurisdiction: string | null): VisibilityVerdict {
   if (node === null || typeof node !== 'object') {
-    return { visible: true, reason: null }
+    return VISIBLE
   }
 
   const visibility = (node as { visibility?: unknown }).visibility
 
   if (visibility === null || typeof visibility !== 'object') {
-    return { visible: true, reason: null }
+    return VISIBLE
   }
 
   return visibilityIn((visibility as { jurisdictions?: unknown }).jurisdictions, jurisdiction)

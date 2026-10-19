@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import cases from '@/contracts/visibility-cases.v1.json'
+import cases from '@/contracts/visibility-cases.v2.json'
+import supersededV1 from '@/contracts/visibility-cases.v1.json'
 
 import {
   blockVisibilityIn,
@@ -44,8 +45,9 @@ describe('ограничение действует', () => {
     const verdict = visibilityIn(['uk-fca'], 'eu-mifid')
 
     expect(verdict.visible).toBe(false)
-    expect(verdict.reason).toContain('uk-fca')
-    expect(verdict.reason).toContain('eu-mifid')
+    expect(verdict.reason).toBe('jurisdiction-not-listed')
+    expect(verdict.explanation).toContain('uk-fca')
+    expect(verdict.explanation).toContain('eu-mifid')
   })
 
   it('ограничение есть, юрисдикция неизвестна — не видно', () => {
@@ -56,7 +58,8 @@ describe('ограничение действует', () => {
     const verdict = visibilityIn(['uk-fca'], null)
 
     expect(verdict.visible).toBe(false)
-    expect(verdict.reason).toContain('неизвестность не разрешение')
+    expect(verdict.reason).toBe('jurisdiction-unknown')
+    expect(verdict.explanation).toContain('неизвестность не разрешение')
   })
 
   it('пустая строка юрисдикции — то же, что отсутствие', () => {
@@ -281,7 +284,7 @@ describe('чтение поля ограничений', () => {
 })
 
 /**
- * Эталонные случаи правила (Р-045).
+ * Эталонные случаи правила, версия 2 (Р-061).
  *
  * Правило обязано быть одним на всех потребителей, но взять его кодом может
  * не каждый: терминал написан на Rust. Поэтому рядом с контрактом лежит
@@ -291,13 +294,35 @@ describe('чтение поля ограничений', () => {
  *
  * Здесь таблицу прогоняет **источник**. Таблица, которой не удовлетворяет сам
  * источник правила, не годится в эталон никому.
+ *
+ * **Почему версия вторая.** Версия 1 прошла у всех трёх реализаций с первого
+ * прогона, и расхождений с правилом не нашлось — дыры были в самих случаях,
+ * и нашла их команда `terminal` мутационным прогоном. Случай на форму
+ * `{code}` был разрешающим, а разрешающий ответ совпадает с умолчанием:
+ * мутация «форму не читаем вовсе» его не красила. Два разных отказа давали
+ * одинаковое булево. Случаи на дерево сверяли только верхний уровень.
+ * Добавление случаев несовместимо — поэтому версия новая, а не правка под
+ * тем же именем.
  */
-describe('эталонные случаи видимости', () => {
+describe('эталонные случаи видимости · v2', () => {
   it.each(cases.items.map((item) => [item.name, item] as const))('%s', (_name, item) => {
-    expect(visibilityIn(item.restrictions, item.jurisdiction)).toEqual({
-      visible: item.visible,
-      reason: item.visible ? null : expect.any(String),
-    })
+    const verdict = visibilityIn(item.restrictions, item.jurisdiction)
+
+    expect(verdict.visible).toBe(item.visible)
+
+    /**
+     * Сверяется **машинный код**, а не только булево. На булевом «юрисдикция
+     * неизвестна» и «юрисдикции нет в списке» неотличимы, и мутация «пустая
+     * строка — особая юрисдикция» не красила ничего.
+     */
+    expect(verdict.reason).toBe(item.reason)
+
+    /**
+     * Подпись для человека обязана быть там же, где отказ, и отсутствовать
+     * там, где его нет. Её текст таблицей не закрепляется намеренно: она
+     * ходит через перевод, а машинный признак — нет.
+     */
+    expect(typeof verdict.explanation === 'string').toBe(!item.visible)
   })
 
   interface CaseNode {
@@ -306,13 +331,27 @@ describe('эталонные случаи видимости', () => {
     readonly children: readonly CaseNode[]
   }
 
+  interface ExpectedNode {
+    readonly label: string
+    readonly children: readonly ExpectedNode[]
+  }
+
+  /** Приводит отфильтрованное дерево к форме ожидания: метки и вложенность. */
+  const shape = (items: readonly CaseNode[]): ExpectedNode[] =>
+    items.map((item) => ({ label: item.label, children: shape(item.children ?? []) }))
+
   it.each(cases.trees.map((tree) => [tree.name, tree] as const))('дерево: %s', (_name, example) => {
     const result = filterNavByJurisdiction(
       example.tree as readonly CaseNode[],
       example.jurisdiction,
     )
 
-    expect(result.items.map((item) => item.label)).toEqual(example.visibleLabels)
+    /**
+     * Сверяется дерево целиком, а не метки верхнего уровня. Измерено: на
+     * метках реализация, которая правильно считает скрытое и возвращает
+     * потомков нефильтрованными, проходила таблицу целиком.
+     */
+    expect(shape(result.items)).toEqual(example.visibleTree)
     expect(result.hidden).toBe(example.hidden)
   })
 
@@ -322,7 +361,52 @@ describe('эталонные случаи видимости', () => {
    * случайно опустошить файл.
    */
   it('таблица не пуста и охват объявлен числом', () => {
-    expect(cases.items.length).toBeGreaterThanOrEqual(14)
-    expect(cases.trees.length).toBeGreaterThanOrEqual(3)
+    expect(cases.items.length).toBeGreaterThanOrEqual(19)
+    expect(cases.trees.length).toBeGreaterThanOrEqual(6)
+  })
+
+  /**
+   * Охват объявлен не только числом, но и **составом** — и состав
+   * проверяется прогоном, а не счётом.
+   *
+   * Урок, ради которого заведена v2: случай, который должен доказывать, что
+   * реализация читает форму `{code}`, обязан давать ответ, отличный от
+   * ответа того, кто эту форму игнорирует. Иначе он проходит у
+   * непрочитавшего — именно это `terminal` и измерил на v1.
+   *
+   * Считать для этого разрешающие и ограничивающие случаи **нельзя**:
+   * соотношение чисел меряется заметно проще, чем утверждение, которое оно
+   * подменяет, — а значит почти наверняка его не подменяет. Поэтому здесь
+   * воспроизводится сама непрочитавшая реализация: из ограничений
+   * выбрасывается форма `{code}`, и ответ обязан измениться.
+   */
+  it('случай, закрепляющий чтение формы `{code}`, не проходит у того, кто её игнорирует', () => {
+    const reading = cases.items.filter((item) => item.pins === 'reads-field')
+
+    expect(reading.length).toBeGreaterThanOrEqual(3)
+
+    for (const item of reading) {
+      const withoutObjectForm = Array.isArray(item.restrictions)
+        ? item.restrictions.filter((entry) => entry === null || typeof entry !== 'object')
+        : item.restrictions
+
+      const ignoring = visibilityIn(withoutObjectForm, item.jurisdiction)
+
+      expect(
+        { case: item.name, visible: ignoring.visible, reason: ignoring.reason },
+        `случай «${item.name}» проходит и у реализации, которая форму {code} не читает`,
+      ).not.toEqual({ case: item.name, visible: item.visible, reason: item.reason })
+    }
+  })
+
+  /**
+   * Версия 1 заменена и больше не прогоняется. Файл оставлен, а не удалён:
+   * удаление стёрло бы и факт, что она была, и дату замены. Но
+   * непрогоняемый контракт обязан сам сообщать, что он не действует, —
+   * иначе его скопирует следующий, и документ, который читают вместо
+   * документов, снова промолчит о своей неполноте.
+   */
+  it('версия 1 помечена заменённой и этим отличима от действующей', () => {
+    expect(supersededV1.status).toContain('заменено версией 2')
   })
 })

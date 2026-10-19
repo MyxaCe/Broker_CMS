@@ -12,6 +12,7 @@ import { loadTokenSet } from '../tokens/load'
 
 import { normalizePath } from '../pages/path'
 
+import type { VisibilityReason } from '../compliance/visibility'
 import type { PreviewPage } from './PageView'
 import type { SectionRecord } from '../sections/resolve'
 import type { SnapshotGlobalArea, SnapshotNavigation } from '../structure/types'
@@ -40,7 +41,14 @@ export interface PreviewResult {
   readonly jurisdiction: string | null
   readonly availableJurisdictions: readonly string[]
   /** Страница существует, но в этой юрисдикции не показывается. */
+  /** Подпись для человека: почему посетитель не увидит эту страницу. */
   readonly pageHiddenReason: string | null
+  /**
+   * Тот же отказ машинным кодом (Р-061). Отдаётся рядом с подписью, а не
+   * вместо неё: признак, по которому отличают состояния, не должен ходить
+   * через перевод, а читать подпись человеку всё равно нужно.
+   */
+  readonly pageHiddenCode: VisibilityReason | null
   /** Сколько блоков скрыла юрисдикция — на странице и в областях. */
   readonly hiddenByJurisdiction: number
   /**
@@ -235,7 +243,8 @@ export async function loadPreview(args: {
     availableLocales,
     jurisdiction,
     availableJurisdictions,
-    pageHiddenReason: pageVisibility === null ? null : pageVisibility.reason,
+    pageHiddenReason: pageVisibility === null ? null : pageVisibility.explanation,
+    pageHiddenCode: pageVisibility === null ? null : pageVisibility.reason,
     hiddenByJurisdiction,
     hiddenNavItems,
     page: page === null ? null : { ...page, blocks: pageBlocks.blocks },
