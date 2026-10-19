@@ -5,13 +5,15 @@ import { checkAgainstSchema, SCHEMA_IDS } from '@/contracts'
 import { EMPTY_ROUTING, EMPTY_STRUCTURE } from '@/modules/design'
 
 import { handleSiteConfig } from './handler'
+import { INSTRUMENTS_LIFETIME_SECONDS } from './instruments-expiry'
 import { readDeliveryRequest } from './http'
 import { buildSiteConfigResponse, DeliveryAssemblyError, resolveLocale } from './site-config'
 
-import { stubDeliverySource } from './source.fixture'
+import { STUB_NOW_MS, stubDeliverySource } from './source.fixture'
 
 import type { DeliveryRequest, DeliverySource, ResolvedRelease } from './handler'
 import type { ReleaseSnapshot } from '../releases/snapshot'
+import type { SiteConfigResponse } from '@/contracts'
 
 const SNAPSHOT: ReleaseSnapshot = {
   schemaVersion: 'snapshot-v1',
@@ -70,9 +72,34 @@ function request(overrides: Partial<DeliveryRequest> = {}): DeliveryRequest {
 
 describe('сборка ответа', () => {
   it('ответ соответствует схеме контракта', () => {
-    const body = buildSiteConfigResponse({ snapshot: SNAPSHOT, release: RELEASE })
+    const body = buildSiteConfigResponse({
+      snapshot: SNAPSHOT,
+      release: RELEASE,
+      nowMs: STUB_NOW_MS,
+    })
 
     expect(checkAgainstSchema(SCHEMA_IDS.siteConfig, body)).toEqual({ valid: true, issues: [] })
+  })
+
+  /**
+   * Обязательность срока проверяется у **схемы**, а не только у сборки.
+   *
+   * Сборка кладёт поле всегда, поэтому «забыли объявить обязательным» не
+   * покрасило бы ни одного теста: ответ-то правильный. Обязательность —
+   * обещание потребителю, и ломается оно не у нас, а у того, кто однажды
+   * соберёт ответ другим путём.
+   */
+  it('схема отвергает ответ без срока годности списка', () => {
+    const body = buildSiteConfigResponse({
+      snapshot: SNAPSHOT,
+      release: RELEASE,
+      nowMs: STUB_NOW_MS,
+    })
+
+    const { instrumentsExpiresAt: _dropped, ...settings } = body.settings
+    const maimed = { ...body, settings }
+
+    expect(checkAgainstSchema(SCHEMA_IDS.siteConfig, maimed).valid).toBe(false)
   })
 
   /**
@@ -80,20 +107,32 @@ describe('сборка ответа', () => {
    * региона, о существовании которых потребитель знать не должен.
    */
   it('провенанс наследования наружу не выходит', () => {
-    const body = buildSiteConfigResponse({ snapshot: SNAPSHOT, release: RELEASE })
+    const body = buildSiteConfigResponse({
+      snapshot: SNAPSHOT,
+      release: RELEASE,
+      nowMs: STUB_NOW_MS,
+    })
 
     expect(JSON.stringify(body)).not.toContain('source')
     expect(JSON.stringify(body)).not.toContain('"2"')
   })
 
   it('внутренний идентификатор сайта наружу не выходит', () => {
-    const body = buildSiteConfigResponse({ snapshot: SNAPSHOT, release: RELEASE })
+    const body = buildSiteConfigResponse({
+      snapshot: SNAPSHOT,
+      release: RELEASE,
+      nowMs: STUB_NOW_MS,
+    })
 
     expect(body.site).toEqual({ slug: 'apex-de' })
   })
 
   it('без запрошенной локали отдаётся локаль по умолчанию', () => {
-    const body = buildSiteConfigResponse({ snapshot: SNAPSHOT, release: RELEASE })
+    const body = buildSiteConfigResponse({
+      snapshot: SNAPSHOT,
+      release: RELEASE,
+      nowMs: STUB_NOW_MS,
+    })
 
     expect(body.resolution.locale).toBe('de')
   })
@@ -111,6 +150,7 @@ describe('сборка ответа', () => {
       snapshot: SNAPSHOT,
       release: RELEASE,
       request: { locale: 'en' },
+      nowMs: STUB_NOW_MS,
     })
 
     expect(body.resolution.locale).toBe('en')
@@ -122,9 +162,9 @@ describe('сборка ответа', () => {
       settings: { ...SNAPSHOT.settings, jurisdiction: { value: null, source: null } },
     }
 
-    expect(() => buildSiteConfigResponse({ snapshot: broken, release: RELEASE })).toThrow(
-      DeliveryAssemblyError,
-    )
+    expect(() =>
+      buildSiteConfigResponse({ snapshot: broken, release: RELEASE, nowMs: STUB_NOW_MS }),
+    ).toThrow(DeliveryAssemblyError)
   })
 
   it('локали отсортированы независимо от порядка в снапшоте', () => {
@@ -134,13 +174,15 @@ describe('сборка ответа', () => {
     }
 
     expect(
-      buildSiteConfigResponse({ snapshot: shuffled, release: RELEASE }).settings.availableLocales,
+      buildSiteConfigResponse({ snapshot: shuffled, release: RELEASE, nowMs: STUB_NOW_MS }).settings
+        .availableLocales,
     ).toEqual(['de', 'en'])
   })
 
   it('вариант присутствует в ответе до появления механизма вариантов', () => {
     expect(
-      buildSiteConfigResponse({ snapshot: SNAPSHOT, release: RELEASE }).resolution.variant,
+      buildSiteConfigResponse({ snapshot: SNAPSHOT, release: RELEASE, nowMs: STUB_NOW_MS })
+        .resolution.variant,
     ).toBe('default')
   })
 })
@@ -241,6 +283,98 @@ describe('обработчик: условный запрос', () => {
     )
 
     expect(next.status).toBe(200)
+  })
+})
+
+/**
+ * Срок годности списка инструментов на уровне связки (Р-042).
+ *
+ * Сама функция срока покрыта отдельно. Здесь проверяется то, чего она не
+ * знает: что срок доезжает до ответа, что он не взят от `builtAt`, и что
+ * обещание «одинаковый `ETag` — одинаковое тело» после его появления
+ * осталось верным.
+ */
+describe('обработчик: срок годности списка', () => {
+  const LIFETIME_MS = INSTRUMENTS_LIFETIME_SECONDS * 1000
+
+  function expiryOf(result: { readonly body: unknown }): string {
+    return (result.body as SiteConfigResponse).settings.instrumentsExpiresAt
+  }
+
+  it('срок приезжает в ответ и лежит в будущем относительно момента выдачи', async () => {
+    const result = await handleSiteConfig(request(), source())
+
+    expect(result.status).toBe(200)
+    expect(Date.parse(expiryOf(result))).toBeGreaterThan(STUB_NOW_MS)
+  })
+
+  /**
+   * Главный выбор решения, и проверяется он именно здесь: срок — обещание
+   * источника о действительности разрешений, а не возраст релиза. Срок от
+   * `builtAt` закрывал бы витрину давно не публиковавшегося сайта при
+   * полностью исправных разрешениях.
+   */
+  it('РАСТЯЖКА: срок не зависит от builtAt — релиз годовой давности получает тот же срок', async () => {
+    const fresh = await handleSiteConfig(
+      request(),
+      source({
+        loadChannelRelease: async () => ({ ...RELEASE, builtAt: '2026-10-19T11:59:00.000Z' }),
+      }),
+    )
+    const stale = await handleSiteConfig(
+      request(),
+      source({
+        loadChannelRelease: async () => ({ ...RELEASE, builtAt: '2025-10-19T11:59:00.000Z' }),
+      }),
+    )
+
+    expect(expiryOf(stale)).toBe(expiryOf(fresh))
+    expect(Date.parse(expiryOf(stale))).toBeGreaterThan(STUB_NOW_MS)
+  })
+
+  /**
+   * Релиз, собранный до появления поля инструментов, отдаёт пустой список —
+   * то есть закрытую границу. Срок обязан приехать и ему: иначе потребитель
+   * не отличил бы «срока нет» от «срок кончился», а это разные состояния.
+   */
+  it('релиз без снапшота инструментов всё равно получает срок', async () => {
+    const legacy = { ...SNAPSHOT, instruments: undefined } as unknown as ReleaseSnapshot
+    const result = await handleSiteConfig(
+      request(),
+      source({ loadChannelRelease: async () => ({ ...RELEASE, snapshot: legacy }) }),
+    )
+
+    expect((result.body as SiteConfigResponse).settings.instruments).toEqual([])
+    expect(Date.parse(expiryOf(result))).toBeGreaterThan(STUB_NOW_MS)
+  })
+
+  /**
+   * Обещание ADR-0003 после появления срока держится не на неизменности
+   * релиза, а на квантовании. Проверяется ровно оно: в пределах окна два
+   * ответа совпадают и `ETag` у них один.
+   */
+  it('в пределах окна ответ и ETag не меняются', async () => {
+    const early = await handleSiteConfig(request(), source({ now: () => STUB_NOW_MS }))
+    const late = await handleSiteConfig(request(), source({ now: () => STUB_NOW_MS + 60_000 }))
+
+    expect(expiryOf(late)).toBe(expiryOf(early))
+    expect(late.headers.ETag).toBe(early.headers.ETag)
+  })
+
+  /**
+   * И обратное: на границе окна меняется и тело, и `ETag`. Если бы `ETag`
+   * остался прежним, потребитель получил бы `304` на изменившееся тело —
+   * то есть сохранил бы истекающий срок навсегда.
+   */
+  it('на границе окна срок уезжает вперёд, и прежний ETag обесценивается', async () => {
+    const early = await handleSiteConfig(request(), source({ now: () => STUB_NOW_MS }))
+    const later = await handleSiteConfig(
+      request({ ifNoneMatch: early.headers.ETag! }),
+      source({ now: () => STUB_NOW_MS + LIFETIME_MS }),
+    )
+
+    expect(later.status).toBe(200)
+    expect(Date.parse(expiryOf(later))).toBeGreaterThan(Date.parse(expiryOf(early)))
   })
 })
 

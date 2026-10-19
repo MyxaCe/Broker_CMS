@@ -239,6 +239,7 @@ describe('после публикации', () => {
     const config = buildSiteConfigResponse({
       snapshot: release!.snapshot,
       release: { number: release!.number, builtAt: release!.builtAt },
+      nowMs: Date.now(),
     })
 
     const open = await handlePublicBrand(
