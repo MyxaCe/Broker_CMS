@@ -163,6 +163,7 @@ describe('успешная сборка', () => {
     const response = buildSiteConfigResponse({
       snapshot: result.snapshot,
       release: { number: result.number, builtAt: new Date().toISOString() },
+      nowMs: Date.now(),
     })
 
     // Символ, а не числовой id: нумерация — внутренняя деталь терминала (Р-024).
@@ -189,6 +190,7 @@ describe('успешная сборка', () => {
     const response = buildSiteConfigResponse({
       snapshot: legacySnapshot,
       release: { number: 1, builtAt: new Date().toISOString() },
+      nowMs: Date.now(),
     })
 
     expect(response.settings.instruments).toEqual([])

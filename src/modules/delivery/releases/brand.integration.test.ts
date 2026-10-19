@@ -156,6 +156,7 @@ describe('брендовые ассеты доезжают до выдачи', (
     const response = buildSiteConfigResponse({
       snapshot: result.snapshot,
       release: { number: result.number, builtAt: new Date().toISOString() },
+      nowMs: Date.now(),
     })
 
     expect(response.brand.logoLight).toMatchObject({
@@ -206,6 +207,7 @@ describe('брендовые ассеты доезжают до выдачи', (
     const response = buildSiteConfigResponse({
       snapshot: result.snapshot,
       release: { number: result.number, builtAt: new Date().toISOString() },
+      nowMs: Date.now(),
     })
 
     expect(response.settings.demoStartBalanceCents).toBe(1_000_000)
@@ -270,6 +272,7 @@ describe('сайт без ассетов', () => {
     const response = buildSiteConfigResponse({
       snapshot: result.snapshot,
       release: { number: result.number, builtAt: new Date().toISOString() },
+      nowMs: Date.now(),
     })
 
     /** Поле присутствует всегда: отсутствие объекта потребитель прочитал бы как undefined. */

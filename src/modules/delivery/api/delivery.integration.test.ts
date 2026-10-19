@@ -10,10 +10,12 @@ import { buildRelease } from '../releases/build'
 import { switchChannel } from '../releases/publish'
 
 import { handleSiteConfig } from './handler'
+import { INSTRUMENTS_LIFETIME_SECONDS } from './instruments-expiry'
 import { createPayloadSource } from './payload-source'
 import { RedisRateLimiter } from './redis-rate-limit'
 
 import type { DeliveryRequest, DeliverySource } from './handler'
+import type { SiteConfigResponse } from '@/contracts'
 import type { Payload } from 'payload'
 
 /**
@@ -180,6 +182,50 @@ describe('опубликованный сайт отдаётся по ключу
 
     expect(second.status).toBe(304)
     expect(second.body).toBeNull()
+  })
+})
+
+/**
+ * Срок годности списка инструментов (Р-042) — на живой базе.
+ *
+ * Модульные проверки знают только функцию и подменённый источник. Здесь
+ * проверяется цепочка: настоящий релиз в базе → настоящий источник с
+ * настоящими часами → поле в ответе, прошедшем схему.
+ */
+describe('срок годности списка доезжает от релиза до ответа', () => {
+  const LIFETIME_MS = INSTRUMENTS_LIFETIME_SECONDS * 1000
+
+  it('поле есть в ответе, прошедшем схему, и лежит в будущем', async () => {
+    const before = Date.now()
+    const result = await handleSiteConfig(request(), source)
+    const expiry = Date.parse((result.body as SiteConfigResponse).settings.instrumentsExpiresAt)
+
+    expect(checkAgainstSchema(SCHEMA_IDS.siteConfig, result.body).valid).toBe(true)
+    /**
+     * Проверяется обещанный запас, а не «больше нуля»: срок, который в момент
+     * выдачи уже на исходе, закрыл бы витрину при штатной перепроверке.
+     */
+    expect(expiry - before).toBeGreaterThan(LIFETIME_MS)
+    expect(expiry - before).toBeLessThanOrEqual(2 * LIFETIME_MS)
+  })
+
+  /**
+   * Релиз один и тот же, срок уехал вперёд — значит и `ETag` обязан
+   * измениться. Иначе потребитель получил бы `304` на изменившееся тело и
+   * остался бы с истекающим сроком навсегда.
+   */
+  it('через окно тот же релиз отдаётся с новым сроком и новым ETag', async () => {
+    const now = Date.now()
+    const early = await handleSiteConfig(request(), { ...source, now: () => now })
+    const later = await handleSiteConfig(request({ ifNoneMatch: early.headers.ETag! }), {
+      ...source,
+      now: () => now + LIFETIME_MS,
+    })
+
+    expect(later.status).toBe(200)
+    expect(
+      Date.parse((later.body as SiteConfigResponse).settings.instrumentsExpiresAt),
+    ).toBeGreaterThan(Date.parse((early.body as SiteConfigResponse).settings.instrumentsExpiresAt))
   })
 })
 

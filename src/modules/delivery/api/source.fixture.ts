@@ -30,9 +30,20 @@ export function emptyFeedPage() {
   }
 }
 
+/**
+ * Момент выдачи по умолчанию — 2026-10-19T12:00:00Z.
+ *
+ * Постоянный, а не `Date.now()`: подвижное время сделало бы тело ответа
+ * разным от прогона к прогону, и проверки `ETag` зеленели бы или краснели в
+ * зависимости от того, попал ли прогон на границу окна срока годности.
+ * Тесту, которому важен именно срок, момент задаётся явно.
+ */
+export const STUB_NOW_MS = Date.parse('2026-10-19T12:00:00.000Z')
+
 export function stubDeliverySource(overrides: Partial<DeliverySource> = {}): DeliverySource {
   return {
     rateLimiter: permissiveRateLimiter,
+    now: () => STUB_NOW_MS,
     resolveSiteId: async () => null,
     authorize: async () => ({ kind: 'deny', reason: 'unknown-key' }),
     loadChannelRelease: async () => null,

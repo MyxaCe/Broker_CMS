@@ -25,6 +25,15 @@ export function createPayloadSource(args: {
   return {
     rateLimiter: args.rateLimiter,
 
+    /**
+     * Настоящие часы. Время считается на каждый ответ, а не запоминается при
+     * создании источника: запомненное замёрзло бы вместе с процессом, и срок
+     * годности списка перестал бы двигаться у долгоживущего сервера. Это у
+     * нас уже было отдельным багом — с моментом старта в отпечатке
+     * конфигурации.
+     */
+    now: () => Date.now(),
+
     async resolveSiteId(siteSlug) {
       const found = await payload.find({
         collection: 'tenants',
