@@ -116,6 +116,16 @@ export interface ReleaseSnapshot {
     readonly structureNodes: number | null
     readonly routedPages: number | null
     readonly compliancePages: number | null
+    /**
+     * Блоки страниц, осмотренные комплаенсом, **после раскрытия ссылок на
+     * секции** (DEBT-021).
+     *
+     * Отдельное число от `compliancePages`: страницы отличают «страниц нет»
+     * от «страницы без блоков», а блоки — та единица, в которой проверка
+     * действительно работает. Раньше охват объявлялся страницами по сырому
+     * дереву, и текст внутри переиспользуемой секции в него не входил.
+     */
+    readonly complianceBlocks: number | null
   }
   /**
    * Расхождения графа токенов: битые ссылки, незаполненные темы, повторы имён.
@@ -227,6 +237,7 @@ export function composeSnapshot(
       structureNodes: content.examined?.structureNodes ?? null,
       routedPages: content.examined?.routedPages ?? null,
       compliancePages: content.examined?.compliancePages ?? null,
+      complianceBlocks: content.examined?.complianceBlocks ?? null,
     },
     tokenIssues: content.tokenIssues ?? [],
     tokens: content.tokens ?? {},

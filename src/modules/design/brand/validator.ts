@@ -90,6 +90,6 @@ export const brandAssetsValidator: Validator<{ readonly brand: BrandSnapshot | n
       return { kind: 'empty', reason: 'ни один слот брендовых ассетов не заполнен' }
     }
 
-    return { kind: 'checked', examined: input.brand.examinedReferences }
+    return { kind: 'checked', examined: input.brand.examinedReferences, unit: 'ссылок на файлы' }
   },
 }

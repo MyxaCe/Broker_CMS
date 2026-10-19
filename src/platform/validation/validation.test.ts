@@ -15,7 +15,7 @@ function validator(name: string, findings: Finding[], coverage?: Coverage): Vali
     name,
     description: `тестовый валидатор ${name}`,
     run: () => findings,
-    coverage: () => coverage ?? { kind: 'checked', examined: 1 },
+    coverage: () => coverage ?? { kind: 'checked', examined: 1, unit: 'единиц' },
   }
 }
 
@@ -78,7 +78,7 @@ const broken: Validator<unknown> = {
   run: () => {
     throw new Error('внутренняя ошибка')
   },
-  coverage: () => ({ kind: 'checked', examined: 1 }),
+  coverage: () => ({ kind: 'checked', examined: 1, unit: 'единиц' }),
 }
 
 describe('runValidation — сломанная проверка', () => {
@@ -157,13 +157,13 @@ describe('runValidation — охват проверки', () => {
 
   it('охват виден в отчёте по каждому валидатору', () => {
     const report = runValidation(
-      [validator('a', [], { kind: 'checked', examined: 42 }), validator('b', [])],
+      [validator('a', [], { kind: 'checked', examined: 42, unit: 'текстов' }), validator('b', [])],
       {},
     )
 
     expect(report.coverage).toEqual({
-      a: { kind: 'checked', examined: 42 },
-      b: { kind: 'checked', examined: 1 },
+      a: { kind: 'checked', examined: 42, unit: 'текстов' },
+      b: { kind: 'checked', examined: 1, unit: 'единиц' },
     })
   })
 
@@ -175,14 +175,14 @@ describe('runValidation — охват проверки', () => {
   it('число находок не отличает осмотренное от неполученного, а охват отличает', () => {
     const report = runValidation(
       [
-        validator('осмотрел', [], { kind: 'checked', examined: 42 }),
+        validator('осмотрел', [], { kind: 'checked', examined: 42, unit: 'текстов' }),
         validator('не получил', [], { kind: 'missing', reason: 'материал не передан' }),
       ],
       {},
     )
 
     expect(report.byValidator['осмотрел']).toBe(0)
-    expect(report.coverage['осмотрел']).toEqual({ kind: 'checked', examined: 42 })
+    expect(report.coverage['осмотрел']).toEqual({ kind: 'checked', examined: 42, unit: 'текстов' })
     expect(report.coverage['не получил']?.kind).toBe('missing')
   })
 

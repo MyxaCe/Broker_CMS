@@ -303,3 +303,67 @@ describe('расхождения слоя В блокируют сборку', (
     }
   })
 })
+
+/**
+ * Третье следствие DEBT-021, и оно тише остальных: разметка для поисковика
+ * читала **сырое** дерево блоков. FAQ, вынесенный в переиспользуемую секцию,
+ * в `FAQPage` не попадал вовсе — и не попадал молча: разметка не проверка,
+ * отчёт о ней ничего не говорит.
+ *
+ * Регресс пишется на том состоянии, в котором дефект жил: блок `faq` лежит
+ * **только внутри секции**, а на самой странице его нет. С блоком на
+ * странице тест был зелёным и до правки.
+ */
+describe('разметка поисковика видит содержимое переиспользуемых секций', () => {
+  it('FAQ внутри секции попадает в FAQPage', async () => {
+    const key = `faq-${stamp}`
+
+    await payload.create({
+      collection: 'sections',
+      overrideAccess: true,
+      data: {
+        title: 'Частые вопросы',
+        key,
+        locale: 'ru',
+        owner: ruSiteId,
+        isActive: true,
+        blocks: [
+          {
+            type: 'faq',
+            props: {
+              title: 'Вопросы',
+              items: [{ question: 'Как открыть счёт?', answer: 'Заполнить анкету.' }],
+            },
+          },
+        ],
+      } as never,
+    })
+
+    const path = `/faq-${stamp}`
+
+    await page({
+      title: 'Вопросы и ответы',
+      path,
+      locale: 'ru',
+      site: ruSiteId,
+      blocks: [{ type: 'section-ref', props: { key } }],
+    })
+
+    const result = await buildRelease({ payload, siteId: ruSiteId })
+
+    expect(result.status).toBe('ready')
+
+    const entry = result.snapshot.routing.pages.find((item) => item.path === path)
+    const faq = entry?.jsonLd.find((node) => node['@type'] === 'FAQPage')
+
+    expect(faq).toMatchObject({
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'Как открыть счёт?',
+          acceptedAnswer: { '@type': 'Answer', text: 'Заполнить анкету.' },
+        },
+      ],
+    })
+  })
+})

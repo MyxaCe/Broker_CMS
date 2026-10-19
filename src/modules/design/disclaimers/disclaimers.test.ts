@@ -273,6 +273,7 @@ describe('disclaimersValidator', () => {
     expect(disclaimersValidator.coverage({ disclaimers: snapshot })).toEqual({
       kind: 'checked',
       examined: 1,
+      unit: 'требуемых дисклеймеров после раскрытия ссылок на секции',
     })
   })
 })

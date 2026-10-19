@@ -188,3 +188,85 @@ describe('раскрытие ссылок на секции', () => {
     expect(expandSections([null, 42], sections).blocks).toEqual([null, 42])
   })
 })
+
+/**
+ * Раскрытие для проверок: узел ссылки сохраняется (DEBT-021).
+ *
+ * Форма отличается от выдачи ровно одним шагом — подстановкой, — и этот
+ * набор закрепляет, что всё остальное у них общее: наследование, вложенность
+ * и обе защиты от бесконечного раскрытия.
+ */
+describe('раскрытие для проверок сохраняет адрес ссылки', () => {
+  const sections = resolveSections({
+    chainIds: CHAIN,
+    records: [section({ key: 'trust', blocks: [{ type: 'quote', props: { text: 'доверие' } }] })],
+    locale: 'ru',
+  })
+
+  const forChecks = (
+    blocks: unknown,
+    map: ReturnType<typeof resolveSections<SectionRecord>> = sections,
+  ) => expandSections(blocks, map, { keepReference: true })
+
+  it('содержимое секции ложится в слот с её ключом, а не вклеивается', () => {
+    const result = forChecks([{ type: 'section-ref', props: { key: 'trust' } }])
+
+    expect(result.issues).toEqual([])
+    expect(result.blocks).toEqual([
+      {
+        type: 'section-ref',
+        props: { key: 'trust' },
+        slots: { 'section:trust': [{ type: 'quote', props: { text: 'доверие' } }] },
+      },
+    ])
+  })
+
+  /**
+   * Главное свойство формы: адрес находки внутри секции читается как адрес
+   * ссылки на странице плюс путь внутри секции. При обычном раскрытии он
+   * указывал бы на блок страницы, которого там нет.
+   */
+  it('адрес вложенной находки называет ключ секции', () => {
+    const nested = resolveSections({
+      chainIds: CHAIN,
+      records: [
+        section({ key: 'outer', blocks: [{ type: 'section-ref', props: { key: 'нет' } }] }),
+      ],
+      locale: 'ru',
+    })
+
+    const result = forChecks([{ type: 'section-ref', props: { key: 'outer' } }], nested)
+
+    expect(result.issues.map((issue) => issue.path)).toEqual(['blocks[0].slots.section:outer[0]'])
+  })
+
+  /** Защита от цикла и предел глубины — те же, что у выдачи. */
+  it('цикл даёт тот же код находки, что и при обычном раскрытии', () => {
+    const cyclic = resolveSections({
+      chainIds: CHAIN,
+      records: [
+        section({ key: 'loop', blocks: [{ type: 'section-ref', props: { key: 'loop' } }] }),
+      ],
+      locale: 'ru',
+    })
+
+    const result = forChecks([{ type: 'section-ref', props: { key: 'loop' } }], cyclic)
+
+    expect(result.issues.map((issue) => issue.code)).toEqual(['cycle'])
+  })
+
+  /**
+   * Нераскрытая ссылка не остаётся в дереве: подставлять нечего, а лишний
+   * узел раздувал бы объявленный охват на материал, которого нет.
+   */
+  it('ссылка, которую нечем раскрыть, из дерева убирается', () => {
+    expect(forChecks([{ type: 'section-ref', props: { key: 'нет' } }]).blocks).toEqual([])
+  })
+
+  /** Выдача этой формы не получает: там раскрытие прежнее, плоское. */
+  it('без флага содержимое по-прежнему вклеивается на место ссылки', () => {
+    const result = expandSections([{ type: 'section-ref', props: { key: 'trust' } }], sections)
+
+    expect(result.blocks).toEqual([{ type: 'quote', props: { text: 'доверие' } }])
+  })
+})

@@ -1,4 +1,5 @@
 import {
+  collectBlocks,
   collectContrastPairs,
   collectTexts,
   loadBrand,
@@ -10,7 +11,13 @@ import {
   runComplianceRules,
 } from '@/modules/design'
 import { resolveAllowList } from '@/modules/trading'
-import { ensureEnv, resolveTenantById, runValidation, summarizeReport } from '@/platform'
+import {
+  describeCoverage,
+  ensureEnv,
+  resolveTenantById,
+  runValidation,
+  summarizeReport,
+} from '@/platform'
 
 import { contentHash } from '../cache-key'
 
@@ -272,6 +279,17 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
         structureNodes: structure.navigation.length + structure.globalAreas.length,
         routedPages: routing.pages.length,
         compliancePages: complianceInput.pages.length,
+        /**
+         * Считаются блоки **раскрытого** дерева, и тем же обходом
+         * (`collectBlocks`), которым ходят сами правила: охват честен ровно
+         * настолько, насколько считается то, что проверяется. Отдельный
+         * подсчёт разошёлся бы с правилами в обработке вложенности —
+         * незаметно и в ту же сторону (DEBT-021).
+         */
+        complianceBlocks: complianceInput.pages.reduce(
+          (total, page) => total + collectBlocks(page.blocks).length,
+          0,
+        ),
       },
     },
   )
@@ -299,6 +317,23 @@ export async function buildRelease(args: BuildReleaseArgs): Promise<BuildRelease
         passed: report.passed,
         findings: report.findings,
         byValidator: report.byValidator,
+        /**
+         * Охват сохраняется вместе с отчётом, и это не косметика.
+         *
+         * До 19.10 он вычислялся, участвовал в отказе и **умирал в памяти**:
+         * в записи релиза оставались `byValidator` — те самые числа находок,
+         * про которые в этом же каркасе написано, что ноль у проверки,
+         * осмотревшей пятьсот текстов, и ноль у проверки, не получившей ни
+         * одного, — одно и то же число. Проверяющий открывал отчёт и видел
+         * ровно то, от чего охват и заведён.
+         */
+        coverage: report.coverage,
+        coverageSummary: Object.fromEntries(
+          Object.entries(report.coverage).map(([name, coverage]) => [
+            name,
+            describeCoverage(coverage),
+          ]),
+        ),
       },
     } as never,
   })

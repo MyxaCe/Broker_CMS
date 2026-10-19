@@ -87,7 +87,13 @@ function cleanContent() {
     brand: EMPTY_BRAND,
     disclaimers: EMPTY_DISCLAIMERS,
     instruments: { symbols: [], configured: false, confirmedUnquoted: [] },
-    examined: { tokens: 12, structureNodes: 2, routedPages: 1, compliancePages: 1 },
+    examined: {
+      tokens: 12,
+      structureNodes: 2,
+      routedPages: 1,
+      compliancePages: 1,
+      complianceBlocks: 3,
+    },
   }
 }
 
@@ -122,6 +128,12 @@ describe('RELEASE_VALIDATORS — гейт не отдаёт чистый отч�
     ['structureNodes', 'structure'],
     ['routedPages', 'routing'],
     ['compliancePages', 'compliance'],
+    /**
+     * Число блоков — отдельный материал, а не производная от страниц: не
+     * посчитали блоки раскрытого дерева — охват комплаенса неизвестен, и
+     * сборка обязана отклониться, а не объявить охват страницами.
+     */
+    ['complianceBlocks', 'compliance'],
   ])('несобранный материал «%s» отклоняет проверку «%s»', (field, validator) => {
     const snapshot = composeSnapshot(SITE, settings(), {
       ...cleanContent(),
@@ -144,7 +156,13 @@ describe('RELEASE_VALIDATORS — гейт не отдаёт чистый отч�
       brand: EMPTY_BRAND,
       disclaimers: EMPTY_DISCLAIMERS,
       instruments: { symbols: [], configured: false, confirmedUnquoted: [] },
-      examined: { tokens: 12, structureNodes: 0, routedPages: 0, compliancePages: 0 },
+      examined: {
+        tokens: 12,
+        structureNodes: 0,
+        routedPages: 0,
+        compliancePages: 0,
+        complianceBlocks: 0,
+      },
     })
 
     const report = runValidation(RELEASE_VALIDATORS, snapshot)
@@ -169,6 +187,10 @@ describe('RELEASE_VALIDATORS — гейт не отдаёт чистый отч�
 
     expect(report.passed).toBe(false)
     expect(report.blocking.map((finding) => finding.code)).toContain('forbidden-claim')
-    expect(report.coverage['forbidden-claims']).toEqual({ kind: 'checked', examined: 1 })
+    expect(report.coverage['forbidden-claims']).toEqual({
+      kind: 'checked',
+      examined: 1,
+      unit: 'редакторских текстов после раскрытия ссылок на секции',
+    })
   })
 })
