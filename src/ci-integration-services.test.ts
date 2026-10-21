@@ -138,7 +138,7 @@ describe('среда интеграционного прогона', () => {
       ]),
     )
 
-    expect(declaredPorts(INTEGRATION)).toEqual(expect.arrayContaining([5432, 5672, 6379, 9000]))
+    expect(declaredPorts(INTEGRATION)).toEqual(expect.arrayContaining([5432, 5672, 6379, 9090]))
   })
 
   it('у каждого адреса localhost есть открытый порт в том же задании', () => {

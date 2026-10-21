@@ -115,6 +115,33 @@ jobs:
           --health-timeout 3s
           --health-retries 20
 
+      # Объектное хранилище. С 06.10 два набора создают документы `media`, то
+      # есть грузят файл по S3 — без сервера они падают с ECONNREFUSED.
+      #
+      # **Почему не MinIO, хотя контур разработки на нём.** Репозиторий
+      # `minio/minio` на Docker Hub больше не отдаётся анонимно: и тег, и
+      # дайджест отвечают `denied: requested access to the resource is denied`,
+      # на quay.io образа тоже нет. Первая редакция этого шага тянула MinIO и
+      # **упала на раннере за секунду** — а локально отработала, потому что
+      # образ уже лежал в кеше машины. Локальное исполнение команды не
+      # доказывает, что она достанет то, чего на этой машине ещё нет.
+      #
+      # **Чем это слабее.** `adobe/s3mock` — не тот сервер, что в контуре: путь
+      # через AWS SDK, HTTP и подпись настоящий, сам сервер — нет. Для шины и
+      # Redis мы сознательно взяли настоящие; здесь настоящий недоступен, и это
+      # названо вслух, а не спрятано. Вернётся доступ к MinIO — вернуть его.
+      #
+      # Бакет создаётся самим сервером (`initialBuckets`), отдельного шага и
+      # второго образа не нужно. Проверки здоровья у службы нет намеренно:
+      # внутри образа нет клиента, которым её выполнить, а проверка, которую
+      # нельзя выполнить, подвесила бы задание. Готовность проверяет шаг.
+      s3:
+        image: adobe/s3mock:4.7.0
+        env:
+          initialBuckets: broker-cms-media
+        ports:
+          - 9090:9090
+
     # Переменные задаются здесь, а не в .env: файлов окружения в репозитории нет
     # и быть не должно. Значения ниже — не секреты: контур существует только на
     # время прогона.
@@ -140,12 +167,12 @@ jobs:
       REDIS_URL: redis://localhost:6379
       BUS_URL: amqp://cms:ci_only_not_a_secret@127.0.0.1:5672/platform
       BUS_EXCHANGE: platform.events
-      S3_ENDPOINT: http://localhost:9000
+      S3_ENDPOINT: http://localhost:9090
       S3_REGION: eu-central-1
       S3_BUCKET: broker-cms-media
       S3_ACCESS_KEY_ID: ci_only_access_key
       S3_SECRET_ACCESS_KEY: ci_only_not_a_secret_32_chars_min_
-      MEDIA_PUBLIC_URL: http://localhost:9000
+      MEDIA_PUBLIC_URL: http://localhost:9090
       MDS_HTTP_URL: http://localhost:3003
       SENTRY_DSN: https://ci-placeholder@localhost/0
       PAYLOAD_SECRET: ci_only_payload_secret_32_chars_min_
@@ -179,38 +206,24 @@ jobs:
       - name: Миграции
         run: pnpm run migrate:test
 
-      # Объектное хранилище поднимается шагом, а не службой: `services:` не
-      # умеет передавать команду контейнеру, а образу MinIO нужна `server /data`.
+      # Готовность хранилища — отдельный шаг, и он обязан быть именно здесь.
       #
-      # Образ закреплён дайджестом, а не тегом: `:latest` делает версию
-      # неустановимой, а тег можно передвинуть. Дайджест соответствует
-      # RELEASE.2025-09-07T16-13-09Z — тому же образу, что в
-      # docker-compose.dev.yml, чтобы контур разработки и прогон не расходились.
+      # Без него отказ хранилища выходит наружу падением набора, который про
+      # другое: ровно так три дня читалась «Изоляция тенантов» (CMS-19).
       #
-      # Бакет создаётся здесь же: без него первая загрузка медиа падает с
-      # невнятным отказом доступа. `mc` лежит внутри образа MinIO, второй образ
-      # не нужен.
-      - name: Хранилище медиа
+      # Ожидание и проверка — разные операции. Цикл только ждёт и молчит;
+      # вердикт выносит запрос после него, и он роняет шаг. Проверяется не
+      # «сервер отвечает», а **существует ли бакет**: на пустом адресе это
+      # разные вопросы. Несуществующий бакет отвечает 404, и `--fail` его
+      # ловит — проверено обоими исходами локально.
+      - name: Хранилище медиа готово
         run: |
           set -euo pipefail
-          docker run -d --name ci-minio -p 9000:9000 \
-            -e MINIO_ROOT_USER=ci_only_access_key \
-            -e MINIO_ROOT_PASSWORD=ci_only_not_a_secret_32_chars_min_ \
-            minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e \
-            server /data
-          # Ожидание и проверка — разные операции. Цикл только ждёт и молчит;
-          # вердикт выносит отдельный запрос после него, и он роняет шаг.
-          # Иначе отказ хранилища вышел бы наружу не красным шагом, а
-          # «что-то долго» и падением тестов, которые про другое.
           for _ in $(seq 1 30); do
-            curl -fsS http://localhost:9000/minio/health/live >/dev/null 2>&1 && break
+            curl -fsS "http://localhost:9090/${S3_BUCKET}?list-type=2" >/dev/null 2>&1 && break
             sleep 2
           done
-          curl -fsS http://localhost:9000/minio/health/live >/dev/null
-          docker exec ci-minio mc alias set ci http://127.0.0.1:9000 \
-            ci_only_access_key ci_only_not_a_secret_32_chars_min_
-          docker exec ci-minio mc mb --ignore-existing ci/broker-cms-media
-          docker exec ci-minio mc anonymous set download ci/broker-cms-media
+          curl -fsS "http://localhost:9090/${S3_BUCKET}?list-type=2" >/dev/null
 
       # Шаг гонит ВЕСЬ интеграционный набор, а не один файл про изоляцию.
       # Прежнее имя «Изоляция тенантов» утверждало больше, чем шаг знает:
