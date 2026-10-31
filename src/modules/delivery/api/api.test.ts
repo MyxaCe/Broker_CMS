@@ -23,6 +23,8 @@ const SNAPSHOT: ReleaseSnapshot = {
     defaultLocale: { value: 'de', source: '2' },
     availableLocales: ['de', 'en'],
     demoStartBalanceCents: 1_000_000,
+    demoStartCurrency: 'USD',
+    demoStartCurrencyMinorUnits: 2,
   },
   brand: EMPTY_BRAND,
   disclaimers: EMPTY_DISCLAIMERS,
@@ -190,6 +192,87 @@ describe('сборка ответа', () => {
       buildSiteConfigResponse({ snapshot: SNAPSHOT, release: RELEASE, nowMs: STUB_NOW_MS })
         .resolution.variant,
     ).toBe('default')
+  })
+
+  /**
+   * Денежная тройка едет целиком (Р-293, Р-435, CMS-29): сумма, валюта и число
+   * знаков. До CMS-29 сумма несла только число и сходилась с валютой счёта
+   * случайно.
+   */
+  it('стартовая сумма несёт валюту и число знаков', () => {
+    const settings = buildSiteConfigResponse({
+      snapshot: SNAPSHOT,
+      release: RELEASE,
+      nowMs: STUB_NOW_MS,
+    }).settings
+
+    expect(settings.demoStartBalanceCents).toBe(1_000_000)
+    expect(settings.demoStartCurrency).toBe('USD')
+    expect(settings.demoStartCurrencyMinorUnits).toBe(2)
+  })
+
+  /**
+   * Валюта с разрядностью, отличной от двух, — не воображаемая ветка: для иены
+   * одно и то же целое означает сумму в сто раз другую. Ответ обязан пройти
+   * схему и с нулём знаков.
+   */
+  it('валюта с нулём знаков (иена) проходит схему', () => {
+    const yen: ReleaseSnapshot = {
+      ...SNAPSHOT,
+      settings: {
+        ...SNAPSHOT.settings,
+        demoStartCurrency: 'JPY',
+        demoStartCurrencyMinorUnits: 0,
+      },
+    }
+
+    const body = buildSiteConfigResponse({ snapshot: yen, release: RELEASE, nowMs: STUB_NOW_MS })
+
+    expect(body.settings.demoStartCurrencyMinorUnits).toBe(0)
+    expect(checkAgainstSchema(SCHEMA_IDS.siteConfig, body)).toEqual({ valid: true, issues: [] })
+  })
+
+  /**
+   * Валюта не задана — отдаётся `null`, не подставленный доллар, и число знаков
+   * тоже `null`. Это отказ, по которому кабинет не откроет счёт (Р-435).
+   */
+  it('незаданная валюта отдаётся как null и проходит схему', () => {
+    const noCurrency: ReleaseSnapshot = {
+      ...SNAPSHOT,
+      settings: {
+        ...SNAPSHOT.settings,
+        demoStartCurrency: null,
+        demoStartCurrencyMinorUnits: null,
+      },
+    }
+
+    const body = buildSiteConfigResponse({
+      snapshot: noCurrency,
+      release: RELEASE,
+      nowMs: STUB_NOW_MS,
+    })
+
+    expect(body.settings.demoStartCurrency).toBeNull()
+    expect(body.settings.demoStartCurrencyMinorUnits).toBeNull()
+    expect(checkAgainstSchema(SCHEMA_IDS.siteConfig, body).valid).toBe(true)
+  })
+
+  /**
+   * Обязательность валюты проверяется у схемы, а не только у сборки: сборка
+   * кладёт поле всегда, поэтому «забыли объявить обязательным» не покрасило бы
+   * ни одного теста — ответ-то правильный. То же свойство уже удерживает срок
+   * годности списка.
+   */
+  it('схема отвергает ответ без валюты стартовой суммы', () => {
+    const body = buildSiteConfigResponse({
+      snapshot: SNAPSHOT,
+      release: RELEASE,
+      nowMs: STUB_NOW_MS,
+    })
+    const { demoStartCurrency: _dropped, ...settings } = body.settings
+    const maimed = { ...body, settings }
+
+    expect(checkAgainstSchema(SCHEMA_IDS.siteConfig, maimed).valid).toBe(false)
   })
 })
 

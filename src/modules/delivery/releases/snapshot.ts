@@ -1,4 +1,5 @@
 import { EMPTY_ROUTING, EMPTY_STRUCTURE } from '@/modules/design'
+import { currencyMinorUnits } from '@/platform'
 
 import type {
   BrandSnapshot,
@@ -53,6 +54,20 @@ export interface ReleaseSnapshot {
      * подставляет, и это одно из расхождений, названных при переезде.
      */
     readonly demoStartBalanceCents: number | null
+    /**
+     * Валюта стартовой суммы и число её младших единиц — второй и третий
+     * элементы денежной тройки (Р-293, Р-435, CMS-29).
+     *
+     * Замораживаются вместе с суммой: «что за деньги назначены» обязано быть
+     * восстановимо вместе с «сколько». `null` означает «валюта не задана ни на
+     * одном слое» — и тогда число знаков тоже `null`: истолковать сумму нечем,
+     * и это отказ, а не нуль знаков (нуль — законная разрядность иены).
+     *
+     * Релизы, собранные до появления поля, этих значений в снапшоте не имеют;
+     * сборка ответа подставляет `null` — см. `api/site-config.ts`.
+     */
+    readonly demoStartCurrency: string | null
+    readonly demoStartCurrencyMinorUnits: number | null
   }
   /**
    * Брендовые ассеты на момент сборки (ТЗ 2.1, DEBT-014).
@@ -226,6 +241,10 @@ export function composeSnapshot(
       // на отпечаток содержимого.
       availableLocales: settings.availableLocales.entries.map((entry) => entry.value).sort(),
       demoStartBalanceCents: settings.demoStartBalanceCents.value ?? null,
+      demoStartCurrency: settings.demoStartCurrency.value ?? null,
+      // Число знаков — производная валюты, а не отдельно хранимое: источник
+      // правды один. При незаданной валюте — null, не ноль (Р-293, Р-435).
+      demoStartCurrencyMinorUnits: currencyMinorUnits(settings.demoStartCurrency.value ?? null),
     },
     brand: content.brand,
     disclaimers: content.disclaimers,

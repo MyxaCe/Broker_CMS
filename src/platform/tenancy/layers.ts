@@ -1,4 +1,10 @@
-import { BRAND_ASSET_SLOTS, readMoneyLayer, readRelationLayer, readSocialsLayer } from './brand'
+import {
+  BRAND_ASSET_SLOTS,
+  readCurrencyLayer,
+  readMoneyLayer,
+  readRelationLayer,
+  readSocialsLayer,
+} from './brand'
 import { resolveCollection, resolveField } from './inheritance'
 
 import type { BrandAssetSlot } from './brand'
@@ -65,6 +71,16 @@ export interface TenantSettings {
    * решение владельца.
    */
   readonly demoStartBalanceCents: FieldResolution<number>
+  /**
+   * Валюта стартовой суммы — второй элемент денежной тройки (Р-293, Р-435).
+   *
+   * Живёт рядом с суммой и наследуется по той же цепочке: у бренда валюта чаще
+   * одна на все сайты, а расхождения — страновые. `undefined` означает «не
+   * задана ни на одном слое»; наружу это уходит как `null`, а не как
+   * подставленный доллар — иначе сумма снова сошлась бы с валютой счёта лишь по
+   * совпадению, ровно то, что вскрыл Р-435.
+   */
+  readonly demoStartCurrency: FieldResolution<string>
   readonly brand: TenantBrand
 }
 
@@ -148,6 +164,12 @@ export function resolveTenantSettings(layers: readonly TenantLayerSource[]): Ten
       chain,
       new Map(
         layers.map((layer) => [layer.node.id, readMoneyLayer(layer.data.demoStartBalanceCents)]),
+      ),
+    ),
+    demoStartCurrency: resolveField(
+      chain,
+      new Map(
+        layers.map((layer) => [layer.node.id, readCurrencyLayer(layer.data.demoStartCurrency)]),
       ),
     ),
     brand: {

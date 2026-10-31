@@ -20,6 +20,8 @@ const SNAPSHOT: ReleaseSnapshot = {
     defaultLocale: { value: 'de', source: '2' },
     availableLocales: ['de', 'en'],
     demoStartBalanceCents: 1_000_000,
+    demoStartCurrency: 'USD',
+    demoStartCurrencyMinorUnits: 2,
   },
   brand: EMPTY_BRAND,
   disclaimers: EMPTY_DISCLAIMERS,

@@ -67,6 +67,13 @@ function settings(overrides: Partial<TenantSettings> = {}): TenantSettings {
       inheritedValue: 1_000_000,
       inheritedFromTenantId: 'apex',
     },
+    demoStartCurrency: {
+      value: 'USD',
+      provenance: 'inherited',
+      sourceTenantId: 'apex',
+      inheritedValue: 'USD',
+      inheritedFromTenantId: 'apex',
+    },
     brand: brandLayers(),
     ...overrides,
   }
@@ -108,6 +115,33 @@ describe('composeSnapshot', () => {
     expect(contentHash(composeSnapshot(SITE, settings(), content()))).toBe(
       contentHash(composeSnapshot(SITE, settings(), content())),
     )
+  })
+
+  /**
+   * Денежная тройка замораживается целиком (Р-293, Р-435): валюта едет рядом с
+   * суммой, а число знаков — производной от валюты, из одного источника.
+   */
+  it('валюта и число её знаков попадают в снапшот рядом с суммой', () => {
+    const snapshot = composeSnapshot(SITE, settings(), content())
+
+    expect(snapshot.settings.demoStartBalanceCents).toBe(1_000_000)
+    expect(snapshot.settings.demoStartCurrency).toBe('USD')
+    expect(snapshot.settings.demoStartCurrencyMinorUnits).toBe(2)
+  })
+
+  /**
+   * Валюта не задана — число знаков `null`, а не ноль: сумму нечем истолковать,
+   * и это отказ, а не «ноль знаков» (нуль — законная разрядность иены).
+   */
+  it('без валюты число знаков — null, а не ноль', () => {
+    const snapshot = composeSnapshot(
+      SITE,
+      settings({ demoStartCurrency: unset<string>() }),
+      content(),
+    )
+
+    expect(snapshot.settings.demoStartCurrency).toBeNull()
+    expect(snapshot.settings.demoStartCurrencyMinorUnits).toBeNull()
   })
 
   it('отсутствующее значение становится null, а не пропадает', () => {
@@ -199,6 +233,7 @@ describe('siteReadinessValidator', () => {
         inheritedFromTenantId: null,
       },
       demoStartBalanceCents: unset<number>(),
+      demoStartCurrency: unset<string>(),
       brand: brandLayers(),
       availableLocales: { entries: [], forkedAtTenantId: null },
     }

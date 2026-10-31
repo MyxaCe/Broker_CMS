@@ -23,6 +23,7 @@ import * as migration_20261005_202531_add_instrument_allow_list from './20261005
 import * as migration_20261006_162655_add_brand_assets from './20261006_162655_add_brand_assets'
 import * as migration_20261006_164830_add_disclaimers from './20261006_164830_add_disclaimers'
 import * as migration_20261006_170610_add_popup_display from './20261006_170610_add_popup_display'
+import * as migration_20261031_120000_add_demo_start_currency from './20261031_120000_add_demo_start_currency'
 
 export const migrations = [
   {
@@ -149,5 +150,10 @@ export const migrations = [
     up: migration_20261006_170610_add_popup_display.up,
     down: migration_20261006_170610_add_popup_display.down,
     name: '20261006_170610_add_popup_display',
+  },
+  {
+    up: migration_20261031_120000_add_demo_start_currency.up,
+    down: migration_20261031_120000_add_demo_start_currency.down,
+    name: '20261031_120000_add_demo_start_currency',
   },
 ]

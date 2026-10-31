@@ -76,6 +76,13 @@ function settings(): TenantSettings {
       inheritedValue: undefined,
       inheritedFromTenantId: null,
     },
+    demoStartCurrency: {
+      value: 'USD',
+      provenance: 'overridden',
+      sourceTenantId: 'de',
+      inheritedValue: undefined,
+      inheritedFromTenantId: null,
+    },
     brand: brandLayers(),
   }
 }

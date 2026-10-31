@@ -122,6 +122,7 @@ beforeAll(async () => {
       favicon: { mode: 'override', value: faviconId },
       primaryColor: { mode: 'override', value: '#d4a437' },
       demoStartBalanceCents: { mode: 'override', value: 1_000_000 },
+      demoStartCurrency: { mode: 'override', value: 'USD' },
       socials: {
         mode: 'extend',
         items: [
@@ -211,6 +212,28 @@ describe('брендовые ассеты доезжают до выдачи', (
     })
 
     expect(response.settings.demoStartBalanceCents).toBe(1_000_000)
+  })
+
+  /**
+   * Денежная тройка доезжает целиком (Р-293, Р-435, CMS-29): сумма без валюты
+   * и без числа знаков — ложь, сходившаяся с валютой счёта лишь случайно.
+   * Валюта наследуется от бренда наравне с суммой, а число знаков приезжает
+   * производным от неё: у доллара — два.
+   */
+  it('валюта стартовой суммы наследуется, число знаков приезжает рядом', async () => {
+    const result = await buildRelease({ payload, siteId })
+
+    expect(result.snapshot.settings.demoStartCurrency).toBe('USD')
+    expect(result.snapshot.settings.demoStartCurrencyMinorUnits).toBe(2)
+
+    const response = buildSiteConfigResponse({
+      snapshot: result.snapshot,
+      release: { number: result.number, builtAt: new Date().toISOString() },
+      nowMs: Date.now(),
+    })
+
+    expect(response.settings.demoStartCurrency).toBe('USD')
+    expect(response.settings.demoStartCurrencyMinorUnits).toBe(2)
   })
 })
 

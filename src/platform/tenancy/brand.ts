@@ -68,6 +68,64 @@ export const BRAND_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/
  */
 export const MAX_DEMO_START_BALANCE_CENTS = 1_000_000_000_000
 
+/**
+ * Валюта стартовой суммы и число её младших единиц (Р-293, Р-435, CMS-29).
+ *
+ * Сумма демо-счёта — денежная величина, пересекающая границу зон, а деньги
+ * едут тройкой: сумма в наименьших единицах, код валюты, число знаков младшей
+ * единицы (Р-293). До сегодня тройка была неполной — поле несло только число,
+ * и совпадало оно с валютой счёта **случайно**: счёт открывался в долларах, у
+ * которых младшая единица и есть цент. Для счёта в иене (0 знаков) или динаре
+ * (3 знака) та же строка означала бы сумму в сто и в тысячу раз другую.
+ *
+ * Перечень закрытый, а не «любые три буквы»: с появлением числа знаков принять
+ * незнакомый код значило бы завести сумму, которую нечем истолковать — тот же
+ * урок, что у шины (Р-294). Число знаков хранится рядом с кодом, потому что
+ * именно оно задаёт смысл записанного целого: «1000000» — это 10 000 единиц у
+ * доллара, 1 000 000 у иены и 1 000 у динара.
+ *
+ * Расширяется по мере появления валют у площадки. Намеренно включены все три
+ * разрядности (2, 0, 3): валюта с нулём и валюта с тремя — не теоретические,
+ * и ветка «число знаков ≠ 2» обязана быть исполнимой, а не воображаемой.
+ */
+export const CURRENCY_MINOR_UNITS: Readonly<Record<string, number>> = {
+  USD: 2,
+  EUR: 2,
+  GBP: 2,
+  CHF: 2,
+  AUD: 2,
+  CAD: 2,
+  JPY: 0,
+  BHD: 3,
+  KWD: 3,
+  TND: 3,
+}
+
+/** Код валюты в форме ISO 4217: ровно три заглавные латинские буквы. */
+export const CURRENCY_CODE_PATTERN = /^[A-Z]{3}$/
+
+/** Известна ли валюта площадке. Незнакомая не заводится вовсе (Р-294). */
+export function isKnownCurrency(code: unknown): code is string {
+  return typeof code === 'string' && code.trim().toUpperCase() in CURRENCY_MINOR_UNITS
+}
+
+/**
+ * Число знаков младшей единицы валюты — третий элемент денежной тройки.
+ *
+ * `null` для незнакомого кода: не «ноль знаков», а «истолковать нечем». Ноль —
+ * законная разрядность (иена), и путать её с отказом нельзя, по тому же уроку,
+ * что `null` против нуля у самой суммы.
+ */
+export function currencyMinorUnits(code: string | null | undefined): number | null {
+  if (typeof code !== 'string') {
+    return null
+  }
+
+  const units = CURRENCY_MINOR_UNITS[code.trim().toUpperCase()]
+
+  return units === undefined ? null : units
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {}
 }
@@ -141,6 +199,34 @@ export function readMoneyLayer(raw: unknown): LayerState<number> {
   }
 
   return { state: mode, value: parsed }
+}
+
+/**
+ * Читает слой с кодом валюты стартовой суммы (Р-293, Р-435, CMS-29).
+ *
+ * Код нормализуется к верхнему регистру и проверяется по закрытому перечню
+ * площадки: незнакомый код становится `unset`, а не уезжает в снапшот. Это тот
+ * же барьер, что у суммы, и по той же причине — негодное значение у одного
+ * слоя не должно нулём или мусором перекрывать годное значение сверху по
+ * цепочке. Полный известный перечень — единственный разрешённый вход: принять
+ * «любые три буквы» значило бы завести валюту, у которой нечем взять число
+ * знаков (Р-294).
+ */
+export function readCurrencyLayer(raw: unknown): LayerState<string> {
+  const group = asRecord(raw)
+  const mode = group.mode
+
+  if (mode !== 'override' && mode !== 'fork') {
+    return { state: 'unset' }
+  }
+
+  const value = typeof group.value === 'string' ? group.value.trim().toUpperCase() : ''
+
+  if (value === '' || !(value in CURRENCY_MINOR_UNITS)) {
+    return { state: 'unset' }
+  }
+
+  return { state: mode, value }
 }
 
 /**

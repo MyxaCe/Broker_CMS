@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import {
   BRAND_ASSET_SLOTS,
+  currencyMinorUnits,
   MAX_DEMO_START_BALANCE_CENTS,
+  readCurrencyLayer,
   readMoneyLayer,
   readRelationLayer,
   readSocialsLayer,
@@ -88,6 +90,65 @@ describe('readMoneyLayer', () => {
     ['не число и не строка', { amount: 100 }],
   ])('негодное значение (%s) даёт «не задано», а не ноль', (_name, value) => {
     expect(readMoneyLayer({ mode: 'override', value })).toEqual({ state: 'unset' })
+  })
+})
+
+describe('readCurrencyLayer', () => {
+  it('принимает известный код и нормализует регистр', () => {
+    expect(readCurrencyLayer({ mode: 'override', value: 'usd' })).toEqual({
+      state: 'override',
+      value: 'USD',
+    })
+    expect(readCurrencyLayer({ mode: 'fork', value: ' eur ' })).toEqual({
+      state: 'fork',
+      value: 'EUR',
+    })
+  })
+
+  it('«наследуется» не смотрит на значение вовсе', () => {
+    expect(readCurrencyLayer({ mode: 'inherit', value: 'USD' })).toEqual({ state: 'unset' })
+  })
+
+  /**
+   * Незнакомая валюта не заводится вовсе (Р-294): её нечем истолковать, число
+   * знаков у неё взять неоткуда. Негодный код становится «не задано», а не
+   * уезжает в снапшот и не перекрывает годную валюту сверху по цепочке — тот
+   * же барьер, что у суммы.
+   */
+  it.each([
+    ['пустая строка', '   '],
+    ['незнакомый код', 'XYZ'],
+    ['не три буквы', 'US'],
+    ['не строка', 840],
+    ['код с цифрами', 'US1'],
+  ])('негодный код (%s) даёт «не задано»', (_name, value) => {
+    expect(readCurrencyLayer({ mode: 'override', value })).toEqual({ state: 'unset' })
+  })
+})
+
+describe('currencyMinorUnits', () => {
+  /**
+   * Третий элемент тройки: число знаков младшей единицы. Все три разрядности
+   * реальны — доллар 2, иена 0, динар 3, — и именно из-за их различия сумма без
+   * валюты лжёт (Р-293, Р-435).
+   */
+  it('доллар 2, иена 0, динар 3', () => {
+    expect(currencyMinorUnits('USD')).toBe(2)
+    expect(currencyMinorUnits('JPY')).toBe(0)
+    expect(currencyMinorUnits('BHD')).toBe(3)
+  })
+
+  it('регистр и пробелы не мешают', () => {
+    expect(currencyMinorUnits(' eur ')).toBe(2)
+  })
+
+  /** Незнакомый код и пустота — `null` («истолковать нечем»), а не ноль знаков. */
+  it.each([
+    ['незнакомый код', 'XYZ'],
+    ['null', null],
+    ['undefined', undefined],
+  ])('%s даёт null, а не 0', (_name, value) => {
+    expect(currencyMinorUnits(value)).toBeNull()
   })
 })
 
@@ -189,6 +250,38 @@ describe('разрешение бренда по цепочке', () => {
         ),
       ).demoStartBalanceCents.value,
     ).toBe(1_000_000)
+  })
+
+  /**
+   * Валюта едет рядом с суммой и наследуется по той же цепочке (Р-435): у
+   * бренда она чаще одна на все сайты, а страна её переопределяет. До CMS-29
+   * валюты не было вовсе, и сумма сходилась со счётом случайно.
+   */
+  it('валюта стартовой суммы наследуется от бренда и переопределяется сайтом', () => {
+    expect(
+      resolveTenantSettings(chain({ demoStartCurrency: { mode: 'override', value: 'USD' } }, {}))
+        .demoStartCurrency.value,
+    ).toBe('USD')
+
+    expect(
+      resolveTenantSettings(
+        chain(
+          { demoStartCurrency: { mode: 'override', value: 'USD' } },
+          { demoStartCurrency: { mode: 'override', value: 'jpy' } },
+        ),
+      ).demoStartCurrency.value,
+    ).toBe('JPY')
+  })
+
+  it('незнакомая валюта у сайта отдаёт победу бренду, а не мусору', () => {
+    expect(
+      resolveTenantSettings(
+        chain(
+          { demoStartCurrency: { mode: 'override', value: 'USD' } },
+          { demoStartCurrency: { mode: 'override', value: 'XYZ' } },
+        ),
+      ).demoStartCurrency.value,
+    ).toBe('USD')
   })
 
   it('социальные сети накапливаются по цепочке и переопределяются по названию', () => {

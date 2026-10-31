@@ -221,6 +221,13 @@ export interface Tenant {
     value?: number | null;
   };
   /**
+   * Код валюты, ISO 4217 — например USD, EUR, JPY. Задаёт смысл числа младших единиц в сумме рядом. Незнакомый код не принимается: сумму в нём нечем истолковать.
+   */
+  demoStartCurrency: {
+    mode: 'inherit' | 'override' | 'fork';
+    value?: string | null;
+  };
+  /**
    * Витрина берёт логотип отсюда. Без него переезд контура на v2 отнимет у неё картинку, которую legacy отдаёт сегодня (Р-014).
    */
   logoLight: {
@@ -1583,6 +1590,12 @@ export interface TenantsSelect<T extends boolean = true> {
         value?: T;
       };
   demoStartBalanceCents?:
+    | T
+    | {
+        mode?: T;
+        value?: T;
+      };
+  demoStartCurrency?:
     | T
     | {
         mode?: T;
