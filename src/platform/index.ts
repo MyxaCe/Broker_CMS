@@ -63,6 +63,28 @@ export {
 } from './validation'
 export type { Coverage, Finding, FindingSeverity, ValidationReport, Validator } from './validation'
 
+export {
+  ACCOUNT_TYPES,
+  ACCOUNT_TYPE_LABELS,
+  CLIENT_CATEGORIES,
+  CLIENT_CATEGORY_LABELS,
+  DEFAULT_JURISDICTION_CODE,
+  REAL_ACCOUNT_START_BALANCE_MINOR_UNITS,
+  SEYCHELLES_DEFAULT_PROFILE,
+  isAccountType,
+  isClientCategory,
+  profileForCode,
+  resolveDefaultProfile,
+  resolveStartBalance,
+} from './jurisdiction'
+export type {
+  AccountType,
+  ClientCategory,
+  JurisdictionProfile,
+  StartBalanceResolution,
+  StartBalanceSource,
+} from './jurisdiction'
+
 export { toActor } from './auth/actor'
 export { validateUserDraft } from './auth/user-rules'
 export type { UserDraft } from './auth/user-rules'

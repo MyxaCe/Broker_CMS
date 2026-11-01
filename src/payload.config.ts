@@ -9,6 +9,7 @@ import { buildConfig } from 'payload'
 import { ensureEnv } from './platform/config'
 import { AuditEvents } from './platform/audit/audit.collection'
 import { Users } from './platform/auth/users.collection'
+import { JurisdictionProfiles } from './platform/jurisdiction/jurisdiction-profiles.collection'
 import { Media } from './platform/media/media.collection'
 import { Tenants } from './platform/tenancy/tenants.collection'
 import { Outbox } from './modules/delivery/events/outbox.collection'
@@ -56,6 +57,7 @@ export default buildConfig({
 
   collections: [
     Tenants,
+    JurisdictionProfiles,
     Users,
     Media,
     Categories,
