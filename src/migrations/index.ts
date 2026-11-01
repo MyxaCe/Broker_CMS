@@ -24,6 +24,7 @@ import * as migration_20261006_162655_add_brand_assets from './20261006_162655_a
 import * as migration_20261006_164830_add_disclaimers from './20261006_164830_add_disclaimers'
 import * as migration_20261006_170610_add_popup_display from './20261006_170610_add_popup_display'
 import * as migration_20261031_120000_add_demo_start_currency from './20261031_120000_add_demo_start_currency'
+import * as migration_20261101_134808_add_jurisdiction_profiles from './20261101_134808_add_jurisdiction_profiles'
 
 export const migrations = [
   {
@@ -155,5 +156,10 @@ export const migrations = [
     up: migration_20261031_120000_add_demo_start_currency.up,
     down: migration_20261031_120000_add_demo_start_currency.down,
     name: '20261031_120000_add_demo_start_currency',
+  },
+  {
+    up: migration_20261101_134808_add_jurisdiction_profiles.up,
+    down: migration_20261101_134808_add_jurisdiction_profiles.down,
+    name: '20261101_134808_add_jurisdiction_profiles',
   },
 ]

@@ -68,6 +68,7 @@ export interface Config {
   blocks: {};
   collections: {
     tenants: Tenant;
+    'jurisdiction-profiles': JurisdictionProfile;
     users: User;
     media: Media;
     categories: Category;
@@ -102,6 +103,7 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     tenants: TenantsSelect<false> | TenantsSelect<true>;
+    'jurisdiction-profiles': JurisdictionProfilesSelect<false> | JurisdictionProfilesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
@@ -214,17 +216,17 @@ export interface Tenant {
     value?: string | null;
   };
   /**
-   * В центах, целым числом: 1000000 — это 10 000 единиц валюты. Не задан ни здесь, ни выше по цепочке — выдача отдаёт null, и кабинет обязан отказать, а не подставить своё число.
+   * Целым числом, в наименьших единицах валюты из поля рядом: для доллара и евро это центы (1000000 — 10 000 единиц), для иены — сами иены (0 знаков), для динара — 1/1000 (3 знака). Задаётся вместе с валютой: число без валюты — это денежная ложь (Р-293, Р-435). Не задан ни здесь, ни выше по цепочке — выдача отдаёт null, и кабинет обязан отказать, а не подставить своё число.
    */
   demoStartBalanceCents: {
     mode: 'inherit' | 'override' | 'fork';
     value?: number | null;
   };
-  /**
-   * Код валюты, ISO 4217 — например USD, EUR, JPY. Задаёт смысл числа младших единиц в сумме рядом. Незнакомый код не принимается: сумму в нём нечем истолковать.
-   */
   demoStartCurrency: {
     mode: 'inherit' | 'override' | 'fork';
+    /**
+     * Код валюты, ISO 4217 — например USD, EUR, JPY. Задаёт смысл числа младших единиц в сумме рядом. Известные площадке: AUD, BHD, CAD, CHF, EUR, GBP, JPY, KWD, TND, USD. Незнакомый код не принимается: сумму в нём нечем истолковать.
+     */
     value?: string | null;
   };
   /**
@@ -345,6 +347,57 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+}
+/**
+ * Регуляторный профиль юрисдикции: деление клиентов, защита от отрицательного баланса, пороги риск-контроля, плечо, размещение данных. Профиль по умолчанию — Сейшелы. Площадки привязываются к профилю кодом юрисдикции.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "jurisdiction-profiles".
+ */
+export interface JurisdictionProfile {
+  id: number;
+  /**
+   * Совпадает с кодом юрисдикции площадки (например SC — Сейшелы). По нему профиль подбирается к сайту. После первой привязки не меняется: смена кода — это другая юрисдикция, а не переименование.
+   */
+  code: string;
+  /**
+   * Человекочитаемое название, например «Сейшелы».
+   */
+  name: string;
+  /**
+   * Ровно один профиль площадки — по умолчанию; сегодня это Сейшелы. На нём открывается площадка, пока юрисдикция сайта не выбрана явно.
+   */
+  isDefault?: boolean | null;
+  /**
+   * Какие категории клиентов существуют в этой юрисдикции (Р-236). Категория конкретного счёта — его собственный атрибут в торговой части, не здесь.
+   */
+  clientCategories: ('retail' | 'professional')[];
+  /**
+   * Видимый флаг, а не вшитое поведение (Р-226, Р-281). На Сейшелах не обязательна — включена по нашему выбору. Выключение здесь — осознанное регуляторное решение, а не умолчание.
+   */
+  negativeBalanceProtection: boolean;
+  /**
+   * Предупреждение клиенту об уровне маржи (Р-226, Р-456). Рабочий дефолт — 100 %. Уточняется юристом без релиза. Пусто — «не задано в профиле», это не ноль.
+   */
+  marginCallPercent?: number | null;
+  /**
+   * Порог принудительного закрытия позиций (Р-226, Р-456). Рабочий дефолт — 50 %. Уточняется юристом без релиза. Пусто — «не задано в профиле», это не ноль: ноль у порога — законное значение.
+   */
+  marginCloseOutPercent?: number | null;
+  /**
+   * Верхняя граница плеча юрисдикции (Р-237, Р-456, TRM-53). Рабочий дефолт — 100 (1:100). Это ПОТОЛОК: стартовые плечи портфелей (Standard/Pro/ENC Prime) живут в site-platform (WEB-44) и профилем не отменяются. Уточняется юристом без релиза. Пусто — «не задан».
+   */
+  maxLeverage?: number | null;
+  /**
+   * Что где можно хранить — регуляторные ограничения на размещение данных. Остаётся заглушкой (Р-456): содержимое даёт юрист позже, без релиза. Пусто — «не задано».
+   */
+  dataResidency?: string | null;
+  /**
+   * Чьё требование исполняет профиль. Справочно, на отбор не влияет.
+   */
+  regulator?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1411,6 +1464,10 @@ export interface PayloadLockedDocument {
         value: number | Tenant;
       } | null)
     | ({
+        relationTo: 'jurisdiction-profiles';
+        value: number | JurisdictionProfile;
+      } | null)
+    | ({
         relationTo: 'users';
         value: number | User;
       } | null)
@@ -1655,6 +1712,24 @@ export interface TenantsSelect<T extends boolean = true> {
               id?: T;
             };
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "jurisdiction-profiles_select".
+ */
+export interface JurisdictionProfilesSelect<T extends boolean = true> {
+  code?: T;
+  name?: T;
+  isDefault?: T;
+  clientCategories?: T;
+  negativeBalanceProtection?: T;
+  marginCallPercent?: T;
+  marginCloseOutPercent?: T;
+  maxLeverage?: T;
+  dataResidency?: T;
+  regulator?: T;
   updatedAt?: T;
   createdAt?: T;
 }
