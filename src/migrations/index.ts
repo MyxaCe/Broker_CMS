@@ -23,7 +23,7 @@ import * as migration_20261005_202531_add_instrument_allow_list from './20261005
 import * as migration_20261006_162655_add_brand_assets from './20261006_162655_add_brand_assets'
 import * as migration_20261006_164830_add_disclaimers from './20261006_164830_add_disclaimers'
 import * as migration_20261006_170610_add_popup_display from './20261006_170610_add_popup_display'
-import * as migration_20261101_132640_add_jurisdiction_profiles from './20261101_132640_add_jurisdiction_profiles'
+import * as migration_20261101_134808_add_jurisdiction_profiles from './20261101_134808_add_jurisdiction_profiles'
 
 export const migrations = [
   {
@@ -152,8 +152,8 @@ export const migrations = [
     name: '20261006_170610_add_popup_display',
   },
   {
-    up: migration_20261101_132640_add_jurisdiction_profiles.up,
-    down: migration_20261101_132640_add_jurisdiction_profiles.down,
-    name: '20261101_132640_add_jurisdiction_profiles',
+    up: migration_20261101_134808_add_jurisdiction_profiles.up,
+    down: migration_20261101_134808_add_jurisdiction_profiles.down,
+    name: '20261101_134808_add_jurisdiction_profiles',
   },
 ]

@@ -729,17 +729,26 @@
           "notNull": true,
           "default": true
         },
+        "margin_call_percent": {
+          "name": "margin_call_percent",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 100
+        },
         "margin_close_out_percent": {
           "name": "margin_close_out_percent",
           "type": "numeric",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": 50
         },
         "max_leverage": {
           "name": "max_leverage",
           "type": "numeric",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": 100
         },
         "data_residency": {
           "name": "data_residency",
@@ -8845,6 +8854,6 @@
     "tables": {},
     "columns": {}
   },
-  "id": "b8fa451f-0de5-4b88-aeac-c2a9d17b3832",
+  "id": "01b4f8fa-a61c-4511-bb40-b48c8eb12069",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

@@ -18,8 +18,9 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   	"name" varchar NOT NULL,
   	"is_default" boolean DEFAULT false,
   	"negative_balance_protection" boolean DEFAULT true NOT NULL,
-  	"margin_close_out_percent" numeric,
-  	"max_leverage" numeric,
+  	"margin_call_percent" numeric DEFAULT 100,
+  	"margin_close_out_percent" numeric DEFAULT 50,
+  	"max_leverage" numeric DEFAULT 100,
   	"data_residency" varchar,
   	"regulator" varchar,
   	"updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -38,19 +39,20 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   CREATE INDEX "payload_locked_documents_rels_jurisdiction_profiles_id_idx" ON "payload_locked_documents_rels" USING btree ("jurisdiction_profiles_id");`)
 
   /**
-   * Профиль по умолчанию — Сейшелы (CMS-24, Р-236, Р-237).
+   * Профиль по умолчанию — Сейшелы с РАБОЧИМИ значениями (CMS-24, Р-236, Р-237,
+   * Р-456 D).
    *
    * Сид в миграции, а не в коде приложения: «по умолчанию — Сейшелы» обязано
-   * стать правдой на накате, а не при первом удачном заходе в админку.
-   * Идемпотентно (`ON CONFLICT`/`NOT EXISTS`) — повторный накат не плодит
-   * дублей и не падает. Заполнены только НАШИ решения: деление на розничных и
-   * профессиональных (Р-236) и защита от отрицательного баланса по нашему
-   * выбору (Р-281). Регуляторные числа, которые задаёт владелец, остаются
-   * пустыми — точками расширения, а не выдумкой.
+   * стать правдой на накате. Идемпотентно (`ON CONFLICT`/`NOT EXISTS`). Значения
+   * рабочие, а не нули: защита от отрицательного баланса (политика брокера,
+   * Р-281), маржин-колл 100 %, стоп-аут 50 %, потолок плеча 1:100 (Р-226, Р-237).
+   * `data_residency` остаётся пустым намеренно — это вопрос к юристу, а не
+   * обоснуемый дефолт. Реальные числа уточняются БЕЗ релиза (конфиг, не код).
    */
   await db.execute(sql`
-   INSERT INTO "jurisdiction_profiles" ("code", "name", "is_default", "negative_balance_protection")
-  VALUES ('SC', 'Сейшелы', true, true)
+   INSERT INTO "jurisdiction_profiles"
+  	("code", "name", "is_default", "negative_balance_protection", "margin_call_percent", "margin_close_out_percent", "max_leverage")
+  VALUES ('SC', 'Сейшелы', true, true, 100, 50, 100)
   ON CONFLICT ("code") DO NOTHING;
   INSERT INTO "jurisdiction_profiles_client_categories" ("order", "parent_id", "value")
   SELECT 1, p.id, 'retail' FROM "jurisdiction_profiles" p

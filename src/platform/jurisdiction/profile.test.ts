@@ -39,9 +39,21 @@ describe('SEYCHELLES_DEFAULT_PROFILE', () => {
     expect(SEYCHELLES_DEFAULT_PROFILE.clientCategories).toEqual(['retail', 'professional'])
   })
 
-  it('регуляторные числа владельца не выдуманы — null, а не правдоподобное значение', () => {
-    expect(SEYCHELLES_DEFAULT_PROFILE.marginCloseOutPercent).toBeNull()
-    expect(SEYCHELLES_DEFAULT_PROFILE.maxLeverage).toBeNull()
+  it('рабочие дефолты риск-контроля, а не нули (Р-456 D)', () => {
+    expect(SEYCHELLES_DEFAULT_PROFILE.marginCallPercent).toBe(100)
+    expect(SEYCHELLES_DEFAULT_PROFILE.marginCloseOutPercent).toBe(50)
+    expect(SEYCHELLES_DEFAULT_PROFILE.maxLeverage).toBe(100)
+  })
+
+  it('стоп-аут строго ниже маржин-колла', () => {
+    const { marginCallPercent, marginCloseOutPercent } = SEYCHELLES_DEFAULT_PROFILE
+
+    expect(marginCallPercent).not.toBeNull()
+    expect(marginCloseOutPercent).not.toBeNull()
+    expect(marginCloseOutPercent as number).toBeLessThan(marginCallPercent as number)
+  })
+
+  it('размещение данных остаётся заглушкой — вопрос к юристу, не рабочий дефолт (Р-456 D)', () => {
     expect(SEYCHELLES_DEFAULT_PROFILE.dataResidency).toBeNull()
   })
 })
